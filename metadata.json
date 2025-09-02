@@ -1,0 +1,5 @@
+{
+  "name": "ContextMatic: AI Content Repurposing",
+  "description": "An AI-powered SaaS tool to repurpose content for different platforms. This application demonstrates a sophisticated architecture including geographic-based pricing, a 7-day free trial system, and a robust fingerprinting-based abuse prevention mechanism to stop users from creating multiple free accounts.",
+  "requestFramePermissions": []
+}
