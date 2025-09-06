@@ -2,10 +2,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getUserPricing } from '../services/pricingService';
-import { PLAN_FEATURES } from '../constants';
+import { createRazorpayOrder } from '../services/razorpayService';
+import { PLAN_FEATURES, RAZORPAY_KEY_ID } from '../constants';
+import type { PlanId, RazorpayOptions } from '../types';
 import { CheckIcon } from './icons/CheckIcon';
 import { AlertTriangleIcon } from './icons/AlertTriangleIcon';
 import { useToast } from '../context/ToastContext';
+import Spinner from './ui/Spinner';
+
 
 interface PricingPageProps {
     showContinueButton?: boolean;
@@ -16,17 +20,63 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
     const { user, upgradePlan } = useAuth();
     const { addToast } = useToast();
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
 
     if (!user) return null; // Should be behind auth guard
 
     const pricing = getUserPricing(user.countryCode);
     const isAbuse = user.plan === 'free_abuse';
     
-    const handleSelectPlan = (plan: 'pro' | 'business') => {
-        const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
-        upgradePlan(plan);
-        addToast(`Successfully upgraded to the ${planName} plan! Welcome aboard.`, 'success');
+    const initiatePayment = async (planId: 'pro' | 'business', price: number) => {
+        if (!user) return;
+        setLoadingPlan(planId);
+
+        try {
+            // Step 1: Create an order from our (simulated) backend
+            const orderDetails = await createRazorpayOrder(price, 'USD', planId);
+
+            // Step 2: Configure Razorpay options
+            const options: RazorpayOptions = {
+                key: RAZORPAY_KEY_ID,
+                amount: orderDetails.amount,
+                currency: orderDetails.currency,
+                name: 'ContextMatic',
+                description: `Upgrade to ${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`,
+                order_id: orderDetails.orderId,
+                handler: (response) => {
+                    // Step 4: Handle successful payment
+                    console.log('Payment successful:', response);
+                    const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
+                    upgradePlan(planId);
+                    addToast(`Successfully upgraded to the ${planName} plan! Welcome aboard.`, 'success');
+                    // The app will re-render and show the dashboard.
+                },
+                prefill: {
+                    email: user.email,
+                },
+                theme: {
+                    color: '#4f46e5', // Indigo-600
+                },
+                modal: {
+                    ondismiss: () => {
+                        console.log('Payment modal dismissed by user.');
+                        addToast('Payment was cancelled.', 'info');
+                        setLoadingPlan(null);
+                    }
+                }
+            };
+
+            // Step 3: Open the Razorpay checkout modal
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+
+        } catch (error) {
+            console.error('Error initiating payment:', error);
+            addToast('Could not initiate payment. Please try again.', 'error');
+            setLoadingPlan(null);
+        }
     };
+
 
     const PlanCard: React.FC<{
         planName: 'Pro' | 'Business';
@@ -49,10 +99,11 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
             </div>
             {billingCycle === 'yearly' && <p className="text-emerald-600 dark:text-emerald-400 mt-2 text-sm font-semibold">Billed as ${price * 12 * 0.83 < 1 ? (price*10).toFixed(2) : Math.round(price * 10)}/year</p>}
             <button
-                onClick={() => handleSelectPlan(planId)}
-                className={`mt-8 w-full py-3 rounded-lg font-semibold transition-all transform hover:scale-105 ${isPopular ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600'}`}
+                onClick={() => initiatePayment(planId, price)}
+                disabled={loadingPlan !== null}
+                className={`mt-8 w-full py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex justify-center items-center ${isPopular ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white disabled:from-slate-400 disabled:to-slate-400' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 disabled:bg-slate-300 dark:disabled:bg-slate-600'}`}
             >
-                Choose {planName}
+                {loadingPlan === planId ? <Spinner /> : `Choose ${planName}`}
             </button>
             <ul className="mt-8 space-y-4 text-sm text-slate-600 dark:text-slate-300 flex-grow">
                 {PLAN_FEATURES.map((feature) => (

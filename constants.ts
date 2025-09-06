@@ -3,6 +3,11 @@ import type { PricingTier, TierId, PlanFeature } from './types';
 // FIX: 'RepurposeOption' is an enum used as a value, so it must be imported separately from the type-only imports.
 import { RepurposeOption } from './types';
 
+// This is your public Razorpay Key ID.
+// It's safe to expose this on the frontend.
+// Replace with your actual key from the Razorpay dashboard.
+export const RAZORPAY_KEY_ID = 'rzp_test_1234567890ABCD';
+
 export const PRICING_TIERS: Record<TierId, PricingTier> = {
     tier1: { // USA, Canada, Western Europe, Australia
         pro: { monthly: 29, yearly: 290 },
