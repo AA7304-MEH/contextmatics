@@ -5,6 +5,7 @@ import { getUserPricing } from '../services/pricingService';
 import { PLAN_FEATURES } from '../constants';
 import { CheckIcon } from './icons/CheckIcon';
 import { AlertTriangleIcon } from './icons/AlertTriangleIcon';
+import { useToast } from '../context/ToastContext';
 
 interface PricingPageProps {
     showContinueButton?: boolean;
@@ -13,6 +14,7 @@ interface PricingPageProps {
 
 const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, onContinue }) => {
     const { user, upgradePlan } = useAuth();
+    const { addToast } = useToast();
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
     if (!user) return null; // Should be behind auth guard
@@ -21,9 +23,9 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
     const isAbuse = user.plan === 'free_abuse';
     
     const handleSelectPlan = (plan: 'pro' | 'business') => {
-        console.log(`Selected ${plan} plan with ${billingCycle} billing.`);
+        const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
         upgradePlan(plan);
-        alert(`You have successfully upgraded to the ${plan} plan!`);
+        addToast(`Successfully upgraded to the ${planName} plan! Welcome aboard.`, 'success');
     };
 
     const PlanCard: React.FC<{
