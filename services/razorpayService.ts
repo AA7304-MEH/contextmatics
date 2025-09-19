@@ -26,8 +26,8 @@ export const createRazorpayOrder = async (
     await new Promise(res => setTimeout(res, 750));
 
     // In a real backend, you'd get a unique order_id from Razorpay.
-    // We'll generate a mock one here for demonstration.
-    const mockOrderId = `order_mock_${Date.now()}`;
+    // We'll generate a mock one here that looks like a real one.
+    const mockOrderId = `order_${Math.random().toString(36).substring(2, 11)}`;
 
     // Razorpay expects the amount in the smallest currency unit (e.g., cents for USD).
     const amountInSmallestUnit = Math.round(amount * 100);

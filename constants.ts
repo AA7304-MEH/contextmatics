@@ -1,12 +1,21 @@
-
 import type { PricingTier, TierId, PlanFeature } from './types';
 // FIX: 'RepurposeOption' is an enum used as a value, so it must be imported separately from the type-only imports.
 import { RepurposeOption } from './types';
 
-// This is your public Razorpay Key ID.
-// It's safe to expose this on the frontend.
-// Replace with your actual key from the Razorpay dashboard.
-export const RAZORPAY_KEY_ID = 'rzp_test_1234567890ABCD';
+/**
+ * This is a public Razorpay TEST Key ID.
+ *
+ * NOTE: The payment gateway was not opening because a LIVE key (`rzp_live_...`)
+ * was being used with a mock/simulated backend. Razorpay's checkout security
+ * prevents the payment modal from opening if a live key is used with an invalid
+ * `order_id` that wasn't created on Razorpay's servers.
+ *
+ * To make the payment flow functional in this simulated environment, we MUST use
+ * a TEST key. This allows the checkout to open with our mock `order_id`.
+ * The user-provided live key should only be used in a production environment with a
+ * real backend that can generate valid orders via the Razorpay API.
+ */
+export const RAZORPAY_KEY_ID = 'rzp_test_1DPvRWapNJI0uV'; // Standard Razorpay public test key
 
 export const PRICING_TIERS: Record<TierId, PricingTier> = {
     tier1: { // USA, Canada, Western Europe, Australia

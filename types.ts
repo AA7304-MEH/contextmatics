@@ -20,6 +20,12 @@ export interface PricingTier {
     };
 }
 
+export interface UserPricingInfo {
+    prices: PricingTier;
+    currency: 'USD' | 'INR';
+    currencySymbol: '$' | '₹';
+}
+
 export type TierId = 'tier1' | 'tier2';
 
 export interface PlanFeature {

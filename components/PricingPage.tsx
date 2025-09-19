@@ -24,16 +24,31 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
 
     if (!user) return null; // Should be behind auth guard
 
-    const pricing = getUserPricing(user.countryCode);
+    const { prices, currency, currencySymbol } = getUserPricing(user.countryCode);
     const isAbuse = user.plan === 'free_abuse';
     
-    const initiatePayment = async (planId: 'pro' | 'business', price: number) => {
+    const initiatePayment = async (planId: 'pro' | 'business', price: number, paymentCurrency: 'USD' | 'INR') => {
         if (!user) return;
+
         setLoadingPlan(planId);
+
+        if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_ID.startsWith('rzp_')) {
+            addToast('Payment gateway is not configured correctly. Please contact support.', 'error');
+            console.error('Razorpay Key ID is missing or invalid.');
+            setLoadingPlan(null);
+            return;
+        }
+
+        if (typeof window.Razorpay === 'undefined') {
+            addToast('Payment gateway script failed to load. Please check your network or ad-blocker and refresh.', 'error');
+            console.error('Razorpay checkout script (window.Razorpay) is not available.');
+            setLoadingPlan(null);
+            return;
+        }
 
         try {
             // Step 1: Create an order from our (simulated) backend
-            const orderDetails = await createRazorpayOrder(price, 'USD', planId);
+            const orderDetails = await createRazorpayOrder(price, paymentCurrency, planId);
 
             // Step 2: Configure Razorpay options
             const options: RazorpayOptions = {
@@ -49,7 +64,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
                     const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
                     upgradePlan(planId);
                     addToast(`Successfully upgraded to the ${planName} plan! Welcome aboard.`, 'success');
-                    // The app will re-render and show the dashboard.
+                    setLoadingPlan(null);
                 },
                 prefill: {
                     email: user.email,
@@ -82,41 +97,46 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
         planName: 'Pro' | 'Business';
         planId: 'pro' | 'business';
         description: string;
-        price: number;
+        planPrices: { monthly: number; yearly: number };
         isPopular?: boolean;
-    }> = ({ planName, planId, description, price, isPopular = false }) => (
-        <div className={`relative border rounded-xl p-8 flex flex-col transition-all duration-300 ${isPopular ? 'border-indigo-500 border-2 shadow-2xl scale-105 bg-white dark:bg-slate-800' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50'}`}>
-            {isPopular && (
-                <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
-                    <span className="bg-indigo-500 text-white text-xs font-semibold px-4 py-1 rounded-full uppercase">Most Popular</span>
+    }> = ({ planName, planId, description, planPrices, isPopular = false }) => {
+        const displayPrice = billingCycle === 'monthly' ? planPrices.monthly : Math.round(planPrices.yearly / 12);
+        const chargePrice = billingCycle === 'monthly' ? planPrices.monthly : planPrices.yearly;
+        
+        return (
+            <div className={`relative border rounded-xl p-8 flex flex-col transition-all duration-300 ${isPopular ? 'border-indigo-500 border-2 shadow-2xl scale-105 bg-white dark:bg-slate-800' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50'}`}>
+                {isPopular && (
+                    <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
+                        <span className="bg-indigo-500 text-white text-xs font-semibold px-4 py-1 rounded-full uppercase">Most Popular</span>
+                    </div>
+                )}
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">{planName}</h3>
+                <p className="text-slate-500 dark:text-slate-400 mt-4 h-12">{description}</p>
+                <div className="mt-6">
+                    <span className="text-5xl font-extrabold text-gray-900 dark:text-white">{currencySymbol}{displayPrice}</span>
+                    <span className="text-lg font-medium text-slate-500 dark:text-slate-400">/mo</span>
                 </div>
-            )}
-            <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">{planName}</h3>
-            <p className="text-slate-500 dark:text-slate-400 mt-4 h-12">{description}</p>
-            <div className="mt-6">
-                <span className="text-5xl font-extrabold text-gray-900 dark:text-white">${price}</span>
-                <span className="text-lg font-medium text-slate-500 dark:text-slate-400">/mo</span>
+                {billingCycle === 'yearly' && <p className="text-emerald-600 dark:text-emerald-400 mt-2 text-sm font-semibold">Billed as {currencySymbol}{planPrices.yearly}/year</p>}
+                <button
+                    onClick={() => initiatePayment(planId, chargePrice, currency)}
+                    disabled={loadingPlan !== null}
+                    className={`mt-8 w-full py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex justify-center items-center ${isPopular ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white disabled:from-slate-400 disabled:to-slate-400' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 disabled:bg-slate-300 dark:disabled:bg-slate-600'}`}
+                >
+                    {loadingPlan === planId ? <Spinner /> : `Choose ${planName}`}
+                </button>
+                <ul className="mt-8 space-y-4 text-sm text-slate-600 dark:text-slate-300 flex-grow">
+                    {PLAN_FEATURES.map((feature) => (
+                        <li key={feature.name} className="flex items-center">
+                            <CheckIcon className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
+                            <span>
+                                {feature.name}: <span className="font-semibold text-slate-800 dark:text-slate-100">{typeof feature[planId] === 'string' ? feature[planId] : (feature[planId] ? 'Included' : 'Not Included')}</span>
+                            </span>
+                        </li>
+                    ))}
+                </ul>
             </div>
-            {billingCycle === 'yearly' && <p className="text-emerald-600 dark:text-emerald-400 mt-2 text-sm font-semibold">Billed as ${price * 12 * 0.83 < 1 ? (price*10).toFixed(2) : Math.round(price * 10)}/year</p>}
-            <button
-                onClick={() => initiatePayment(planId, price)}
-                disabled={loadingPlan !== null}
-                className={`mt-8 w-full py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex justify-center items-center ${isPopular ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white disabled:from-slate-400 disabled:to-slate-400' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 disabled:bg-slate-300 dark:disabled:bg-slate-600'}`}
-            >
-                {loadingPlan === planId ? <Spinner /> : `Choose ${planName}`}
-            </button>
-            <ul className="mt-8 space-y-4 text-sm text-slate-600 dark:text-slate-300 flex-grow">
-                {PLAN_FEATURES.map((feature) => (
-                    <li key={feature.name} className="flex items-center">
-                        <CheckIcon className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
-                        <span>
-                            {feature.name}: <span className="font-semibold text-slate-800 dark:text-slate-100">{typeof feature[planId] === 'string' ? feature[planId] : (feature[planId] ? 'Included' : 'Not Included')}</span>
-                        </span>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
+        );
+    }
 
     return (
         <section className="py-12 sm:py-16">
@@ -191,7 +211,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
                         planName="Pro"
                         planId="pro"
                         description="For professionals and small teams who need more power and flexibility."
-                        price={billingCycle === 'monthly' ? pricing.pro.monthly : Math.round(pricing.pro.yearly / 12)}
+                        planPrices={prices.pro}
                         isPopular={true}
                     />
 
@@ -200,7 +220,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
                         planName="Business"
                         planId="business"
                         description="For large teams and agencies needing collaboration and API access."
-                        price={billingCycle === 'monthly' ? pricing.business.monthly : Math.round(pricing.business.yearly / 12)}
+                        planPrices={prices.business}
                     />
 
                     {/* Enterprise Plan */}
