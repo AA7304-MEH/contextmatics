@@ -90,5 +90,6 @@ declare global {
         Razorpay: new (options: RazorpayOptions) => {
             open: () => void;
         };
+        paypal: any;
     }
 }

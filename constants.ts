@@ -17,6 +17,15 @@ import { RepurposeOption } from './types';
  */
 export const RAZORPAY_KEY_ID = 'rzp_test_1DPvRWapNJI0uV'; // Standard Razorpay public test key
 
+/**
+ * This is a public PayPal Client ID for the Sandbox environment.
+ * NOTE: In a real production application, this key should be stored in an
+ * environment variable (e.g., process.env.REACT_APP_PAYPAL_CLIENT_ID) and not
+ * hardcoded in the source code. The secret key MUST NEVER be in the frontend code.
+ */
+export const PAYPAL_CLIENT_ID = 'AYTvYjBG2seZa0FGQlKVLUDH4Mp1ml2BmqEDxgb8ysdoLnVEoa0q7Ceu0ycycxpBu8Nx2iPlW1SpOz5K';
+
+
 export const PRICING_TIERS: Record<TierId, PricingTier> = {
     tier1: { // USA, Canada, Western Europe, Australia
         pro: { monthly: 29, yearly: 290 },

@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getUserPricing } from '../services/pricingService';
 import { createRazorpayOrder } from '../services/razorpayService';
@@ -9,6 +8,7 @@ import { CheckIcon } from './icons/CheckIcon';
 import { AlertTriangleIcon } from './icons/AlertTriangleIcon';
 import { useToast } from '../context/ToastContext';
 import Spinner from './ui/Spinner';
+import PayPalButton from './PayPalButton';
 
 
 interface PricingPageProps {
@@ -27,7 +27,14 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
     const { prices, currency, currencySymbol } = getUserPricing(user.countryCode);
     const isAbuse = user.plan === 'free_abuse';
     
-    const initiatePayment = async (planId: 'pro' | 'business', price: number, paymentCurrency: 'USD' | 'INR') => {
+    const handlePaymentSuccess = useCallback((planId: 'pro' | 'business') => {
+        const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
+        upgradePlan(planId);
+        addToast(`Successfully upgraded to the ${planName} plan! Welcome aboard.`, 'success');
+        setLoadingPlan(null);
+    }, [upgradePlan, addToast]);
+    
+    const initiateRazorpayPayment = async (planId: 'pro' | 'business', price: number, paymentCurrency: 'USD' | 'INR') => {
         if (!user) return;
 
         setLoadingPlan(planId);
@@ -61,10 +68,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
                 handler: (response) => {
                     // Step 4: Handle successful payment
                     console.log('Payment successful:', response);
-                    const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
-                    upgradePlan(planId);
-                    addToast(`Successfully upgraded to the ${planName} plan! Welcome aboard.`, 'success');
-                    setLoadingPlan(null);
+                    handlePaymentSuccess(planId);
                 },
                 prefill: {
                     email: user.email,
@@ -117,13 +121,37 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
                     <span className="text-lg font-medium text-slate-500 dark:text-slate-400">/mo</span>
                 </div>
                 {billingCycle === 'yearly' && <p className="text-emerald-600 dark:text-emerald-400 mt-2 text-sm font-semibold">Billed as {currencySymbol}{planPrices.yearly}/year</p>}
-                <button
-                    onClick={() => initiatePayment(planId, chargePrice, currency)}
-                    disabled={loadingPlan !== null}
-                    className={`mt-8 w-full py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex justify-center items-center ${isPopular ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white disabled:from-slate-400 disabled:to-slate-400' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 disabled:bg-slate-300 dark:disabled:bg-slate-600'}`}
-                >
-                    {loadingPlan === planId ? <Spinner /> : `Choose ${planName}`}
-                </button>
+                
+                <div className="mt-8 h-[44px] flex items-center">
+                    {currency === 'INR' ? (
+                        <button
+                            onClick={() => initiateRazorpayPayment(planId, chargePrice, currency)}
+                            disabled={loadingPlan !== null}
+                            className={`w-full py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex justify-center items-center h-[44px] ${isPopular ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white disabled:from-slate-400 disabled:to-slate-400' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 disabled:bg-slate-300 dark:disabled:bg-slate-600'}`}
+                        >
+                            {loadingPlan === planId ? <Spinner /> : 'Pay with Card / UPI'}
+                        </button>
+                    ) : (
+                        <>
+                            {loadingPlan !== null && loadingPlan !== planId ? (
+                                 <div className="w-full flex justify-center items-center">
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Processing payment...</p>
+                                 </div>
+                            ) : (
+                                <div className="w-full">
+                                    <PayPalButton
+                                        planId={planId}
+                                        amount={chargePrice}
+                                        currency={currency}
+                                        onSuccess={handlePaymentSuccess}
+                                        setLoadingPlan={setLoadingPlan}
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+
                 <ul className="mt-8 space-y-4 text-sm text-slate-600 dark:text-slate-300 flex-grow">
                     {PLAN_FEATURES.map((feature) => (
                         <li key={feature.name} className="flex items-center">
