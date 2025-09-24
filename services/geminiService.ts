@@ -4,13 +4,7 @@ import type { RepurposeOption, Job, PlanId } from '../types';
 // IMPORTANT: This key is exposed on the client-side for demonstration purposes ONLY.
 // In a real production application, you should proxy all API calls through your own
 // backend server to protect your API key.
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-  console.warn("Gemini API key not found. Please set the API_KEY environment variable. Using a placeholder key.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY || "YOUR_API_KEY_HERE" });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const getPromptForOption = (option: RepurposeOption, content: string): string => {
     switch (option) {
@@ -80,7 +74,8 @@ export const startRepurposingJob = async (
             await new Promise(res => setTimeout(res, 3000));
 
             // 3. Call actual API
-            if (!API_KEY) {
+            if (!process.env.API_KEY) {
+                console.warn("Gemini API key not found. Please set the API_KEY environment variable. Using a mock response.");
                 let mockResult = `This is a mock response for "${option}" from job ${jobId}. The original content was: "${content.substring(0, 100)}..."`;
                 if (userPlan === 'free') {
                     mockResult += '\n\n---\nRepurposed with ContextMatic';

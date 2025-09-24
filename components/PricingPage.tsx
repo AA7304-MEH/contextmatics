@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
 import { getUserPricing } from '../services/pricingService';
 import { createRazorpayOrder } from '../services/razorpayService';
 import { PLAN_FEATURES, RAZORPAY_KEY_ID } from '../constants';
@@ -22,7 +22,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
     const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
 
-    if (!user) return null; // Should be behind auth guard
+    if (!user) return null;
 
     const { prices, currency, currencySymbol } = getUserPricing(user.countryCode);
     const isAbuse = user.plan === 'free_abuse';

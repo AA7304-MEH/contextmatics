@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { startRepurposingJob } from '../services/geminiService';
 import { REPURPOSE_OPTIONS } from '../constants';

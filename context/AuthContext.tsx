@@ -1,12 +1,34 @@
-
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import type { User, PlanId } from '../types';
 import { checkAbuseAndCreateUser } from '../services/api';
 
+const getUserFromStorage = (): User | null => {
+    try {
+        const userStr = localStorage.getItem('contextmatic_user');
+        return userStr ? JSON.parse(userStr) : null;
+    } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+        return null;
+    }
+};
+
+const saveUserToStorage = (user: User | null) => {
+    try {
+        if (user) {
+            localStorage.setItem('contextmatic_user', JSON.stringify(user));
+        } else {
+            localStorage.removeItem('contextmatic_user');
+        }
+    } catch (e) {
+        console.error("Failed to save user to localStorage", e);
+    }
+};
+
 interface AuthContextType {
     user: User | null;
+    isAuthenticated: boolean;
     loading: boolean;
-    login: (email: string, countryCode: string, visitorId: string) => Promise<void>;
+    signup: (email: string, countryCode: string, visitorId: string) => Promise<void>;
     logout: () => void;
     upgradePlan: (plan: 'pro' | 'business' | 'enterprise') => void;
     decrementCredits: () => void;
@@ -19,47 +41,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Simulate checking for an existing session
-        const storedUser = localStorage.getItem('contextmatic_user');
+        const storedUser = getUserFromStorage();
         if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
+            setUser(storedUser);
         }
         setLoading(false);
     }, []);
 
-    const updateUser = useCallback((newUser: User | null) => {
-        setUser(newUser);
-        if (newUser) {
-            localStorage.setItem('contextmatic_user', JSON.stringify(newUser));
-        } else {
-            localStorage.removeItem('contextmatic_user');
-        }
-    }, []);
-
-    const login = async (email: string, countryCode: string, visitorId: string) => {
-        setLoading(true);
-        // The abuse check will determine if they get a 'free' or 'free_abuse' plan.
+    const signup = async (email: string, countryCode: string, visitorId: string) => {
         const newUser = await checkAbuseAndCreateUser(email, countryCode, visitorId);
-
-        // If it's a legitimate new user on the free plan, set a flag to show them the pricing page once.
-        if (newUser.plan === 'free') {
-            sessionStorage.setItem('contextmatic_new_user', 'true');
-        } else {
-            // Clear flag for returning users or abuse cases.
-            sessionStorage.removeItem('contextmatic_new_user');
-        }
-
-        updateUser(newUser);
-        setLoading(false);
+        saveUserToStorage(newUser);
+        setUser(newUser);
     };
 
     const logout = () => {
-        updateUser(null);
-        // also clear our mock abuse database for demonstration purposes
-        localStorage.removeItem('fingerprint_db');
-        localStorage.removeItem('contextmatic_jobs'); // also clear jobs
-        sessionStorage.removeItem('contextmatic_new_user');
+        saveUserToStorage(null);
+        setUser(null);
     };
 
     const upgradePlan = (plan: 'pro' | 'business' | 'enterprise') => {
@@ -67,27 +64,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             let credits = 0;
             if (plan === 'pro') credits = 10;
             else if (plan === 'business') credits = 50;
-            else if (plan === 'enterprise') credits = 500; // Assign a high number for demo purposes
+            else if (plan === 'enterprise') credits = 500;
 
-            updateUser({
-                ...user,
-                plan: plan,
-                processingCredits: credits,
-            });
+            const updatedUser = { ...user, plan: plan, processingCredits: credits };
+            saveUserToStorage(updatedUser);
+            setUser(updatedUser);
         }
     };
-    
+
     const decrementCredits = () => {
         if (user && user.processingCredits > 0) {
-            updateUser({
-                ...user,
-                processingCredits: user.processingCredits - 1,
-            });
+            const updatedUser = { ...user, processingCredits: user.processingCredits - 1 };
+            saveUserToStorage(updatedUser);
+            setUser(updatedUser);
         }
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, upgradePlan, decrementCredits }}>
+        <AuthContext.Provider value={{
+            user,
+            isAuthenticated: !!user,
+            loading,
+            signup,
+            logout,
+            upgradePlan,
+            decrementCredits
+        }}>
             {children}
         </AuthContext.Provider>
     );

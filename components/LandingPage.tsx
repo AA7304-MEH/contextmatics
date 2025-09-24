@@ -1,35 +1,47 @@
-
-
-// FIX: `useState` must be imported using curly braces for named imports, not as a string literal.
 import React, { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { useFingerprint } from '../hooks/useFingerprint';
-import Spinner from './ui/Spinner';
 import { ClockIcon } from './icons/ClockIcon';
 import { TargetIcon } from './icons/TargetIcon';
 import { WandIcon } from './icons/WandIcon';
 import { QuoteIcon } from './icons/QuoteIcon';
-import { COUNTRIES } from '../constants';
 import { TwitterIcon } from './icons/TwitterIcon';
 import { BlogIcon } from './icons/BlogIcon';
 import { LinkedInIcon } from './icons/LinkedInIcon';
 import { EmailIcon } from './icons/EmailIcon';
-
+import { useAuth } from '../context/AuthContext';
+import { useFingerprint } from '../hooks/useFingerprint';
+import { useToast } from '../context/ToastContext';
+import Spinner from './ui/Spinner';
+import { COUNTRIES } from '../constants';
 
 const LandingPage: React.FC = () => {
+    const [activeTab, setActiveTab] = useState<'tweet' | 'blog' | 'linkedin' | 'email'>('tweet');
+    const { signup } = useAuth();
+    const { addToast } = useToast();
+    const { visitorId, loading: fingerprintLoading } = useFingerprint();
+
     const [email, setEmail] = useState('');
     const [countryCode, setCountryCode] = useState('US');
-    const [activeTab, setActiveTab] = useState<'tweet' | 'blog' | 'linkedin' | 'email'>('tweet');
-    
-    const { login, loading: authLoading } = useAuth();
-    const { visitorId, loading: fingerprintLoading, error: fingerprintError } = useFingerprint();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (visitorId) {
-            await login(email, countryCode, visitorId);
-        } else {
-            alert("Could not verify your browser. Please try again.");
+        if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+            addToast('Please enter a valid email address.', 'error');
+            return;
+        }
+        if (!visitorId) {
+            addToast('Could not verify browser. Please disable ad-blockers and refresh.', 'error');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            await signup(email, countryCode, visitorId);
+            addToast(`Welcome! You're all set.`, 'success');
+        } catch (error) {
+            console.error('Signup failed:', error);
+            addToast('An unexpected error occurred during signup.', 'error');
+            setIsSubmitting(false);
         }
     };
     
@@ -67,71 +79,60 @@ const LandingPage: React.FC = () => {
         { id: 'email', name: 'Email Newsletter', icon: EmailIcon },
     ];
     
-    const getButtonText = () => {
-        if(authLoading || fingerprintLoading) return <Spinner />;
-        return 'Get Started For Free';
-    }
-
     return (
         <div className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased">
             {/* Header */}
             <header className="absolute top-0 left-0 w-full z-30 py-4">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                     <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">ContextMatic</h1>
-                    <button onClick={() => document.getElementById('signup-form')?.scrollIntoView({ behavior: 'smooth' })} className="px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow">
-                        Get Started
-                    </button>
                 </div>
             </header>
 
             {/* Hero Section */}
             <main className="relative overflow-hidden">
-                <section id="signup-form" className="relative pt-32 pb-20 lg:pt-48 lg:pb-28">
+                <section id="hero" className="relative pt-32 pb-20 lg:pt-48 lg:pb-28">
                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 opacity-60"></div>
                      <div className="absolute inset-0 -z-10 h-full w-full bg-white dark:bg-slate-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#374151_1px,transparent_1px)] [background-size:16px_16px]"></div>
                      
-                    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
-                        <div className="text-center lg:text-left">
-                            <h1 className="text-4xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                                One Piece of Content. <span className="text-indigo-600">Endless Possibilities.</span>
-                            </h1>
-                            <p className="mt-6 text-lg lg:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto lg:mx-0">
-                                Stop wasting hours manually reformatting. With ContextMatic, you can instantly repurpose any video, blog post, or idea into engaging social media threads, newsletters, and more.
+                    <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h1 className="text-4xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                            One Piece of Content. <span className="text-indigo-600">Endless Possibilities.</span>
+                        </h1>
+                        <p className="mt-6 text-lg lg:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+                            Stop wasting hours manually reformatting. With ContextMatic, you can instantly repurpose any video, blog post, or idea into engaging social media threads, newsletters, and more.
+                        </p>
+                        <div className="mt-8">
+                            <form onSubmit={handleSignup} className="max-w-2xl mx-auto space-y-4">
+                                <div className="grid sm:grid-cols-3 gap-4">
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Enter your email"
+                                        required
+                                        className="sm:col-span-2 w-full px-5 py-3 text-base text-gray-900 placeholder-gray-500 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                                    />
+                                    <select
+                                        value={countryCode}
+                                        onChange={(e) => setCountryCode(e.target.value)}
+                                        className="w-full px-5 py-3 text-base text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                                    >
+                                        {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting || fingerprintLoading}
+                                        className="w-full flex items-center justify-center px-8 py-3 text-lg font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-lg transform hover:scale-105 disabled:bg-indigo-400 disabled:cursor-not-allowed"
+                                    >
+                                        {isSubmitting ? <Spinner /> : 'Get Started For Free'}
+                                    </button>
+                                </div>
+                            </form>
+                             <p className="text-center text-xs text-slate-500 mt-4 h-4">
+                                {fingerprintLoading ? 'Verifying browser...' : 'No credit card required.'}
                             </p>
-                        </div>
-                        <div className="w-full max-w-md mx-auto">
-                            <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm shadow-2xl rounded-xl p-8 border border-slate-200 dark:border-slate-700">
-                                <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6">Create Your Free Account</h2>
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    <div>
-                                        <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email address</label>
-                                        <div className="mt-1">
-                                            <input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-slate-50 dark:bg-slate-700 text-gray-900 dark:text-white" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label htmlFor="country" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Country</label>
-                                        <select id="country" name="country" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white">
-                                            {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 min-h-[20px] text-center pt-4">
-                                        {fingerprintLoading && <p>Verifying browser...</p>}
-                                        {fingerprintError && <p className="text-red-500">Could not verify browser. Please disable ad-blockers.</p>}
-                                        {visitorId && <p className="text-emerald-600">Browser verified successfully.</p>}
-                                    </div>
-                                    <div>
-                                        <button type="submit" disabled={authLoading || fingerprintLoading || !visitorId} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:from-slate-400 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-600 disabled:cursor-not-allowed transition-all transform hover:scale-105">
-                                            {getButtonText()}
-                                        </button>
-                                    </div>
-                                </form>
-                                 <p className="text-center text-xs text-slate-500 mt-4">
-                                    By signing up, you agree to our Terms of Service.
-                                </p>
-                            </div>
                         </div>
                     </div>
                 </section>
@@ -243,9 +244,14 @@ const LandingPage: React.FC = () => {
                     <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">Join Thousands of Smart Creators</h2>
                         <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">Start your free trial today. No credit card required.</p>
-                         <button onClick={() => document.getElementById('signup-form')?.scrollIntoView({ behavior: 'smooth' })} className="mt-8 px-8 py-3 text-lg font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-lg transform hover:scale-105">
-                            Get Started For Free
-                        </button>
+                         <div className="mt-8">
+                            <button
+                                onClick={() => document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' })}
+                                className="px-8 py-3 text-lg font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-lg transform hover:scale-105"
+                            >
+                                Sign Up Now
+                            </button>
+                         </div>
                         <p className="mt-10 text-center text-base text-slate-500 dark:text-slate-400">
                            &copy; 2024 ContextMatic. All rights reserved.
                         </p>

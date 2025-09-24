@@ -3,27 +3,19 @@ import type { PricingTier, TierId, PlanFeature } from './types';
 import { RepurposeOption } from './types';
 
 /**
- * This is a public Razorpay TEST Key ID.
+ * This is a public Razorpay Key ID, which should be loaded from environment variables.
+ * A fallback TEST key is provided for demonstration purposes.
  *
- * NOTE: The payment gateway was not opening because a LIVE key (`rzp_live_...`)
- * was being used with a mock/simulated backend. Razorpay's checkout security
- * prevents the payment modal from opening if a live key is used with an invalid
- * `order_id` that wasn't created on Razorpay's servers.
- *
- * To make the payment flow functional in this simulated environment, we MUST use
- * a TEST key. This allows the checkout to open with our mock `order_id`.
- * The user-provided live key should only be used in a production environment with a
- * real backend that can generate valid orders via the Razorpay API.
+ * NOTE: For the payment flow to function in a simulated environment, this must be a 
+ * TEST key (e.g., 'rzp_test_1DPvRWapNJI0uV'). Using a LIVE key without a real backend 
+ * that generates valid order IDs from Razorpay's API will cause the payment modal to fail.
  */
-export const RAZORPAY_KEY_ID = 'rzp_test_1DPvRWapNJI0uV'; // Standard Razorpay public test key
+export const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_1DPvRWapNJI0uV';
 
 /**
- * This is a public PayPal Client ID for the Sandbox environment.
- * NOTE: In a real production application, this key should be stored in an
- * environment variable (e.g., process.env.REACT_APP_PAYPAL_CLIENT_ID) and not
- * hardcoded in the source code. The secret key MUST NEVER be in the frontend code.
+ * The PayPal Client ID has been moved into the PayPalButton component to facilitate
+ * loading the PayPal SDK script dynamically using the environment variable.
  */
-export const PAYPAL_CLIENT_ID = 'AYTvYjBG2seZa0FGQlKVLUDH4Mp1ml2BmqEDxgb8ysdoLnVEoa0q7Ceu0ycycxpBu8Nx2iPlW1SpOz5K';
 
 
 export const PRICING_TIERS: Record<TierId, PricingTier> = {
@@ -33,7 +25,7 @@ export const PRICING_TIERS: Record<TierId, PricingTier> = {
     },
     tier2: { // India, Brazil, Indonesia, Other
         pro: { monthly: 15, yearly: 150 },
-        business: { monthly: 39, yearly: 390 },
+        business: { monthly: 39, yearly: 790 },
     },
 };
 

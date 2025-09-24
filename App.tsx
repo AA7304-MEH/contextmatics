@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import Dashboard from './components/Dashboard';
@@ -8,23 +8,7 @@ import Header from './components/Header';
 import ToastContainer from './components/ui/ToastContainer';
 
 const AppContent: React.FC = () => {
-    const { user, loading } = useAuth();
-    const [showPricingAfterSignup, setShowPricingAfterSignup] = useState(false);
-
-    useEffect(() => {
-        // Check sessionStorage flag to determine if we should show the pricing page to a new user.
-        if (user?.plan === 'free' && sessionStorage.getItem('contextmatic_new_user') === 'true') {
-            setShowPricingAfterSignup(true);
-        } else if (showPricingAfterSignup) {
-            // Reset if user state changes or flag is removed, to avoid being stuck.
-            setShowPricingAfterSignup(false);
-        }
-    }, [user]);
-
-    const handleContinueToDashboard = () => {
-        sessionStorage.removeItem('contextmatic_new_user');
-        setShowPricingAfterSignup(false);
-    };
+    const { isAuthenticated, loading, user } = useAuth();
 
     if (loading) {
         return (
@@ -33,21 +17,12 @@ const AppContent: React.FC = () => {
             </div>
         );
     }
-
-    if (!user) {
+    
+    if (!isAuthenticated || !user) {
         return <LandingPage />;
     }
 
-    // For brand new users, show the pricing page to encourage selecting a plan.
-    if (showPricingAfterSignup) {
-         return (
-            <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
-                <Header />
-                <PricingPage showContinueButton={true} onContinue={handleContinueToDashboard} />
-            </div>
-        );
-    }
-    
+    // If the user has been flagged for abuse, show them the pricing page.
     if (user.plan === 'free_abuse') {
         return (
             <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
@@ -56,7 +31,8 @@ const AppContent: React.FC = () => {
             </div>
         );
     }
-
+    
+    // Render the main dashboard for a fully authenticated and onboarded user.
     return (
         <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
             <Header />
@@ -66,6 +42,7 @@ const AppContent: React.FC = () => {
         </div>
     );
 };
+
 
 const App: React.FC = () => {
     return (
