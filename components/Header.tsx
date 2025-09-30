@@ -1,8 +1,12 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { SunIcon } from './icons/SunIcon';
+import { MoonIcon } from './icons/MoonIcon';
 
 const Header: React.FC = () => {
     const { user, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
 
     const getPlanName = () => {
         if (!user) return '';
@@ -25,6 +29,17 @@ const Header: React.FC = () => {
                     </div>
                     {user && (
                         <div className="flex items-center space-x-4">
+                            <button
+                                onClick={toggleTheme}
+                                aria-label="Toggle dark mode"
+                                className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800 transition-colors"
+                            >
+                                {theme === 'light' ? (
+                                    <MoonIcon className="w-6 h-6" />
+                                ) : (
+                                    <SunIcon className="w-6 h-6" />
+                                )}
+                            </button>
                              <div className="text-right">
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">{user.email}</p>
                                 <div className="flex items-center justify-end space-x-2 text-xs text-slate-500 dark:text-slate-400">

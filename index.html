@@ -35,6 +35,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
@@ -54,6 +55,13 @@
       }
     </script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!--
+  NOTE: In a production environment, API keys should be managed through a secure build process 
+  and environment variables, not exposed directly in the HTML. This is for demonstration purposes only.
+-->
+<script>
+  window.process = { env: { API_KEY: 'AIzaSyCeDEzq6MMCBdaXoyQ0alpgZhTDpNOajF4' } };
+</script>
 <script type="importmap">
 {
   "imports": {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
 import PricingPage from './components/PricingPage';
@@ -47,14 +48,16 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
     return (
-        <AuthProvider>
-            <ToastProvider>
-                 <ErrorBoundary>
-                    <AppContent />
-                 </ErrorBoundary>
-                 <ToastContainer />
-            </ToastProvider>
-        </AuthProvider>
+        <ThemeProvider>
+            <AuthProvider>
+                <ToastProvider>
+                     <ErrorBoundary>
+                        <AppContent />
+                     </ErrorBoundary>
+                     <ToastContainer />
+                </ToastProvider>
+            </AuthProvider>
+        </ThemeProvider>
     );
 };
 

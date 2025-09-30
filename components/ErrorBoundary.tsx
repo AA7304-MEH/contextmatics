@@ -35,7 +35,9 @@ class ErrorBoundary extends Component<Props, State> {
                         <details className="mt-4 p-2 bg-slate-100 dark:bg-slate-700 rounded text-xs text-slate-500 dark:text-slate-400">
                             <summary className="cursor-pointer font-semibold">Error Details</summary>
                             <pre className="mt-2 whitespace-pre-wrap font-mono">
-                                {this.state.error?.message}
+                                {this.state.error?.toString()}
+                                {'\n\nStack Trace:\n'}
+                                {this.state.error?.stack}
                             </pre>
                         </details>
                         <button 
