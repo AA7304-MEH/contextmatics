@@ -6,6 +6,7 @@ import LandingPage from './components/LandingPage';
 import PricingPage from './components/PricingPage';
 import Header from './components/Header';
 import ToastContainer from './components/ui/ToastContainer';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const AppContent: React.FC = () => {
     const { isAuthenticated, loading, user } = useAuth();
@@ -48,7 +49,9 @@ const App: React.FC = () => {
     return (
         <AuthProvider>
             <ToastProvider>
-                 <AppContent />
+                 <ErrorBoundary>
+                    <AppContent />
+                 </ErrorBoundary>
                  <ToastContainer />
             </ToastProvider>
         </AuthProvider>

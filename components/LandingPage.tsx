@@ -106,6 +106,7 @@ const LandingPage: React.FC = () => {
                                 <div className="grid sm:grid-cols-3 gap-4">
                                     <input
                                         type="email"
+                                        aria-label="Email Address"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="Enter your email"
@@ -113,6 +114,7 @@ const LandingPage: React.FC = () => {
                                         className="sm:col-span-2 w-full px-5 py-3 text-base text-gray-900 placeholder-gray-500 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                                     />
                                     <select
+                                        aria-label="Country"
                                         value={countryCode}
                                         onChange={(e) => setCountryCode(e.target.value)}
                                         className="w-full px-5 py-3 text-base text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
@@ -126,7 +128,7 @@ const LandingPage: React.FC = () => {
                                         disabled={isSubmitting || fingerprintLoading}
                                         className="w-full flex items-center justify-center px-8 py-3 text-lg font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-lg transform hover:scale-105 disabled:bg-indigo-400 disabled:cursor-not-allowed"
                                     >
-                                        {isSubmitting ? <Spinner /> : 'Get Started For Free'}
+                                        {isSubmitting ? <Spinner /> : <span>Get Started For Free</span>}
                                     </button>
                                 </div>
                             </form>
@@ -202,7 +204,8 @@ const LandingPage: React.FC = () => {
                                                     } flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors`}
                                                     aria-current={activeTab === tab.id ? 'page' : undefined}
                                                     >
-                                                    <tab.icon className="mr-2 h-5 w-5" /> {tab.name}
+                                                    <tab.icon className="mr-2 h-5 w-5" />
+                                                    <span>{tab.name}</span>
                                                 </button>
                                             ))}
                                         </nav>

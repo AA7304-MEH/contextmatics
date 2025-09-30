@@ -129,7 +129,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ showContinueButton = false, o
                             disabled={loadingPlan !== null}
                             className={`w-full py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex justify-center items-center h-[44px] ${isPopular ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white disabled:from-slate-400 disabled:to-slate-400' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 disabled:bg-slate-300 dark:disabled:bg-slate-600'}`}
                         >
-                            {loadingPlan === planId ? <Spinner /> : 'Pay with Card / UPI'}
+                            {loadingPlan === planId ? <Spinner /> : <span>Pay with Card / UPI</span>}
                         </button>
                     ) : (
                         <>

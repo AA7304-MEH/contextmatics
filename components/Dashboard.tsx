@@ -63,6 +63,31 @@ const Dashboard: React.FC = () => {
 
     const canRepurpose = user && user.processingCredits > 0;
 
+    const renderButtonContent = () => {
+        if (activeJobId) {
+            return (
+                <>
+                    <Spinner />
+                    <span className="ml-2">Processing...</span>
+                </>
+            );
+        }
+        if (isLoading) {
+            return (
+                <>
+                    <Spinner />
+                    <span className="ml-2">Repurpose Content</span>
+                </>
+            );
+        }
+        return (
+            <>
+                <SparklesIcon className="w-5 h-5 mr-2" />
+                <span>Repurpose Content</span>
+            </>
+        );
+    };
+
     return (
         <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -96,8 +121,7 @@ const Dashboard: React.FC = () => {
                         disabled={isLoading || !canRepurpose || !!activeJobId}
                         className="mt-6 w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all transform hover:scale-105"
                     >
-                        {isLoading ? <Spinner /> : <SparklesIcon className="w-5 h-5 mr-2" />}
-                        {activeJobId ? 'Processing...' : 'Repurpose Content'}
+                        {renderButtonContent()}
                     </button>
                      {!canRepurpose && <p className="text-red-500 text-center mt-4">You're out of credits. Please upgrade to continue.</p>}
                      {error && <p className="text-red-500 text-center mt-2">{error}</p>}
