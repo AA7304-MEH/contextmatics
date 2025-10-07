@@ -23,7 +23,7 @@ export default defineConfig({
     global: 'globalThis',
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', '@google/generative-ai'],
+    include: ['react', 'react-dom'],
   },
   resolve: {
     alias: {
