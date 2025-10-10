@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
     }, []);
 
-    const signup = async (email: string, countryCode: string, visitorId: string, userData?: any) => {
+    const signup = async (email: string, countryCode: string, _visitorId: string, _userData?: any) => {
         // Mock user creation for demo
         const newUser: User = {
             id: `user_${Date.now()}`,

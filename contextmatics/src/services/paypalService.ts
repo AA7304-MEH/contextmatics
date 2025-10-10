@@ -42,7 +42,7 @@ export class PayPalService {
     // Initialize PayPal Buttons
     if (window.paypal && window.paypal.Buttons) {
       window.paypal.Buttons({
-        createOrder: (data: any, actions: any) => {
+        createOrder: (_data: any, actions: any) => {
           return actions.order.create({
             purchase_units: [{
               description: `${planName} Subscription`,
@@ -59,14 +59,14 @@ export class PayPalService {
             }
           })
         },
-        onApprove: (data: any, actions: any) => {
+        onApprove: (_data: any, actions: any) => {
           return actions.order.capture().then((details: any) => {
             console.log('PayPal payment successful:', details)
             this.handlePaymentSuccess(details)
           })
         },
-        onCancel: (data: any) => {
-          console.log('PayPal payment cancelled:', data)
+        onCancel: (_data: any) => {
+          console.log('PayPal payment cancelled:', _data)
         },
         onError: (error: any) => {
           console.error('PayPal payment error:', error)

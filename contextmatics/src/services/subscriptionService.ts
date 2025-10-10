@@ -4,8 +4,7 @@ import type { SubscriptionInfo, PlanId } from '../types';
  * Subscription management service with expiry tracking and renewal reminders
  */
 class SubscriptionService {
-    private static instance: SubscriptionService;
-    private renewalReminders: Map<string, number> = new Map();
+     private static instance: SubscriptionService;
 
     static getInstance(): SubscriptionService {
         if (!SubscriptionService.instance) {
@@ -17,7 +16,7 @@ class SubscriptionService {
     /**
      * Create subscription for user after successful payment
      */
-    createSubscription(userId: string, planId: PlanId): SubscriptionInfo {
+    createSubscription(_userId: string, planId: PlanId): SubscriptionInfo {
         const now = Date.now();
         const subscriptionLength = planId === 'pro' ? 30 : planId === 'business' ? 30 : 0; // days
         const endDate = now + (subscriptionLength * 24 * 60 * 60 * 1000);
