@@ -1,5 +1,6 @@
-# SPA fallback for client-side routing
-/*    /index.html   200
+# Netlify redirects for HashRouter
+# Since we're using HashRouter, we don't need complex SPA fallbacks
+# HashRouter handles routing client-side with # in URLs
 
 # API routes (if you add them later)
 /api/*  /.netlify/functions/:splat  200
