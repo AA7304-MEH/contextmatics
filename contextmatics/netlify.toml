@@ -10,11 +10,6 @@
   # Node.js version for builds
   NODE_VERSION = "18"
 
-[[redirects]]
-  # SPA fallback - redirect all routes to index.html for client-side routing
-  from = "/*"
-  to = "/index.html"
-  status = 200
 
 [[headers]]
   # Security headers
