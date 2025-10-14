@@ -1,0 +1,55 @@
+[build]
+  # Base directory for the build
+  base = "contextmatics"
+  # Directory that contains the deploy-ready HTML files and assets
+  publish = "dist"
+  # Build command
+  command = "npm install && npm run build"
+
+[build.environment]
+  # Node.js version for builds
+  NODE_VERSION = "18"
+
+[[headers]]
+  # Security headers for all pages
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.paypal.com https://js.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.razorpay.com https://api.paypal.com https://generativelanguage.googleapis.com;"
+
+[[headers]]
+  # Cache static assets for 1 year
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  # Cache HTML files for 1 hour
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+# SPA fallback for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# API routes (if you add serverless functions later)
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[functions]
+  # Directory for serverless functions
+  directory = "netlify/functions"
+
+[dev]
+  # Development server settings
+  command = "npm run dev"
+  port = 3000
+  publish = "dist"

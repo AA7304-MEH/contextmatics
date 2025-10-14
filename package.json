@@ -1,13 +1,16 @@
 {
-  "name": "contextmatics",
+  "name": "contextmatics-root",
   "version": "1.0.0",
-  "description": "Context management and mathematical operations",
+  "description": "ContextMatic - AI Content Repurposing Platform",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "build": "cd contextmatics && npm install && npm run build",
+    "dev": "cd contextmatics && npm run dev",
+    "install-deps": "cd contextmatics && npm install",
+    "start": "cd contextmatics && npm run preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["context", "mathematics", "computation"],
-  "author": "",
+  "keywords": ["ai", "content-repurposing", "react", "typescript", "vite"],
+  "author": "ContextMatic Team",
   "license": "MIT"
 }
