@@ -54,8 +54,8 @@ VITE_SENTRY_DSN = your_sentry_dsn
 - [x] Repository: `AA7304-MEH/contextmatics` ✅
 - [x] Branch: `main` ✅
 - [x] Base directory: `contextmatics` ✅
-- [x] Build command: `npm run build` ✅
-- [x] Publish directory: `contextmatics/dist` ✅
+- [x] Build command: `npm install && npm run build` ✅
+- [x] Publish directory: `dist` ✅
 - [ ] Click "Deploy site" button
 - [ ] Wait for build to complete (2-3 minutes)
 - [ ] Add environment variables
