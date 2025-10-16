@@ -6,8 +6,13 @@ import LandingPage from './components/LandingPage'
 import PricingPage from './components/PricingPage'
 import Dashboard from './components/Dashboard'
 import SubscriptionManager from './components/SubscriptionManager'
+import { validateEnvironmentVariables } from './utils/envCheck'
 
 function App() {
+  // Validate environment variables on app start
+  if (import.meta.env.PROD) {
+    validateEnvironmentVariables();
+  }
   return (
     <ThemeProvider>
       <ToastProvider>

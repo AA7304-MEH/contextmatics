@@ -2,12 +2,12 @@
  * Application constants and configuration
  */
 
-// Payment Gateway Keys - These should be set as environment variables in Vercel
-export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_1DPvRWapNJI0uV';
-export const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'your_paypal_client_id';
+// Payment Gateway Keys - These MUST be set as environment variables
+export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
+export const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
 
-// AI Service Configuration
-export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCeDEzq6MMCBdaXoyQ0alpgZhTDpNOajF4';
+// AI Service Configuration - MUST be set as environment variable
+export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 // Application Configuration
 export const APP_NAME = 'ContextMatic';
