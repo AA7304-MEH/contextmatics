@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
-    "prepare-deployment": "node prepare-deployment.js"
+    "prepare-deployment": "node prepare-deployment.js",
+    "deployment-check": "node deployment-check.js"
   },
   "dependencies": {
     "lucide-react": "^0.263.1",
