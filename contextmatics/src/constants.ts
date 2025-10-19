@@ -95,8 +95,8 @@ export const FEATURES = {
 // API endpoints
 export const API_ENDPOINTS = {
     gemini: 'https://generativelanguage.googleapis.com/v1',
-    webhook: import.meta.env.VITE_WEBHOOK_URL || 'https://your-backend.com/webhook',
-    analytics: import.meta.env.VITE_ANALYTICS_URL || 'https://your-backend.com/analytics',
+    webhook: import.meta.env.VITE_WEBHOOK_URL || '',
+    analytics: import.meta.env.VITE_ANALYTICS_URL || '',
 };
 
 // Social media links
