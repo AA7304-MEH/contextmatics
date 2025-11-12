@@ -9,8 +9,8 @@
 [build.environment]
   # Node.js version for builds
   NODE_VERSION = "18"
-  # Disable secrets scanning completely
-  SECRETS_SCAN_ENABLED = "false"
+  # Skip secrets scanning for these environment variables
+  SECRETS_SCAN_OMIT_KEYS = "VITE_RAZORPAY_KEY_ID,VITE_PAYPAL_CLIENT_ID,VITE_GEMINI_API_KEY,VITE_GA_ID,VITE_MIXPANEL_TOKEN,VITE_SENTRY_DSN,VITE_WEBHOOK_URL,VITE_ANALYTICS_URL"
   # Skip TypeScript type checking in CI for faster builds
   CI = "true"
 
