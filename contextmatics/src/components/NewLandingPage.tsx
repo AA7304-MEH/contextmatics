@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 
 const NewLandingPage: React.FC = () => {
   const navigate = useNavigate()
-  const { signup } = useAuth()
+  const { login, signup } = useAuth()
   const [scrolled, setScrolled] = useState(false)
   const [email, setEmail] = useState('')
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -27,8 +27,13 @@ const NewLandingPage: React.FC = () => {
     setAuthLoading(true)
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      await signup(authEmail, 'US', 'visitor_123', { name: authName || authEmail.split('@')[0] })
+      if (isLogin) {
+        // Login flow
+        await login(authEmail, authPassword)
+      } else {
+        // Signup flow
+        await signup(authEmail, 'US', 'visitor_123', { name: authName || authEmail.split('@')[0] })
+      }
       setShowAuthModal(false)
       navigate('/dashboard')
     } catch (err) {
@@ -43,8 +48,7 @@ const NewLandingPage: React.FC = () => {
     setAuthLoading(true)
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      await signup(`user@${provider}.com`, 'US', 'visitor_123', { name: `${provider} User` })
+      await login(`user@${provider}.com`, 'social_auth_token')
       setShowAuthModal(false)
       navigate('/dashboard')
     } catch (err) {

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
-  const { signup, isAuthenticated } = useAuth();
+  const { login, signup, isAuthenticated } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -31,14 +31,12 @@ const Auth: React.FC = () => {
     setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (!isLogin) {
-        await signup(email, 'US', 'visitor_123', { name });
+      if (isLogin) {
+        // Login flow
+        await login(email, password);
       } else {
-        // Mock login
-        await signup(email, 'US', 'visitor_123', { name: email.split('@')[0] });
+        // Signup flow
+        await signup(email, 'US', 'visitor_123', { name });
       }
       
       navigate('/dashboard');
@@ -54,9 +52,8 @@ const Auth: React.FC = () => {
     setLoading(true);
 
     try {
-      // Simulate OAuth flow
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      await signup(`user@${provider}.com`, 'US', 'visitor_123', { name: `${provider} User` });
+      // Simulate OAuth flow - use login for social auth
+      await login(`user@${provider}.com`, 'social_auth_token');
       navigate('/dashboard');
     } catch (err) {
       setError(`${provider} authentication failed. Please try again.`);

@@ -88,13 +88,13 @@ const History: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white border border-gray-200 rounded-xl p-8 text-center max-w-md">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Please Log In</h2>
-          <p className="text-gray-600 mb-6">You need to be logged in to view history.</p>
+      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem', textAlign: 'center', maxWidth: '28rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem' }}>Please Log In</h2>
+          <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>You need to be logged in to view history.</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all"
+            style={{ backgroundColor: '#2563eb', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer' }}
           >
             Go to Home
           </button>
@@ -104,36 +104,59 @@ const History: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', color: '#111827' }}>
+      {/* Gradient Orbs Background */}
+      <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)', filter: 'blur(60px)' }}></div>
+        <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)', filter: 'blur(60px)' }}></div>
+      </div>
+
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-          <div className="flex justify-between items-center">
+      <nav style={{
+        position: 'fixed',
+        top: 0,
+        width: '100%',
+        zIndex: 50,
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        backdropFilter: 'blur(20px)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        borderBottom: '1px solid rgba(0,0,0,0.05)'
+      }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <button
               onClick={() => navigate('/')}
-              className="flex items-center space-x-2 group"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer' }}
             >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
-                <span className="text-white font-bold text-base sm:text-lg">C</span>
+              <div style={{
+                width: '36px',
+                height: '36px',
+                backgroundColor: '#2563eb',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <span style={{ color: 'white', fontWeight: 'bold', fontSize: '18px' }}>C</span>
               </div>
-              <span className="text-base sm:text-lg font-bold text-gray-900 hidden sm:inline">ContextMatics</span>
+              <span style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>ContextMatics</span>
             </button>
-            <div className="flex items-center space-x-2 sm:space-x-4 lg:space-x-6">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
               <button
                 onClick={() => navigate('/dashboard')}
-                className="text-gray-600 hover:text-gray-900 transition-colors text-xs sm:text-sm font-medium px-2 sm:px-3 py-2"
+                style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Dashboard
               </button>
               <button
                 onClick={() => navigate('/settings')}
-                className="hidden sm:inline-block text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium px-3 py-2"
+                style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Settings
               </button>
               <button
                 onClick={logout}
-                className="bg-red-50 border border-red-200 text-red-600 px-3 sm:px-4 py-2 rounded-lg hover:bg-red-100 transition-all text-xs sm:text-sm font-medium"
+                style={{ backgroundColor: 'white', color: '#dc2626', fontSize: '14px', fontWeight: '500', border: '1px solid #fecaca', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}
               >
                 Logout
               </button>
@@ -142,28 +165,39 @@ const History: React.FC = () => {
         </div>
       </nav>
 
-      <div className="pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
+      <div style={{ paddingTop: '7rem', paddingBottom: '3rem', padding: '7rem 1.5rem 3rem', position: 'relative', zIndex: 1 }}>
+        <div style={{ maxWidth: '1152px', margin: '0 auto' }}>
           {/* Header */}
-          <div className="mb-8 sm:mb-12">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">Content History</h1>
-            <p className="text-base sm:text-lg text-gray-600">View and manage all your generated content</p>
+          <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>Content History</h1>
+            <p style={{ fontSize: '1.125rem', color: '#6b7280' }}>View and manage all your generated content</p>
           </div>
 
           {/* Search and Filter Bar */}
-          <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8">
-            <div className="flex flex-col sm:flex-row gap-4">
+          <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Search */}
-              <div className="flex-1">
-                <div className="relative">
+              <div style={{ flex: 1 }}>
+                <div style={{ position: 'relative' }}>
                   <input
                     type="text"
                     placeholder="Search content..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    style={{
+                      width: '100%',
+                      paddingLeft: '2.5rem',
+                      paddingRight: '1rem',
+                      paddingTop: '0.75rem',
+                      paddingBottom: '0.75rem',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'all 0.2s'
+                    }}
                   />
-                  <svg className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '20px', height: '20px', color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
@@ -173,7 +207,15 @@ const History: React.FC = () => {
               <select
                 value={filterFormat}
                 onChange={(e) => setFilterFormat(e.target.value)}
-                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
+                style={{
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  outline: 'none',
+                  transition: 'all 0.2s',
+                  backgroundColor: 'white'
+                }}
               >
                 <option value="all">All Formats</option>
                 <option value="Blog Post">Blog Posts</option>
@@ -186,79 +228,139 @@ const History: React.FC = () => {
           </div>
 
           {/* Stats Overview */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4 sm:p-6">
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{historyItems.length}</div>
-              <div className="text-xs sm:text-sm text-gray-600 font-medium">Total Items</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+            <div style={{ background: 'linear-gradient(to bottom right, #dbeafe, #bfdbfe)', border: '1px solid #93c5fd', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>{historyItems.length}</div>
+              <div style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Total Items</div>
             </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-4 sm:p-6">
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">5</div>
-              <div className="text-xs sm:text-sm text-gray-600 font-medium">This Week</div>
+            <div style={{ background: 'linear-gradient(to bottom right, #d1fae5, #a7f3d0)', border: '1px solid #6ee7b7', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>5</div>
+              <div style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>This Week</div>
             </div>
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-4 sm:p-6">
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">100%</div>
-              <div className="text-xs sm:text-sm text-gray-600 font-medium">Success Rate</div>
+            <div style={{ background: 'linear-gradient(to bottom right, #e9d5ff, #d8b4fe)', border: '1px solid #c084fc', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>100%</div>
+              <div style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Success Rate</div>
             </div>
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-xl p-4 sm:p-6">
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">3.2k</div>
-              <div className="text-xs sm:text-sm text-gray-600 font-medium">Words Generated</div>
+            <div style={{ background: 'linear-gradient(to bottom right, #fed7aa, #fdba74)', border: '1px solid #fb923c', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>3.2k</div>
+              <div style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Words Generated</div>
             </div>
           </div>
 
           {/* History List */}
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {filteredItems.length === 0 ? (
-              <div className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-12 text-center">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No content found</h3>
-                <p className="text-gray-600">Try adjusting your search or filters</p>
+              <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '3rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔍</div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>No content found</h3>
+                <p style={{ color: '#6b7280' }}>Try adjusting your search or filters</p>
               </div>
             ) : (
               filteredItems.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:shadow-lg hover:border-blue-300 transition-all"
+                  style={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '16px',
+                    padding: '1.5rem',
+                    transition: 'all 0.2s',
+                    cursor: 'pointer'
+                  }}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
                     {/* Icon */}
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-100 rounded-xl flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0">
+                    <div style={{
+                      width: '56px',
+                      height: '56px',
+                      backgroundColor: '#dbeafe',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.5rem',
+                      flexShrink: 0
+                    }}>
                       {item.icon}
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.75rem' }}>
                         <div>
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">{item.title}</h3>
-                          <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
-                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">
+                          <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>{item.title}</h3>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                            <span style={{ backgroundColor: '#dbeafe', color: '#1d4ed8', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: '500' }}>
                               {item.format}
                             </span>
                             <span>{formatDate(item.createdAt)}</span>
                           </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-lg text-xs font-semibold self-start ${
-                          item.status === 'success'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}>
+                        <span style={{
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '8px',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          backgroundColor: item.status === 'success' ? '#d1fae5' : '#fee2e2',
+                          color: item.status === 'success' ? '#065f46' : '#dc2626'
+                        }}>
                           {item.status === 'success' ? '✓ Success' : '✗ Failed'}
                         </span>
                       </div>
-                      <p className="text-sm sm:text-base text-gray-600 mb-4 line-clamp-2">{item.content}</p>
-                      
+                      <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem', lineHeight: '1.5' }}>{item.content}</p>
+
                       {/* Actions */}
-                      <div className="flex flex-wrap gap-2 sm:gap-3">
-                        <button className="bg-blue-50 border border-blue-200 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100 transition-all text-xs sm:text-sm font-medium">
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <button style={{
+                          backgroundColor: '#dbeafe',
+                          border: '1px solid #93c5fd',
+                          color: '#1d4ed8',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '8px',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}>
                           📋 Copy
                         </button>
-                        <button className="bg-green-50 border border-green-200 text-green-600 px-4 py-2 rounded-lg hover:bg-green-100 transition-all text-xs sm:text-sm font-medium">
+                        <button style={{
+                          backgroundColor: '#d1fae5',
+                          border: '1px solid #6ee7b7',
+                          color: '#047857',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '8px',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}>
                           📤 Export
                         </button>
-                        <button className="bg-purple-50 border border-purple-200 text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-100 transition-all text-xs sm:text-sm font-medium">
+                        <button style={{
+                          backgroundColor: '#e9d5ff',
+                          border: '1px solid #c084fc',
+                          color: '#7c3aed',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '8px',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}>
                           🔄 Regenerate
                         </button>
-                        <button className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition-all text-xs sm:text-sm font-medium">
+                        <button style={{
+                          backgroundColor: '#fee2e2',
+                          border: '1px solid #fca5a5',
+                          color: '#dc2626',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '8px',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}>
                           🗑️ Delete
                         </button>
                       </div>

@@ -28,6 +28,7 @@ interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     loading: boolean;
+    login: (email: string, password: string) => Promise<void>;
     signup: (email: string, countryCode: string, visitorId: string, userData?: any) => Promise<void>;
     logout: () => void;
     upgradePlan: (plan: PlanId) => void;
@@ -50,6 +51,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         setLoading(false);
     }, []);
+
+    const login = async (email: string, _password: string) => {
+        // Mock login for demo - simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const newUser: User = {
+            id: `user_${Date.now()}`,
+            email,
+            countryCode: 'US',
+            plan: 'pro',
+            processingCredits: 1000,
+        };
+
+        saveUserToStorage(newUser);
+        setUser(newUser);
+    };
 
     const signup = async (email: string, countryCode: string, _visitorId: string, _userData?: any) => {
         // Mock user creation for demo
@@ -136,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             user,
             isAuthenticated: !!user,
             loading,
+            login,
             signup,
             logout,
             upgradePlan,
