@@ -18,7 +18,6 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
 
     setIsGenerating(true);
     
-    // Simulate AI processing
     setTimeout(() => {
       onGenerate(inputContent, selectedFormat);
       setIsGenerating(false);
@@ -26,42 +25,76 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-      <h2 className="text-3xl font-bold text-white mb-6">Create Content</h2>
+    <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem' }}>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1.5rem' }}>Create Content</h2>
       
       {/* Input Area */}
-      <div className="mb-6">
-        <label className="block text-white/80 mb-3 text-lg font-medium">
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={{ display: 'block', color: '#111827', marginBottom: '0.75rem', fontSize: '0.875rem', fontWeight: '600' }}>
           Your Content
         </label>
         <textarea
           value={inputContent}
           onChange={(e) => setInputContent(e.target.value)}
           placeholder="Paste your content here... (blog post, article, notes, etc.)"
-          className="w-full h-48 bg-white/5 border border-white/20 rounded-xl p-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+          style={{
+            width: '100%',
+            height: '12rem',
+            backgroundColor: '#f9fafb',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            padding: '1rem',
+            color: '#111827',
+            fontSize: '0.875rem',
+            outline: 'none',
+            resize: 'none'
+          }}
         />
-        <div className="mt-2 text-white/60 text-sm">
-          {inputContent.length} characters
+        <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+            {inputContent.length} characters
+          </span>
+          {inputContent.length > 0 && (
+            <button
+              onClick={() => setInputContent('')}
+              style={{
+                color: '#ef4444',
+                fontSize: '0.875rem',
+                fontWeight: '600',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
       {/* Format Selection */}
-      <div className="mb-6">
-        <label className="block text-white/80 mb-3 text-lg font-medium">
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={{ display: 'block', color: '#111827', marginBottom: '0.75rem', fontSize: '0.875rem', fontWeight: '600' }}>
           Output Format
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
           {REPURPOSE_OPTIONS.map((option) => (
             <button
               key={option.value}
               onClick={() => setSelectedFormat(option.value)}
-              className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-                selectedFormat === option.value
-                  ? 'bg-purple-500/30 border-purple-400 text-white'
-                  : 'bg-white/5 border-white/20 text-white/70 hover:bg-white/10 hover:border-white/40'
-              }`}
+              style={{
+                padding: '0.75rem',
+                borderRadius: '8px',
+                border: selectedFormat === option.value ? '2px solid #2563eb' : '1px solid #d1d5db',
+                backgroundColor: selectedFormat === option.value ? '#dbeafe' : 'white',
+                color: selectedFormat === option.value ? '#2563eb' : '#111827',
+                fontWeight: '500',
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
             >
-              <div className="font-semibold">{option.label}</div>
+              {option.label}
             </button>
           ))}
         </div>
@@ -71,17 +104,24 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
       <button
         onClick={handleGenerate}
         disabled={isGenerating || !inputContent.trim()}
-        className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${
-          isGenerating || !inputContent.trim()
-            ? 'bg-gray-500 cursor-not-allowed'
-            : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transform hover:scale-105'
-        } text-white shadow-lg`}
+        style={{
+          width: '100%',
+          padding: '0.75rem 1.5rem',
+          borderRadius: '8px',
+          fontSize: '1rem',
+          fontWeight: '600',
+          border: 'none',
+          cursor: isGenerating || !inputContent.trim() ? 'not-allowed' : 'pointer',
+          backgroundColor: isGenerating || !inputContent.trim() ? '#d1d5db' : '#2563eb',
+          color: isGenerating || !inputContent.trim() ? '#6b7280' : 'white',
+          transition: 'all 0.2s'
+        }}
       >
         {isGenerating ? (
-          <span className="flex items-center justify-center">
-            <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg style={{ animation: 'spin 1s linear infinite', height: '1.25rem', width: '1.25rem', marginRight: '0.75rem' }} viewBox="0 0 24 24">
+              <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             Generating...
           </span>
@@ -89,6 +129,12 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
           '✨ Generate Content'
         )}
       </button>
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
