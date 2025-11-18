@@ -1,8 +1,26 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
+import { razorpayService } from '@/services/razorpayService'
+import { paypalService } from '@/services/paypalService'
 
 const PricingPage: React.FC = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const [showPaypalModal, setShowPaypalModal] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<{ name: string; amount: number } | null>(null)
+
+  const isIndia = useMemo(() => {
+    // Automatic location detection
+    if (user?.countryCode === 'IN') return true
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+      const lang = navigator.language || ''
+      return tz === 'Asia/Kolkata' || lang.toLowerCase().includes('-in')
+    } catch {
+      return false
+    }
+  }, [user])
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
 
   const plans = [
@@ -166,6 +184,39 @@ const PricingPage: React.FC = () => {
           </div>
         </section>
 
+        {/* Payment Method Indicator */}
+        <section style={{ padding: '2rem 1.5rem 0', textAlign: 'center' }}>
+          <div style={{
+            maxWidth: '600px',
+            margin: '0 auto',
+            padding: '1rem 1.5rem',
+            backgroundColor: isIndia ? '#fff7ed' : '#eff6ff',
+            borderRadius: '12px',
+            border: `1px solid ${isIndia ? '#fed7aa' : '#bfdbfe'}`
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              {isIndia ? (
+                <svg style={{ width: '20px', height: '20px', color: '#ea580c' }} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M5 3H15V9H5V3M19 21H5V16H19V21Z"/>
+                </svg>
+              ) : (
+                <svg style={{ width: '20px', height: '20px', color: '#2563eb' }} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9.93 12.24C9.47 12.24 9.09 12.41 8.8 12.74C8.51 13.06 8.36 13.49 8.36 13.95V14.5H7.27V15.5H8.61V17.5H9.7V15.5H10.82V14.5H9.7V13.92C9.7 13.47 9.89 13.09 10.26 12.78C10.64 12.47 11.14 12.31 11.77 12.31C12.4 12.31 12.9 12.47 13.27 12.78C13.64 13.09 13.83 13.47 13.83 13.92V14.5H14.92V15.5H13.58V17.5H14.67V18.5H7.27V17.5H8.36V15.5H7.27V14.5H8.36V13.95C8.36 13.03 8.7 12.24 9.93 12.24Z"/>
+                </svg>
+              )}
+              <span style={{ fontWeight: '600', fontSize: '0.875rem', color: isIndia ? '#c2410c' : '#1d4ed8' }}>
+                {isIndia ? '🇮🇳 Recommended for India' : '🌍 Recommended for International Users'}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.875rem', color: isIndia ? '#9a3412' : '#1e40af', margin: 0 }}>
+              {isIndia
+                ? 'You\'ll be able to pay using Razorpay with UPI, cards, or net banking'
+                : 'You\'ll be able to pay using PayPal or credit/debit cards'
+              }
+            </p>
+          </div>
+        </section>
+
         {/* Pricing Cards */}
         <section style={{ padding: '3rem 1.5rem' }}>
           <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
@@ -219,7 +270,53 @@ const PricingPage: React.FC = () => {
                   </div>
                   
                   <button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={async () => {
+                      const amount = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
+                      const currency = isIndia ? 'INR' : 'USD'
+                      const email = user?.email || 'guest@contextmatic.example.com'
+                      const name = user?.id ? 'ContextMatic User' : 'Guest User'
+
+                      if (isIndia) {
+                        try {
+                          await razorpayService.initiatePayment({
+                            amount,
+                            currency,
+                            planName: plan.name,
+                            userEmail: email,
+                            userName: name
+                          })
+                        } catch (e: any) {
+                          console.error('Razorpay error:', e)
+                          alert(e?.message || 'Unable to start Razorpay checkout. Please check your configuration and try again.')
+                        }
+                      } else {
+                        try {
+                          setSelectedPlan({ name: plan.name, amount })
+                          setShowPaypalModal(true)
+                          await paypalService.loadPayPalSDK(currency)
+                          // Small delay to ensure modal is rendered
+                          setTimeout(async () => {
+                            try {
+                              await paypalService.initiatePayment({
+                                amount,
+                                currency,
+                                planName: plan.name,
+                                userEmail: email,
+                                userName: name
+                              })
+                            } catch (e: any) {
+                              console.error('PayPal initiation error:', e)
+                              setShowPaypalModal(false)
+                              alert(e?.message || 'Unable to initialize PayPal checkout. Please try again.')
+                            }
+                          }, 100)
+                        } catch (e: any) {
+                          console.error('PayPal SDK loading error:', e)
+                          setShowPaypalModal(false)
+                          alert(e?.message || 'Unable to load PayPal SDK. Please check your configuration and try again.')
+                        }
+                      }
+                    }}
                     style={{
                       width: '100%',
                       padding: '0.75rem 1.5rem',
@@ -233,7 +330,7 @@ const PricingPage: React.FC = () => {
                       border: plan.popular ? 'none' : '1px solid #d1d5db'
                     }}
                   >
-                    Get Started
+                    {isIndia ? 'Buy with Razorpay' : 'Buy with PayPal'}
                   </button>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -314,6 +411,23 @@ const PricingPage: React.FC = () => {
             </button>
           </div>
         </section>
+
+        {/* PayPal Modal */}
+        {showPaypalModal && (
+          <div onClick={() => setShowPaypalModal(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '520px', width: '100%', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', margin: '1rem' }}>
+              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>{selectedPlan ? `${selectedPlan.name} Plan - $${selectedPlan.amount}` : 'Checkout'}</h3>
+                <button onClick={() => setShowPaypalModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#6b7280', cursor: 'pointer' }}>×</button>
+              </div>
+              <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Complete your payment with PayPal</p>
+                <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>You'll be redirected to the dashboard after successful payment</p>
+              </div>
+              <div id="paypal-button-container" style={{ minHeight: '150px' }} />
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <footer style={{ borderTop: '1px solid #e5e7eb', padding: '3rem 1.5rem', backgroundColor: '#f9fafb' }}>

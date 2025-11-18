@@ -41,13 +41,13 @@ const LandingPage: React.FC = () => {
                 Pricing
               </a>
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/auth')}
                 className="text-gray-600 hover:text-gray-900 font-medium transition-colors text-lg"
               >
                 Sign In
               </button>
               <button
-                onClick={() => navigate('/pricing')}
+                onClick={() => navigate('/auth')}
                 className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300 text-lg"
               >
                 Get Started
@@ -83,7 +83,7 @@ const LandingPage: React.FC = () => {
             {/* CTA Buttons with space */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-20">
               <button
-                onClick={() => navigate('/pricing')}
+                onClick={() => navigate('/auth')}
                 className="group relative bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-10 py-5 rounded-2xl font-bold text-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
               >
                 <span className="relative z-10">Start Free Trial</span>
@@ -91,7 +91,7 @@ const LandingPage: React.FC = () => {
               </button>
               
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/auth')}
                 className="bg-white border-2 border-gray-300 text-gray-700 px-10 py-5 rounded-2xl font-bold text-xl hover:border-gray-400 hover:shadow-xl transition-all duration-300"
               >
                 Watch Demo
@@ -110,7 +110,7 @@ const LandingPage: React.FC = () => {
                 <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span className="font-medium">No credit card required</span>
+                <span className="font-medium">Email signup only</span>
               </div>
               <div className="flex items-center gap-3">
                 <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -310,13 +310,13 @@ const LandingPage: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <button
-              onClick={() => navigate('/pricing')}
+              onClick={() => navigate('/auth')}
               className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-12 py-6 rounded-2xl font-bold text-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
             >
               Start Free Trial
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/auth')}
               className="bg-white border-2 border-gray-300 text-gray-700 px-12 py-6 rounded-2xl font-bold text-xl hover:border-gray-400 hover:shadow-xl transition-all duration-300"
             >
               Schedule Demo

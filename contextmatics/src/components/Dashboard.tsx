@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,77 +8,189 @@ const Dashboard: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   if (!user) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '3rem', textAlign: 'center', maxWidth: '28rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem' }}>Please Log In</h2>
-          <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>You need to be logged in to access the dashboard.</p>
-          <button onClick={() => navigate('/')} style={{ backgroundColor: '#2563eb', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer' }}>Go to Home</button>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center px-8">
+        <div className="bg-white rounded-3xl p-12 text-center max-w-md shadow-2xl border border-gray-100">
+          <div className="text-6xl mb-6">🔒</div>
+          <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Please Log In</h2>
+          <p className="text-xl text-gray-600 mb-8">You need to be logged in to access the dashboard.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all"
+          >
+            Go to Home
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', color: '#111827' }}>
-      <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)', filter: 'blur(60px)' }}></div>
-        <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)', filter: 'blur(60px)' }}></div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Gradient Orbs Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-gradient-radial from-indigo-500/15 to-transparent blur-3xl"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-gradient-radial from-purple-500/15 to-transparent blur-3xl"></div>
       </div>
-      <nav style={{ position: 'fixed', top: 0, width: '100%', zIndex: 50, backgroundColor: scrolled ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.3s', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <button onClick={() => navigate('/')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer' }}>
-              <div style={{ width: '36px', height: '36px', backgroundColor: '#2563eb', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: 'white', fontWeight: 'bold', fontSize: '18px' }}>C</span></div>
-              <span style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>ContextMatics</span>
+
+      {/* Navigation */}
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+        scrolled ? 'bg-white/95 backdrop-blur-xl shadow-sm' : 'bg-transparent'
+      }`}>
+        <div className="max-w-7xl mx-auto px-8 py-6">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center space-x-3 bg-transparent border-none cursor-pointer"
+            >
+              <div className="w-11 h-11 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">C</span>
+              </div>
+              <span className="text-2xl font-bold text-gray-900">ContextMatics</span>
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-              <button onClick={() => navigate('/pricing')} style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer' }}>Pricing</button>
-              <button onClick={() => navigate('/settings')} style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer' }}>Settings</button>
-              <button onClick={logout} style={{ backgroundColor: 'white', color: '#dc2626', fontSize: '14px', fontWeight: '500', border: '1px solid #fecaca', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>Logout</button>
+            
+            <div className="flex items-center space-x-10">
+              <button
+                onClick={() => navigate('/pricing')}
+                className="text-gray-600 hover:text-gray-900 font-medium transition-colors text-lg bg-transparent border-none cursor-pointer"
+              >
+                Pricing
+              </button>
+              <button
+                onClick={() => navigate('/settings')}
+                className="text-gray-600 hover:text-gray-900 font-medium transition-colors text-lg bg-transparent border-none cursor-pointer"
+              >
+                Settings
+              </button>
+              <button
+                onClick={logout}
+                className="bg-white text-red-600 text-base font-semibold border-2 border-red-200 px-6 py-2.5 rounded-xl cursor-pointer hover:bg-red-50 hover:border-red-300 transition-all"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
       </nav>
-      <div style={{ paddingTop: '7rem', paddingBottom: '4rem', padding: '7rem 1.5rem 4rem', position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>Welcome Back!</h1>
-            <p style={{ fontSize: '1.125rem', color: '#6b7280' }}>You're logged in as {user.email}</p>
+
+      {/* Main Content */}
+      <div className="pt-40 pb-20 px-8 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          {/* Welcome Header */}
+          <div className="mb-16 text-center">
+            <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-4 tracking-tight">
+              Welcome Back! 👋
+            </h1>
+            <p className="text-xl text-gray-600 leading-relaxed">
+              You're logged in as <span className="font-semibold text-indigo-600">{user.email}</span>
+            </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div><h3 style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6b7280', marginBottom: '0.5rem' }}>Credits Remaining</h3><p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#111827' }}>{user.processingCredits}</p></div>
-                <div style={{ fontSize: '3rem' }}>💎</div>
+
+          {/* Stats Cards */}
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {/* Credits Card */}
+            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Credits Remaining</h3>
+                  <p className="text-5xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    {user.processingCredits}
+                  </p>
+                </div>
+                <div className="text-6xl group-hover:scale-110 transition-transform">💎</div>
+              </div>
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <p className="text-sm text-gray-600">Use credits to generate content</p>
               </div>
             </div>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div><h3 style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6b7280', marginBottom: '0.5rem' }}>Current Plan</h3><p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#111827', textTransform: 'capitalize' }}>{user.plan}</p></div>
-                <div style={{ fontSize: '3rem' }}>🚀</div>
+
+            {/* Plan Card */}
+            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Current Plan</h3>
+                  <p className="text-5xl font-extrabold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent capitalize">
+                    {user.plan}
+                  </p>
+                </div>
+                <div className="text-6xl group-hover:scale-110 transition-transform">🚀</div>
+              </div>
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="text-sm text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
+                >
+                  Upgrade Plan →
+                </button>
               </div>
             </div>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div><h3 style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6b7280', marginBottom: '0.5rem' }}>Account Status</h3><p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#111827' }}>Active</p></div>
-                <div style={{ fontSize: '3rem' }}>✨</div>
+
+            {/* Status Card */}
+            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Account Status</h3>
+                  <p className="text-5xl font-extrabold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                    Active
+                  </p>
+                </div>
+                <div className="text-6xl group-hover:scale-110 transition-transform">✨</div>
+              </div>
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <p className="text-sm text-gray-600">All systems operational</p>
               </div>
             </div>
           </div>
-          <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1.5rem' }}>Quick Actions</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-              <button onClick={() => navigate('/pricing')} style={{ backgroundColor: '#2563eb', color: 'white', padding: '1rem', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>📊 View Pricing</button>
-              <button onClick={() => navigate('/settings')} style={{ backgroundColor: '#10b981', color: 'white', padding: '1rem', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>⚙️ Settings</button>
-              <button onClick={() => navigate('/history')} style={{ backgroundColor: '#8b5cf6', color: 'white', padding: '1rem', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>📜 History</button>
+
+          {/* Quick Actions */}
+          <div className="bg-white rounded-3xl p-10 shadow-2xl border border-gray-100 mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Quick Actions</h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              <button
+                onClick={() => navigate('/pricing')}
+                className="group bg-gradient-to-br from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border-2 border-indigo-200 p-8 rounded-2xl cursor-pointer transition-all hover:shadow-lg"
+              >
+                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📊</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">View Pricing</h3>
+                <p className="text-gray-600 text-sm">Explore our plans and pricing</p>
+              </button>
+
+              <button
+                onClick={() => navigate('/settings')}
+                className="group bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border-2 border-green-200 p-8 rounded-2xl cursor-pointer transition-all hover:shadow-lg"
+              >
+                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">⚙️</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Settings</h3>
+                <p className="text-gray-600 text-sm">Manage your account preferences</p>
+              </button>
+
+              <button
+                onClick={() => navigate('/history')}
+                className="group bg-gradient-to-br from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border-2 border-purple-200 p-8 rounded-2xl cursor-pointer transition-all hover:shadow-lg"
+              >
+                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📜</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">History</h3>
+                <p className="text-gray-600 text-sm">View your content history</p>
+              </button>
             </div>
+          </div>
+
+          {/* Getting Started Section */}
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl p-12 shadow-2xl text-white text-center">
+            <h2 className="text-4xl font-extrabold mb-4">Ready to Create Amazing Content?</h2>
+            <p className="text-xl mb-8 opacity-90">Transform your ideas into engaging content with AI</p>
+            <button
+              onClick={() => navigate('/content-creator')}
+              className="bg-white text-indigo-600 px-10 py-4 rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all"
+            >
+              Start Creating →
+            </button>
           </div>
         </div>
       </div>

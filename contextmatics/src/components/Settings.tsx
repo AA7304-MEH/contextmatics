@@ -7,6 +7,7 @@ const Settings: React.FC = () => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security'>('profile');
   const [showSaveNotification, setShowSaveNotification] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const [profileData, setProfileData] = useState({
     name: 'John Doe',
@@ -23,6 +24,12 @@ const Settings: React.FC = () => {
     billingAlerts: true
   });
 
+  React.useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleSave = () => {
     setShowSaveNotification(true);
     setTimeout(() => setShowSaveNotification(false), 3000);
@@ -30,13 +37,14 @@ const Settings: React.FC = () => {
 
   if (!user) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem', textAlign: 'center', maxWidth: '28rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem' }}>Please Log In</h2>
-          <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>You need to be logged in to access settings.</p>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center px-8">
+        <div className="bg-white rounded-3xl p-12 text-center max-w-md shadow-2xl border border-gray-100">
+          <div className="text-6xl mb-6">🔒</div>
+          <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Please Log In</h2>
+          <p className="text-xl text-gray-600 mb-8">You need to be logged in to access settings.</p>
           <button
             onClick={() => navigate('/')}
-            style={{ backgroundColor: '#2563eb', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer' }}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all"
           >
             Go to Home
           </button>
@@ -46,59 +54,45 @@ const Settings: React.FC = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', color: '#111827' }}>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Gradient Orbs Background */}
-      <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)', filter: 'blur(60px)' }}></div>
-        <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)', filter: 'blur(60px)' }}></div>
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-gradient-radial from-indigo-500/15 to-transparent blur-3xl"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-gradient-radial from-purple-500/15 to-transparent blur-3xl"></div>
       </div>
 
       {/* Navigation */}
-      <nav style={{
-        position: 'fixed',
-        top: 0,
-        width: '100%',
-        zIndex: 50,
-        backgroundColor: 'rgba(255,255,255,0.8)',
-        backdropFilter: 'blur(20px)',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        borderBottom: '1px solid rgba(0,0,0,0.05)'
-      }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+        scrolled ? 'bg-white/95 backdrop-blur-xl shadow-sm' : 'bg-transparent'
+      }`}>
+        <div className="max-w-7xl mx-auto px-8 py-6">
+          <div className="flex justify-between items-center">
             <button
               onClick={() => navigate('/')}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer' }}
+              className="flex items-center space-x-3 bg-transparent border-none cursor-pointer"
             >
-              <div style={{
-                width: '36px',
-                height: '36px',
-                backgroundColor: '#2563eb',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <span style={{ color: 'white', fontWeight: 'bold', fontSize: '18px' }}>C</span>
+              <div className="w-11 h-11 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">C</span>
               </div>
-              <span style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>ContextMatics</span>
+              <span className="text-2xl font-bold text-gray-900">ContextMatics</span>
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            
+            <div className="flex items-center space-x-10">
               <button
                 onClick={() => navigate('/dashboard')}
-                style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer' }}
+                className="text-gray-600 hover:text-gray-900 font-medium transition-colors text-lg bg-transparent border-none cursor-pointer"
               >
                 Dashboard
               </button>
               <button
                 onClick={() => navigate('/pricing')}
-                style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer' }}
+                className="text-gray-600 hover:text-gray-900 font-medium transition-colors text-lg bg-transparent border-none cursor-pointer"
               >
                 Pricing
               </button>
               <button
                 onClick={logout}
-                style={{ backgroundColor: 'white', color: '#dc2626', fontSize: '14px', fontWeight: '500', border: '1px solid #fecaca', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}
+                className="bg-white text-red-600 text-base font-semibold border-2 border-red-200 px-6 py-2.5 rounded-xl cursor-pointer hover:bg-red-50 hover:border-red-300 transition-all"
               >
                 Logout
               </button>
@@ -107,174 +101,92 @@ const Settings: React.FC = () => {
         </div>
       </nav>
 
-      <div style={{ paddingTop: '7rem', paddingBottom: '3rem', padding: '7rem 1.5rem 3rem', position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '1152px', margin: '0 auto' }}>
+      <div className="pt-40 pb-20 px-8 relative z-10">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>Settings</h1>
-            <p style={{ fontSize: '1.125rem', color: '#6b7280' }}>Manage your account preferences and settings</p>
+          <div className="mb-16 text-center">
+            <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-4 tracking-tight">Settings</h1>
+            <p className="text-xl text-gray-600 leading-relaxed">Manage your account preferences and settings</p>
           </div>
 
           {/* Save Notification */}
           {showSaveNotification && (
-            <div style={{
-              position: 'fixed',
-              top: '7rem',
-              right: '1.5rem',
-              backgroundColor: '#10b981',
-              color: 'white',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px',
-              boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-              zIndex: 50
-            }}>
-              ✓ Settings saved successfully!
+            <div className="fixed top-32 right-8 bg-green-500 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3 animate-slide-in">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="font-semibold">Settings saved successfully!</span>
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+          <div className="grid md:grid-cols-4 gap-8">
             {/* Sidebar Tabs */}
-            <div>
-              <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '1rem' }}>
-                <button
-                  onClick={() => setActiveTab('profile')}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '8px',
-                    fontWeight: '500',
-                    border: 'none',
-                    backgroundColor: activeTab === 'profile' ? '#dbeafe' : 'transparent',
-                    color: activeTab === 'profile' ? '#1d4ed8' : '#374151',
-                    cursor: 'pointer',
-                    marginBottom: '0.5rem',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '1.25rem' }}>👤</span>
-                    <span>Profile</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveTab('notifications')}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '8px',
-                    fontWeight: '500',
-                    border: 'none',
-                    backgroundColor: activeTab === 'notifications' ? '#dbeafe' : 'transparent',
-                    color: activeTab === 'notifications' ? '#1d4ed8' : '#374151',
-                    cursor: 'pointer',
-                    marginBottom: '0.5rem',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '1.25rem' }}>🔔</span>
-                    <span>Notifications</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveTab('security')}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '8px',
-                    fontWeight: '500',
-                    border: 'none',
-                    backgroundColor: activeTab === 'security' ? '#dbeafe' : 'transparent',
-                    color: activeTab === 'security' ? '#1d4ed8' : '#374151',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '1.25rem' }}>🔒</span>
-                    <span>Security</span>
-                  </div>
-                </button>
+            <div className="md:col-span-1">
+              <div className="bg-white rounded-3xl p-4 shadow-xl border border-gray-100 sticky top-32">
+                {[
+                  { id: 'profile', icon: '👤', label: 'Profile' },
+                  { id: 'notifications', icon: '🔔', label: 'Notifications' },
+                  { id: 'security', icon: '🔒', label: 'Security' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`w-full text-left px-6 py-4 rounded-2xl font-semibold border-none cursor-pointer mb-2 transition-all ${
+                      activeTab === tab.id
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+                        : 'bg-transparent text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{tab.icon}</span>
+                      <span className="text-lg">{tab.label}</span>
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Content Area */}
-            <div style={{ flex: 1 }}>
-              <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem' }}>
+            <div className="md:col-span-3">
+              <div className="bg-white rounded-3xl p-10 shadow-2xl border border-gray-100">
                 {/* Profile Tab */}
                 {activeTab === 'profile' && (
                   <div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1.5rem' }}>Profile Information</h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-8">Profile Information</h2>
+                    <div className="flex flex-col gap-6">
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Full Name</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-3">Full Name</label>
                         <input
                           type="text"
                           value={profileData.name}
                           onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem 1rem',
-                            border: '2px solid #d1d5db',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            outline: 'none',
-                            transition: 'all 0.2s'
-                          }}
+                          className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
                         />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Email Address</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-3">Email Address</label>
                         <input
                           type="email"
                           value={profileData.email}
                           onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem 1rem',
-                            border: '2px solid #d1d5db',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            outline: 'none',
-                            transition: 'all 0.2s'
-                          }}
+                          className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
                         />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Company</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-3">Company</label>
                         <input
                           type="text"
                           value={profileData.company}
                           onChange={(e) => setProfileData({ ...profileData, company: e.target.value })}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem 1rem',
-                            border: '2px solid #d1d5db',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            outline: 'none',
-                            transition: 'all 0.2s'
-                          }}
+                          className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
                         />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Timezone</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-3">Timezone</label>
                         <select
                           value={profileData.timezone}
                           onChange={(e) => setProfileData({ ...profileData, timezone: e.target.value })}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem 1rem',
-                            border: '2px solid #d1d5db',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            outline: 'none',
-                            transition: 'all 0.2s',
-                            backgroundColor: 'white'
-                          }}
+                          className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all bg-white"
                         >
                           <option value="UTC-5">Eastern Time (UTC-5)</option>
                           <option value="UTC-6">Central Time (UTC-6)</option>
@@ -285,18 +197,7 @@ const Settings: React.FC = () => {
                       </div>
                       <button
                         onClick={handleSave}
-                        style={{
-                          width: '100%',
-                          backgroundColor: '#2563eb',
-                          color: 'white',
-                          padding: '0.75rem 1.5rem',
-                          borderRadius: '8px',
-                          fontWeight: '600',
-                          fontSize: '1rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.1)'
-                        }}
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg border-none cursor-pointer hover:shadow-xl hover:scale-105 transition-all mt-4"
                       >
                         Save Changes
                       </button>
@@ -307,8 +208,8 @@ const Settings: React.FC = () => {
                 {/* Notifications Tab */}
                 {activeTab === 'notifications' && (
                   <div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1.5rem' }}>Notification Preferences</h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-8">Notification Preferences</h2>
+                    <div className="flex flex-col gap-4">
                       {[
                         { key: 'emailNotifications', label: 'Email Notifications', desc: 'Receive notifications via email' },
                         { key: 'contentGenerated', label: 'Content Generated', desc: 'Get notified when content is ready' },
@@ -316,58 +217,35 @@ const Settings: React.FC = () => {
                         { key: 'productUpdates', label: 'Product Updates', desc: 'Stay informed about new features' },
                         { key: 'billingAlerts', label: 'Billing Alerts', desc: 'Important billing notifications' }
                       ].map((item) => (
-                        <div key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                          <div style={{ flex: 1 }}>
-                            <p style={{ fontWeight: '600', color: '#111827', fontSize: '1rem' }}>{item.label}</p>
-                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>{item.desc}</p>
+                        <div key={item.key} className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl border-2 border-gray-100 hover:border-indigo-200 transition-all">
+                          <div className="flex-1">
+                            <p className="font-bold text-gray-900 text-lg">{item.label}</p>
+                            <p className="text-sm text-gray-600 mt-1">{item.desc}</p>
                           </div>
                           <button
                             onClick={() => setNotificationSettings({
                               ...notificationSettings,
                               [item.key]: !notificationSettings[item.key as keyof typeof notificationSettings]
                             })}
-                            style={{
-                              position: 'relative',
-                              display: 'inline-flex',
-                              height: '24px',
-                              width: '44px',
-                              alignItems: 'center',
-                              borderRadius: '9999px',
-                              backgroundColor: notificationSettings[item.key as keyof typeof notificationSettings] ? '#2563eb' : '#d1d5db',
-                              border: 'none',
-                              cursor: 'pointer',
-                              transition: 'background-color 0.2s'
-                            }}
+                            className={`relative inline-flex h-8 w-16 items-center rounded-full border-none cursor-pointer transition-all ${
+                              notificationSettings[item.key as keyof typeof notificationSettings]
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
+                                : 'bg-gray-300'
+                            }`}
                           >
                             <span
-                              style={{
-                                display: 'inline-block',
-                                height: '16px',
-                                width: '16px',
-                                borderRadius: '50%',
-                                backgroundColor: 'white',
-                                transform: notificationSettings[item.key as keyof typeof notificationSettings] ? 'translateX(20px)' : 'translateX(2px)',
-                                transition: 'transform 0.2s'
-                              }}
+                              className={`inline-block h-6 w-6 rounded-full bg-white shadow-lg transition-transform ${
+                                notificationSettings[item.key as keyof typeof notificationSettings]
+                                  ? 'translate-x-9'
+                                  : 'translate-x-1'
+                              }`}
                             />
                           </button>
                         </div>
                       ))}
                       <button
                         onClick={handleSave}
-                        style={{
-                          width: '100%',
-                          backgroundColor: '#2563eb',
-                          color: 'white',
-                          padding: '0.75rem 1.5rem',
-                          borderRadius: '8px',
-                          fontWeight: '600',
-                          fontSize: '1rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.1)',
-                          marginTop: '1rem'
-                        }}
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg border-none cursor-pointer hover:shadow-xl hover:scale-105 transition-all mt-4"
                       >
                         Save Preferences
                       </button>
@@ -378,30 +256,45 @@ const Settings: React.FC = () => {
                 {/* Security Tab */}
                 {activeTab === 'security' && (
                   <div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1.5rem' }}>Security Settings</h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                      <div style={{ padding: '1.5rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                        <h3 style={{ fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem', fontSize: '1.125rem' }}>Change Password</h3>
-                        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>Update your password to keep your account secure</p>
-                        <button style={{ backgroundColor: '#2563eb', color: 'white', padding: '0.625rem 1.5rem', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer' }}>
-                          Change Password
-                        </button>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-8">Security Settings</h2>
+                    <div className="flex flex-col gap-6">
+                      <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-indigo-100">
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="text-4xl">🔑</div>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 mb-2 text-xl">Change Password</h3>
+                            <p className="text-sm text-gray-600 mb-4">Update your password to keep your account secure</p>
+                            <button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold border-none cursor-pointer hover:shadow-lg transition-all">
+                              Change Password
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
-                      <div style={{ padding: '1.5rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                        <h3 style={{ fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem', fontSize: '1.125rem' }}>Two-Factor Authentication</h3>
-                        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>Add an extra layer of security to your account</p>
-                        <button style={{ backgroundColor: '#10b981', color: 'white', padding: '0.625rem 1.5rem', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer' }}>
-                          Enable 2FA
-                        </button>
+                      <div className="p-8 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border-2 border-green-100">
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="text-4xl">🛡️</div>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 mb-2 text-xl">Two-Factor Authentication</h3>
+                            <p className="text-sm text-gray-600 mb-4">Add an extra layer of security to your account</p>
+                            <button className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold border-none cursor-pointer hover:shadow-lg transition-all">
+                              Enable 2FA
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
-                      <div style={{ padding: '1.5rem', backgroundColor: '#fef2f2', borderRadius: '8px', border: '2px solid #fecaca' }}>
-                        <h3 style={{ fontWeight: 'bold', color: '#dc2626', marginBottom: '0.5rem', fontSize: '1.125rem' }}>Danger Zone</h3>
-                        <p style={{ fontSize: '0.875rem', color: '#dc2626', marginBottom: '1rem' }}>Permanently delete your account and all data</p>
-                        <button style={{ backgroundColor: '#dc2626', color: 'white', padding: '0.625rem 1.5rem', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer' }}>
-                          Delete Account
-                        </button>
+                      <div className="p-8 bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl border-2 border-red-200">
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="text-4xl">⚠️</div>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-red-700 mb-2 text-xl">Danger Zone</h3>
+                            <p className="text-sm text-red-600 mb-4">Permanently delete your account and all data. This action cannot be undone.</p>
+                            <button className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold border-none cursor-pointer hover:shadow-lg transition-all">
+                              Delete Account
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

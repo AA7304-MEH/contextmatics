@@ -3,6 +3,7 @@ dist/
 node_modules/
 .env.local
 .env
+/.secrets.local.json
 *.log
 .DS_Store
 prepare-deployment.js

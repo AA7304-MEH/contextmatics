@@ -16,6 +16,7 @@ function App() {
   if (import.meta.env.PROD) {
     validateEnvironmentVariables();
   }
+  
   return (
     <ThemeProvider>
       <ToastProvider>
