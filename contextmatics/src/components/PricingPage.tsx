@@ -73,6 +73,23 @@ const PricingPage: React.FC = () => {
     }
   ]
 
+  // Check for payment configuration
+  const [configError, setConfigError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isIndia) {
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      if (!razorpayKey || razorpayKey.includes('dummy')) {
+        setConfigError('Razorpay is not configured. Payments will not work.');
+      }
+    } else {
+      const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+      if (!paypalClientId || paypalClientId.includes('dummy')) {
+        setConfigError('PayPal is not configured. Payments will not work.');
+      }
+    }
+  }, [isIndia]);
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', color: '#111827' }}>
       {/* Gradient Orbs Background */}
@@ -139,6 +156,27 @@ const PricingPage: React.FC = () => {
             Choose the perfect plan for your content creation needs
           </p>
 
+          {configError && (
+            <div style={{
+              maxWidth: '600px',
+              margin: '0 auto 2rem',
+              padding: '1rem',
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '8px',
+              color: '#b91c1c',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              justifyContent: 'center'
+            }}>
+              <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span style={{ fontWeight: '600' }}>{configError}</span>
+            </div>
+          )}
+
           {/* Billing Toggle */}
           <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: '#f3f4f6', borderRadius: '12px', padding: '0.25rem' }}>
             <button
@@ -197,11 +235,11 @@ const PricingPage: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               {isIndia ? (
                 <svg style={{ width: '20px', height: '20px', color: '#ea580c' }} fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M5 3H15V9H5V3M19 21H5V16H19V21Z"/>
+                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M5 3H15V9H5V3M19 21H5V16H19V21Z" />
                 </svg>
               ) : (
                 <svg style={{ width: '20px', height: '20px', color: '#2563eb' }} fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9.93 12.24C9.47 12.24 9.09 12.41 8.8 12.74C8.51 13.06 8.36 13.49 8.36 13.95V14.5H7.27V15.5H8.61V17.5H9.7V15.5H10.82V14.5H9.7V13.92C9.7 13.47 9.89 13.09 10.26 12.78C10.64 12.47 11.14 12.31 11.77 12.31C12.4 12.31 12.9 12.47 13.27 12.78C13.64 13.09 13.83 13.47 13.83 13.92V14.5H14.92V15.5H13.58V17.5H14.67V18.5H7.27V17.5H8.36V15.5H7.27V14.5H8.36V13.95C8.36 13.03 8.7 12.24 9.93 12.24Z"/>
+                  <path d="M9.93 12.24C9.47 12.24 9.09 12.41 8.8 12.74C8.51 13.06 8.36 13.49 8.36 13.95V14.5H7.27V15.5H8.61V17.5H9.7V15.5H10.82V14.5H9.7V13.92C9.7 13.47 9.89 13.09 10.26 12.78C10.64 12.47 11.14 12.31 11.77 12.31C12.4 12.31 12.9 12.47 13.27 12.78C13.64 13.09 13.83 13.47 13.83 13.92V14.5H14.92V15.5H13.58V17.5H14.67V18.5H7.27V17.5H8.36V15.5H7.27V14.5H8.36V13.95C8.36 13.03 8.7 12.24 9.93 12.24Z" />
                 </svg>
               )}
               <span style={{ fontWeight: '600', fontSize: '0.875rem', color: isIndia ? '#c2410c' : '#1d4ed8' }}>
@@ -249,10 +287,10 @@ const PricingPage: React.FC = () => {
                       ⭐ Most Popular
                     </div>
                   )}
-                  
+
                   <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#111827' }}>{plan.name}</h3>
                   <p style={{ color: '#6b7280', marginBottom: '2rem' }}>{plan.description}</p>
-                  
+
                   <div style={{ marginBottom: '2rem' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
                       <span style={{ fontSize: '3rem', fontWeight: 'bold', color: '#111827' }}>
@@ -268,7 +306,7 @@ const PricingPage: React.FC = () => {
                       </p>
                     )}
                   </div>
-                  
+
                   <button
                     onClick={async () => {
                       const amount = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
@@ -332,7 +370,7 @@ const PricingPage: React.FC = () => {
                   >
                     {isIndia ? 'Buy with Razorpay' : 'Buy with PayPal'}
                   </button>
-                  
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {plan.features.map((feature, idx) => (
                       <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
@@ -355,7 +393,7 @@ const PricingPage: React.FC = () => {
             <h2 style={{ fontSize: '3rem', fontWeight: 'bold', textAlign: 'center', marginBottom: '3rem', color: '#111827' }}>
               Frequently Asked Questions
             </h2>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {[
                 {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { ClerkAuthModal } from './ClerkAuthModal'
 
 const NewLandingPage: React.FC = () => {
   const navigate = useNavigate()
@@ -58,7 +59,7 @@ const NewLandingPage: React.FC = () => {
               </div>
               <span style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>ContextMatics</span>
             </div>
-            
+
             {/* Navigation Links */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
               <a href="#product" style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500', textDecoration: 'none' }}>Product</a>
@@ -100,7 +101,7 @@ const NewLandingPage: React.FC = () => {
       </nav>
 
       {/* Hero Section */}
-      <section style={{ paddingTop: '7rem', paddingBottom: '4rem', padding: '7rem 1.5rem 4rem' }}>
+      <section id="product" style={{ paddingTop: '7rem', paddingBottom: '4rem', padding: '7rem 1.5rem 4rem' }}>
         <div style={{ maxWidth: '1024px', margin: '0 auto', textAlign: 'center' }}>
           {/* Main Headline */}
           <h1 style={{ fontSize: '3.75rem', fontWeight: 'bold', marginBottom: '1.5rem', lineHeight: '1.1' }}>
@@ -178,7 +179,7 @@ const NewLandingPage: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section style={{ padding: '6rem 1.5rem' }}>
+      <section id="features" style={{ padding: '6rem 1.5rem' }}>
         <div style={{ maxWidth: '1152px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
             <h2 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>
@@ -229,7 +230,7 @@ const NewLandingPage: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section style={{ padding: '6rem 1.5rem' }}>
+      <section id="pricing" style={{ padding: '6rem 1.5rem' }}>
         <div style={{ maxWidth: '1024px', margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>
             Ready to get started?
@@ -274,7 +275,7 @@ const NewLandingPage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer style={{ borderTop: '1px solid #e5e7eb', padding: '4rem 1.5rem', backgroundColor: '#f9fafb' }}>
+      <footer id="resources" style={{ borderTop: '1px solid #e5e7eb', padding: '4rem 1.5rem', backgroundColor: '#f9fafb' }}>
         <div style={{ maxWidth: '1152px', margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3rem', marginBottom: '3rem' }}>
             <div style={{ gridColumn: 'span 2' }}>
@@ -319,6 +320,12 @@ const NewLandingPage: React.FC = () => {
         </div>
       </footer>
 
+      <ClerkAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        isLogin={isLogin}
+        onToggleMode={() => setIsLogin(!isLogin)}
+      />
     </div>
   )
 }

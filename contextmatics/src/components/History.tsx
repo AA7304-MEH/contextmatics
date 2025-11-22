@@ -1,75 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-interface ContentItem {
-  id: string;
-  title: string;
-  format: string;
-  content: string;
-  createdAt: Date;
-  status: 'success' | 'failed';
-  icon: string;
-}
+import { useHistory } from '../context/HistoryContext';
 
 const History: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { historyItems, deleteFromHistory } = useHistory();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterFormat, setFilterFormat] = useState<string>('all');
 
-  // Mock history data
-  const historyItems: ContentItem[] = [
-    {
-      id: '1',
-      title: 'AI Revolution Blog Post',
-      format: 'Blog Post',
-      content: 'The future of AI is here and it\'s transforming how we work...',
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      status: 'success',
-      icon: '📝'
-    },
-    {
-      id: '2',
-      title: 'Product Launch Thread',
-      format: 'Twitter Thread',
-      content: '🚀 Excited to announce our new product! Here\'s what you need to know...',
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-      status: 'success',
-      icon: '🐦'
-    },
-    {
-      id: '3',
-      title: 'Weekly Newsletter',
-      format: 'Email Newsletter',
-      content: 'This week in tech: Major breakthroughs and industry updates...',
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      status: 'success',
-      icon: '📧'
-    },
-    {
-      id: '4',
-      title: 'LinkedIn Thought Leadership',
-      format: 'LinkedIn Post',
-      content: 'Leadership in the digital age requires adaptability and vision...',
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      status: 'success',
-      icon: '💼'
-    },
-    {
-      id: '5',
-      title: 'Content Summary',
-      format: 'Summary',
-      content: 'Key takeaways from the quarterly report...',
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      status: 'success',
-      icon: '📊'
-    }
-  ];
-
   const filteredItems = historyItems.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.content.toLowerCase().includes(searchQuery.toLowerCase());
+      item.content.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterFormat === 'all' || item.format === filterFormat;
     return matchesSearch && matchesFilter;
   });
@@ -350,17 +293,22 @@ const History: React.FC = () => {
                         }}>
                           🔄 Regenerate
                         </button>
-                        <button style={{
-                          backgroundColor: '#fee2e2',
-                          border: '1px solid #fca5a5',
-                          color: '#dc2626',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '8px',
-                          fontSize: '0.875rem',
-                          fontWeight: '500',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteFromHistory(item.id);
+                          }}
+                          style={{
+                            backgroundColor: '#fee2e2',
+                            border: '1px solid #fca5a5',
+                            color: '#dc2626',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '8px',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}>
                           🗑️ Delete
                         </button>
                       </div>

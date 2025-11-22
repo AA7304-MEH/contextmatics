@@ -8,21 +8,32 @@ const Dashboard: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center px-8">
-        <div className="bg-white rounded-3xl p-12 text-center max-w-md shadow-2xl border border-gray-100">
-          <div className="text-6xl mb-6">🔒</div>
-          <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Please Log In</h2>
-          <p className="text-xl text-gray-600 mb-8">You need to be logged in to access the dashboard.</p>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(to bottom, #f9fafb, #ffffff)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 2rem' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '3rem', textAlign: 'center', maxWidth: '28rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #f3f4f6' }}>
+          <div style={{ fontSize: '3.75rem', marginBottom: '1.5rem' }}>🔒</div>
+          <h2 style={{ fontSize: '2.25rem', fontWeight: '800', color: '#111827', marginBottom: '1rem' }}>Please Log In</h2>
+          <p style={{ fontSize: '1.25rem', color: '#4b5563', marginBottom: '2rem' }}>You need to be logged in to access the dashboard.</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all"
+            style={{
+              background: 'linear-gradient(to right, #4f46e5, #9333ea)',
+              color: 'white',
+              padding: '1rem 2rem',
+              borderRadius: '12px',
+              fontWeight: 'bold',
+              fontSize: '1.125rem',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+            }}
           >
             Go to Home
           </button>
@@ -32,45 +43,84 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', color: '#111827', position: 'relative' }}>
       {/* Gradient Orbs Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-gradient-radial from-indigo-500/15 to-transparent blur-3xl"></div>
-        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-gradient-radial from-purple-500/15 to-transparent blur-3xl"></div>
+      <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)', filter: 'blur(60px)' }}></div>
+        <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)', filter: 'blur(60px)' }}></div>
       </div>
 
       {/* Navigation */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? 'bg-white/95 backdrop-blur-xl shadow-sm' : 'bg-transparent'
-      }`}>
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <div className="flex justify-between items-center">
+      <nav style={{
+        position: 'fixed',
+        top: 0,
+        width: '100%',
+        zIndex: 50,
+        backgroundColor: scrolled ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(20px)',
+        boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.05)',
+        transition: 'all 0.3s',
+        borderBottom: '1px solid rgba(0,0,0,0.05)'
+      }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <button
               onClick={() => navigate('/')}
-              className="flex items-center space-x-3 bg-transparent border-none cursor-pointer"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'none', border: 'none', cursor: 'pointer' }}
             >
-              <div className="w-11 h-11 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">C</span>
+              <div style={{
+                width: '44px',
+                height: '44px',
+                background: 'linear-gradient(to bottom right, #4f46e5, #9333ea)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}>
+                <span style={{ color: 'white', fontWeight: 'bold', fontSize: '20px' }}>C</span>
               </div>
-              <span className="text-2xl font-bold text-gray-900">ContextMatics</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>ContextMatics</span>
             </button>
-            
-            <div className="flex items-center space-x-10">
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
               <button
                 onClick={() => navigate('/pricing')}
-                className="text-gray-600 hover:text-gray-900 font-medium transition-colors text-lg bg-transparent border-none cursor-pointer"
+                style={{ color: '#4b5563', fontSize: '1.125rem', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s' }}
+                onMouseOver={(e) => e.currentTarget.style.color = '#111827'}
+                onMouseOut={(e) => e.currentTarget.style.color = '#4b5563'}
               >
                 Pricing
               </button>
               <button
                 onClick={() => navigate('/settings')}
-                className="text-gray-600 hover:text-gray-900 font-medium transition-colors text-lg bg-transparent border-none cursor-pointer"
+                style={{ color: '#4b5563', fontSize: '1.125rem', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.2s' }}
+                onMouseOver={(e) => e.currentTarget.style.color = '#111827'}
+                onMouseOut={(e) => e.currentTarget.style.color = '#4b5563'}
               >
                 Settings
               </button>
               <button
                 onClick={logout}
-                className="bg-white text-red-600 text-base font-semibold border-2 border-red-200 px-6 py-2.5 rounded-xl cursor-pointer hover:bg-red-50 hover:border-red-300 transition-all"
+                style={{
+                  backgroundColor: 'white',
+                  color: '#dc2626',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  border: '2px solid #fecaca',
+                  padding: '0.625rem 1.5rem',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#fef2f2';
+                  e.currentTarget.style.borderColor = '#fca5a5';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                  e.currentTarget.style.borderColor = '#fecaca';
+                }}
               >
                 Logout
               </button>
@@ -80,51 +130,51 @@ const Dashboard: React.FC = () => {
       </nav>
 
       {/* Main Content */}
-      <div className="pt-40 pb-20 px-8 relative z-10">
-        <div className="max-w-7xl mx-auto">
+      <div style={{ paddingTop: '10rem', paddingBottom: '5rem', paddingLeft: '2rem', paddingRight: '2rem', position: 'relative', zIndex: 10 }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           {/* Welcome Header */}
-          <div className="mb-16 text-center">
-            <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-4 tracking-tight">
+          <div style={{ marginBottom: '4rem', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '3.75rem', fontWeight: '800', color: '#111827', marginBottom: '1rem', letterSpacing: '-0.025em' }}>
               Welcome Back! 👋
             </h1>
-            <p className="text-xl text-gray-600 leading-relaxed">
-              You're logged in as <span className="font-semibold text-indigo-600">{user.email}</span>
+            <p style={{ fontSize: '1.25rem', color: '#4b5563', lineHeight: '1.625' }}>
+              You're logged in as <span style={{ fontWeight: '600', color: '#4f46e5' }}>{user.email}</span>
             </p>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
             {/* Credits Card */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all group">
-              <div className="flex items-center justify-between">
+            <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', border: '1px solid #f3f4f6', transition: 'all 0.3s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Credits Remaining</h3>
-                  <p className="text-5xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  <h3 style={{ fontSize: '0.875rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Credits Remaining</h3>
+                  <p style={{ fontSize: '3rem', fontWeight: '800', background: 'linear-gradient(to right, #4f46e5, #9333ea)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                     {user.processingCredits}
                   </p>
                 </div>
-                <div className="text-6xl group-hover:scale-110 transition-transform">💎</div>
+                <div style={{ fontSize: '3.75rem' }}>💎</div>
               </div>
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <p className="text-sm text-gray-600">Use credits to generate content</p>
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #f3f4f6' }}>
+                <p style={{ fontSize: '0.875rem', color: '#4b5563' }}>Use credits to generate content</p>
               </div>
             </div>
 
             {/* Plan Card */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all group">
-              <div className="flex items-center justify-between">
+            <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', border: '1px solid #f3f4f6', transition: 'all 0.3s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Current Plan</h3>
-                  <p className="text-5xl font-extrabold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent capitalize">
+                  <h3 style={{ fontSize: '0.875rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Current Plan</h3>
+                  <p style={{ fontSize: '3rem', fontWeight: '800', background: 'linear-gradient(to right, #16a34a, #059669)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textTransform: 'capitalize' }}>
                     {user.plan}
                   </p>
                 </div>
-                <div className="text-6xl group-hover:scale-110 transition-transform">🚀</div>
+                <div style={{ fontSize: '3.75rem' }}>🚀</div>
               </div>
-              <div className="mt-6 pt-6 border-t border-gray-100">
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #f3f4f6' }}>
                 <button
                   onClick={() => navigate('/pricing')}
-                  className="text-sm text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
+                  style={{ fontSize: '0.875rem', color: '#4f46e5', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
                   Upgrade Plan →
                 </button>
@@ -132,62 +182,183 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Status Card */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all group">
-              <div className="flex items-center justify-between">
+            <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', border: '1px solid #f3f4f6', transition: 'all 0.3s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Account Status</h3>
-                  <p className="text-5xl font-extrabold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  <h3 style={{ fontSize: '0.875rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Account Status</h3>
+                  <p style={{ fontSize: '3rem', fontWeight: '800', background: 'linear-gradient(to right, #2563eb, #0891b2)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                     Active
                   </p>
                 </div>
-                <div className="text-6xl group-hover:scale-110 transition-transform">✨</div>
+                <div style={{ fontSize: '3.75rem' }}>✨</div>
               </div>
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <p className="text-sm text-gray-600">All systems operational</p>
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #f3f4f6' }}>
+                <p style={{ fontSize: '0.875rem', color: '#4b5563' }}>All systems operational</p>
               </div>
             </div>
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-3xl p-10 shadow-2xl border border-gray-100 mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Quick Actions</h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              <button
-                onClick={() => navigate('/pricing')}
-                className="group bg-gradient-to-br from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border-2 border-indigo-200 p-8 rounded-2xl cursor-pointer transition-all hover:shadow-lg"
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #f3f4f6', marginBottom: '3rem' }}>
+            <h2 style={{ fontSize: '1.875rem', fontWeight: '700', color: '#111827', marginBottom: '2rem' }}>Quick Actions</h2>
+            {/* Quick Actions Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
+              {/* Create Content Card */}
+              <div
+                onClick={() => navigate('/content-creator')}
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: '24px',
+                  padding: '2rem',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  border: '1px solid rgba(0,0,0,0.05)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                }}
               >
-                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📊</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">View Pricing</h3>
-                <p className="text-gray-600 text-sm">Explore our plans and pricing</p>
-              </button>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #4f46e5, #9333ea)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'white',
+                  fontSize: '2rem'
+                }}>
+                  ✨
+                </div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>Create Content</h3>
+                <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
+                  Generate blog posts, threads, and newsletters instantly with AI.
+                </p>
+              </div>
 
-              <button
-                onClick={() => navigate('/settings')}
-                className="group bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border-2 border-green-200 p-8 rounded-2xl cursor-pointer transition-all hover:shadow-lg"
+              {/* Video Repurposing Card */}
+              <div
+                onClick={() => navigate('/video-repurpose')}
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: '24px',
+                  padding: '2rem',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  border: '1px solid rgba(0,0,0,0.05)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                }}
               >
-                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">⚙️</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Settings</h3>
-                <p className="text-gray-600 text-sm">Manage your account preferences</p>
-              </button>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'white',
+                  fontSize: '2rem'
+                }}>
+                  🎥
+                </div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>Video to Shorts</h3>
+                <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
+                  Turn long videos into viral shorts and reels automatically.
+                </p>
+              </div>
 
-              <button
+              {/* View History Card */}
+              <div
                 onClick={() => navigate('/history')}
-                className="group bg-gradient-to-br from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border-2 border-purple-200 p-8 rounded-2xl cursor-pointer transition-all hover:shadow-lg"
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: '24px',
+                  padding: '2rem',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  border: '1px solid rgba(0,0,0,0.05)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                }}
               >
-                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📜</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">History</h3>
-                <p className="text-gray-600 text-sm">View your content history</p>
-              </button>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'white',
+                  fontSize: '2rem'
+                }}>
+                  📚
+                </div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>View History</h3>
+                <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
+                  Access all your generated content and past projects.
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Getting Started Section */}
-          <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl p-12 shadow-2xl text-white text-center">
-            <h2 className="text-4xl font-extrabold mb-4">Ready to Create Amazing Content?</h2>
-            <p className="text-xl mb-8 opacity-90">Transform your ideas into engaging content with AI</p>
+          <div style={{
+            background: 'linear-gradient(to bottom right, #4f46e5, #9333ea)',
+            borderRadius: '24px',
+            padding: '3rem',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            textAlign: 'center',
+            color: 'white'
+          }}>
+            <h2 style={{ fontSize: '2.25rem', fontWeight: '800', marginBottom: '1rem' }}>Ready to Create Amazing Content?</h2>
+            <p style={{ fontSize: '1.25rem', marginBottom: '2rem', opacity: 0.9 }}>Transform your ideas into engaging content with AI</p>
             <button
               onClick={() => navigate('/content-creator')}
-              className="bg-white text-indigo-600 px-10 py-4 rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all"
+              style={{
+                backgroundColor: 'white',
+                color: '#4f46e5',
+                padding: '1rem 2.5rem',
+                borderRadius: '12px',
+                fontWeight: '700',
+                fontSize: '1.125rem',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                transition: 'transform 0.2s'
+              }}
             >
               Start Creating →
             </button>
