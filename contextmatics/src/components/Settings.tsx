@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PageLayout } from './shared';
+import { CountrySelector } from './CountrySelector';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security'>('profile');
+  const { user, updateUserCountry } = useAuth();
   const [showSaveNotification, setShowSaveNotification] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const [profileData, setProfileData] = useState({
     name: 'John Doe',
     email: user?.email || '',
     company: 'Acme Inc.',
-    timezone: 'UTC-5'
+    timezone: 'UTC-5',
+    country: user?.countryCode || 'US'
   });
 
   const [notificationSettings, setNotificationSettings] = useState({
@@ -25,26 +27,29 @@ const Settings: React.FC = () => {
   });
 
   React.useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleSave = () => {
+    if (profileData.country) {
+      updateUserCountry(profileData.country);
+    }
     setShowSaveNotification(true);
     setTimeout(() => setShowSaveNotification(false), 3000);
   };
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center px-8">
-        <div className="bg-white rounded-3xl p-12 text-center max-w-md shadow-2xl border border-gray-100">
-          <div className="text-6xl mb-6">🔒</div>
-          <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Please Log In</h2>
-          <p className="text-xl text-gray-600 mb-8">You need to be logged in to access settings.</p>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(to bottom, #f9fafb, #ffffff)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '3rem', textAlign: 'center', maxWidth: '28rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+          <div style={{ fontSize: '3.75rem', marginBottom: '1.5rem' }}>🔒</div>
+          <h2 style={{ fontSize: '2.25rem', fontWeight: '800', color: '#111827', marginBottom: '1rem' }}>Please Log In</h2>
+          <p style={{ fontSize: '1.25rem', color: '#4b5563', marginBottom: '2rem' }}>You need to be logged in to access settings.</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all"
+            style={{ background: 'linear-gradient(to right, #4f46e5, #9333ea)', color: 'white', padding: '1rem 2rem', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.125rem', border: 'none', cursor: 'pointer' }}
           >
             Go to Home
           </button>
@@ -53,258 +58,258 @@ const Settings: React.FC = () => {
     );
   }
 
+  const gridCols = windowWidth < 768 ? '1fr' : windowWidth < 1200 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)';
+  const gridGap = windowWidth < 768 ? '1.5rem' : '2rem';
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Gradient Orbs Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-gradient-radial from-indigo-500/15 to-transparent blur-3xl"></div>
-        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-gradient-radial from-purple-500/15 to-transparent blur-3xl"></div>
-      </div>
-
-      {/* Navigation */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? 'bg-white/95 backdrop-blur-xl shadow-sm' : 'bg-transparent'
-      }`}>
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <div className="flex justify-between items-center">
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center space-x-3 bg-transparent border-none cursor-pointer"
-            >
-              <div className="w-11 h-11 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">C</span>
-              </div>
-              <span className="text-2xl font-bold text-gray-900">ContextMatics</span>
-            </button>
-            
-            <div className="flex items-center space-x-10">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="text-gray-600 hover:text-gray-900 font-medium transition-colors text-lg bg-transparent border-none cursor-pointer"
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => navigate('/pricing')}
-                className="text-gray-600 hover:text-gray-900 font-medium transition-colors text-lg bg-transparent border-none cursor-pointer"
-              >
-                Pricing
-              </button>
-              <button
-                onClick={logout}
-                className="bg-white text-red-600 text-base font-semibold border-2 border-red-200 px-6 py-2.5 rounded-xl cursor-pointer hover:bg-red-50 hover:border-red-300 transition-all"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="pt-40 pb-20 px-8 relative z-10">
-        <div className="max-w-6xl mx-auto">
+    <PageLayout showPricing={true} showSettings={false}>
+      <div style={{ minHeight: '100vh', background: '#f9fafb', padding: windowWidth < 768 ? '2rem 1rem' : '4rem 2rem' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
           {/* Header */}
-          <div className="mb-16 text-center">
-            <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-4 tracking-tight">Settings</h1>
-            <p className="text-xl text-gray-600 leading-relaxed">Manage your account preferences and settings</p>
+          <div style={{ marginBottom: windowWidth < 768 ? '2rem' : '4rem', textAlign: 'center' }}>
+            <h1 style={{ fontSize: windowWidth < 768 ? '2.5rem' : '3.75rem', fontWeight: '800', color: '#111827', marginBottom: '1rem', letterSpacing: '-0.02em' }}>
+              Account Settings
+            </h1>
+            <p style={{ fontSize: windowWidth < 768 ? '1rem' : '1.25rem', color: '#6b7280', maxWidth: '600px', margin: '0 auto' }}>
+              Manage your profile, preferences, and security settings with ease.
+            </p>
           </div>
 
           {/* Save Notification */}
           {showSaveNotification && (
-            <div className="fixed top-32 right-8 bg-green-500 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3 animate-slide-in">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="font-semibold">Settings saved successfully!</span>
+            <div style={{ position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 50 }}>
+              <div style={{ background: '#10b981', color: 'white', padding: '1rem 1.5rem', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '50%' }}>
+                  <svg style={{ width: '1.5rem', height: '1.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <p style={{ fontWeight: 'bold', fontSize: '1.125rem', margin: 0 }}>Success</p>
+                  <p style={{ fontSize: '0.875rem', opacity: 0.9, margin: 0 }}>Your changes have been saved.</p>
+                </div>
+              </div>
             </div>
           )}
 
-          <div className="grid md:grid-cols-4 gap-8">
-            {/* Sidebar Tabs */}
-            <div className="md:col-span-1">
-              <div className="bg-white rounded-3xl p-4 shadow-xl border border-gray-100 sticky top-32">
-                {[
-                  { id: 'profile', icon: '👤', label: 'Profile' },
-                  { id: 'notifications', icon: '🔔', label: 'Notifications' },
-                  { id: 'security', icon: '🔒', label: 'Security' }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`w-full text-left px-6 py-4 rounded-2xl font-semibold border-none cursor-pointer mb-2 transition-all ${
-                      activeTab === tab.id
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                        : 'bg-transparent text-gray-700 hover:bg-gray-50'
-                    }`}
+          {/* Settings Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: gridCols,
+            gap: gridGap
+          }}>
+
+            {/* Profile Card */}
+            <div style={{ background: 'white', borderRadius: '24px', padding: windowWidth < 768 ? '1.5rem' : '2.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', border: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '2px solid #f3f4f6' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'linear-gradient(135deg, #4f46e5, #9333ea)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>
+                  👤
+                </div>
+                <div>
+                  <h2 style={{ fontSize: windowWidth < 768 ? '1.5rem' : '1.875rem', fontWeight: '700', color: '#111827', marginBottom: '0.25rem', margin: 0 }}>My Profile</h2>
+                  <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Personal info & details</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Full Name</label>
+                  <input
+                    type="text"
+                    value={profileData.name}
+                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                    style={{ width: '100%', padding: '0.875rem 1rem', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '1rem', color: '#111827', outline: 'none', transition: 'all 0.2s' }}
+                    onFocus={(e) => { e.target.style.background = 'white'; e.target.style.borderColor = '#4f46e5'; }}
+                    onBlur={(e) => { e.target.style.background = '#f9fafb'; e.target.style.borderColor = '#e5e7eb'; }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Email Address</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="email"
+                      value={profileData.email}
+                      readOnly
+                      style={{ width: '100%', padding: '0.875rem 1rem', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '1rem', color: '#6b7280', cursor: 'not-allowed' }}
+                    />
+                    <span style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', fontWeight: '600', color: '#10b981', background: '#d1fae5', padding: '0.25rem 0.75rem', borderRadius: '6px' }}>VERIFIED</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Company</label>
+                  <input
+                    type="text"
+                    value={profileData.company}
+                    onChange={(e) => setProfileData({ ...profileData, company: e.target.value })}
+                    style={{ width: '100%', padding: '0.875rem 1rem', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '1rem', color: '#111827', outline: 'none', transition: 'all 0.2s' }}
+                    onFocus={(e) => { e.target.style.background = 'white'; e.target.style.borderColor = '#4f46e5'; }}
+                    onBlur={(e) => { e.target.style.background = '#f9fafb'; e.target.style.borderColor = '#e5e7eb'; }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Country</label>
+                  <CountrySelector
+                    value={profileData.country}
+                    onChange={(country) => setProfileData({ ...profileData, country })}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Timezone</label>
+                  <select
+                    value={profileData.timezone}
+                    onChange={(e) => setProfileData({ ...profileData, timezone: e.target.value })}
+                    style={{ width: '100%', padding: '0.875rem 1rem', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '1rem', color: '#111827', outline: 'none', cursor: 'pointer' }}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{tab.icon}</span>
-                      <span className="text-lg">{tab.label}</span>
+                    <option value="UTC-5">Eastern Time (UTC-5)</option>
+                    <option value="UTC-6">Central Time (UTC-6)</option>
+                    <option value="UTC-7">Mountain Time (UTC-7)</option>
+                    <option value="UTC-8">Pacific Time (UTC-8)</option>
+                    <option value="UTC+0">UTC</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleSave}
+                  style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #4f46e5, #9333ea)', color: 'white', borderRadius: '12px', fontWeight: '600', fontSize: '1rem', border: 'none', cursor: 'pointer', marginTop: '0.5rem', transition: 'transform 0.2s' }}
+                  onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+
+            {/* Notifications Card */}
+            <div style={{ background: 'white', borderRadius: '24px', padding: windowWidth < 768 ? '1.5rem' : '2.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', border: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '2px solid #f3f4f6' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>
+                  🔔
+                </div>
+                <div>
+                  <h2 style={{ fontSize: windowWidth < 768 ? '1.5rem' : '1.875rem', fontWeight: '700', color: '#111827', marginBottom: '0.25rem', margin: 0 }}>Notifications</h2>
+                  <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Email & alerts setup</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {[
+                  { key: 'emailNotifications', label: 'Email Notifications', desc: 'Receive daily summaries via email' },
+                  { key: 'contentGenerated', label: 'Content Generated', desc: 'Get notified when AI content is ready' },
+                  { key: 'weeklyReport', label: 'Weekly Report', desc: 'Receive weekly usage reports' },
+                  { key: 'productUpdates', label: 'Product Updates', desc: 'Be first to know about new features' },
+                  { key: 'billingAlerts', label: 'Billing Alerts', desc: 'Get alerts about payments' }
+                ].map((item) => (
+                  <div
+                    key={item.key}
+                    onClick={() => setNotificationSettings({
+                      ...notificationSettings,
+                      [item.key]: !notificationSettings[item.key as keyof typeof notificationSettings]
+                    })}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f9fafb', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                    onMouseOut={(e) => e.currentTarget.style.background = '#f9fafb'}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: '600', fontSize: '1rem', color: '#111827', marginBottom: '0.25rem', margin: 0 }}>{item.label}</p>
+                      <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>{item.desc}</p>
                     </div>
-                  </button>
+                    <div style={{ position: 'relative', width: '52px', height: '28px', background: notificationSettings[item.key as keyof typeof notificationSettings] ? '#4f46e5' : '#d1d5db', borderRadius: '14px', transition: 'background 0.3s' }}>
+                      <span style={{ position: 'absolute', top: '2px', left: notificationSettings[item.key as keyof typeof notificationSettings] ? '26px' : '2px', width: '24px', height: '24px', background: 'white', borderRadius: '50%', transition: 'left 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                    </div>
+                  </div>
                 ))}
+
+                <button
+                  onClick={handleSave}
+                  style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #10b981, #3b82f6)', color: 'white', borderRadius: '12px', fontWeight: '600', fontSize: '1rem', border: 'none', cursor: 'pointer', marginTop: '0.5rem', transition: 'transform 0.2s' }}
+                  onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  Save Preferences
+                </button>
               </div>
             </div>
 
-            {/* Content Area */}
-            <div className="md:col-span-3">
-              <div className="bg-white rounded-3xl p-10 shadow-2xl border border-gray-100">
-                {/* Profile Tab */}
-                {activeTab === 'profile' && (
-                  <div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-8">Profile Information</h2>
-                    <div className="flex flex-col gap-6">
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-3">Full Name</label>
-                        <input
-                          type="text"
-                          value={profileData.name}
-                          onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                          className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-3">Email Address</label>
-                        <input
-                          type="email"
-                          value={profileData.email}
-                          onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                          className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-3">Company</label>
-                        <input
-                          type="text"
-                          value={profileData.company}
-                          onChange={(e) => setProfileData({ ...profileData, company: e.target.value })}
-                          className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-3">Timezone</label>
-                        <select
-                          value={profileData.timezone}
-                          onChange={(e) => setProfileData({ ...profileData, timezone: e.target.value })}
-                          className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all bg-white"
-                        >
-                          <option value="UTC-5">Eastern Time (UTC-5)</option>
-                          <option value="UTC-6">Central Time (UTC-6)</option>
-                          <option value="UTC-7">Mountain Time (UTC-7)</option>
-                          <option value="UTC-8">Pacific Time (UTC-8)</option>
-                          <option value="UTC+0">UTC</option>
-                        </select>
-                      </div>
-                      <button
-                        onClick={handleSave}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg border-none cursor-pointer hover:shadow-xl hover:scale-105 transition-all mt-4"
-                      >
-                        Save Changes
-                      </button>
+            {/* Security Card */}
+            <div style={{ background: 'white', borderRadius: '24px', padding: windowWidth < 768 ? '1.5rem' : '2.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', border: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '2px solid #f3f4f6' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>
+                  🛡️
+                </div>
+                <div>
+                  <h2 style={{ fontSize: windowWidth < 768 ? '1.5rem' : '1.875rem', fontWeight: '700', color: '#111827', marginBottom: '0.25rem', margin: 0 }}>Security</h2>
+                  <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Password & 2FA</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {/* Password */}
+                <div style={{ padding: '1.5rem', background: '#f9fafb', borderRadius: '16px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                      🔑
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#111827', marginBottom: '0.25rem', margin: 0 }}>Password</h3>
+                      <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Last changed 3 months ago</p>
                     </div>
                   </div>
-                )}
+                  <button style={{ width: '100%', padding: '0.75rem 1.5rem', background: 'white', color: '#4f46e5', border: '2px solid #4f46e5', borderRadius: '10px', fontWeight: '600', fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = '#4f46e5'; e.currentTarget.style.color = 'white'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#4f46e5'; }}
+                  >
+                    Update Password
+                  </button>
+                </div>
 
-                {/* Notifications Tab */}
-                {activeTab === 'notifications' && (
-                  <div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-8">Notification Preferences</h2>
-                    <div className="flex flex-col gap-4">
-                      {[
-                        { key: 'emailNotifications', label: 'Email Notifications', desc: 'Receive notifications via email' },
-                        { key: 'contentGenerated', label: 'Content Generated', desc: 'Get notified when content is ready' },
-                        { key: 'weeklyReport', label: 'Weekly Report', desc: 'Receive weekly usage summary' },
-                        { key: 'productUpdates', label: 'Product Updates', desc: 'Stay informed about new features' },
-                        { key: 'billingAlerts', label: 'Billing Alerts', desc: 'Important billing notifications' }
-                      ].map((item) => (
-                        <div key={item.key} className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl border-2 border-gray-100 hover:border-indigo-200 transition-all">
-                          <div className="flex-1">
-                            <p className="font-bold text-gray-900 text-lg">{item.label}</p>
-                            <p className="text-sm text-gray-600 mt-1">{item.desc}</p>
-                          </div>
-                          <button
-                            onClick={() => setNotificationSettings({
-                              ...notificationSettings,
-                              [item.key]: !notificationSettings[item.key as keyof typeof notificationSettings]
-                            })}
-                            className={`relative inline-flex h-8 w-16 items-center rounded-full border-none cursor-pointer transition-all ${
-                              notificationSettings[item.key as keyof typeof notificationSettings]
-                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
-                                : 'bg-gray-300'
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-6 w-6 rounded-full bg-white shadow-lg transition-transform ${
-                                notificationSettings[item.key as keyof typeof notificationSettings]
-                                  ? 'translate-x-9'
-                                  : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        onClick={handleSave}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg border-none cursor-pointer hover:shadow-xl hover:scale-105 transition-all mt-4"
-                      >
-                        Save Preferences
-                      </button>
+                {/* 2FA */}
+                <div style={{ padding: '1.5rem', background: '#f9fafb', borderRadius: '16px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                      🔐
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#111827', marginBottom: '0.25rem', margin: 0 }}>Two-Factor Authentication</h3>
+                      <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Add extra security layer</p>
                     </div>
                   </div>
-                )}
+                  <button style={{ width: '100%', padding: '0.75rem 1.5rem', background: 'white', color: '#10b981', border: '2px solid #10b981', borderRadius: '10px', fontWeight: '600', fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = 'white'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#10b981'; }}
+                  >
+                    Enable 2FA
+                  </button>
+                </div>
 
-                {/* Security Tab */}
-                {activeTab === 'security' && (
-                  <div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-8">Security Settings</h2>
-                    <div className="flex flex-col gap-6">
-                      <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-indigo-100">
-                        <div className="flex items-start gap-4 mb-4">
-                          <div className="text-4xl">🔑</div>
-                          <div className="flex-1">
-                            <h3 className="font-bold text-gray-900 mb-2 text-xl">Change Password</h3>
-                            <p className="text-sm text-gray-600 mb-4">Update your password to keep your account secure</p>
-                            <button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold border-none cursor-pointer hover:shadow-lg transition-all">
-                              Change Password
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-8 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border-2 border-green-100">
-                        <div className="flex items-start gap-4 mb-4">
-                          <div className="text-4xl">🛡️</div>
-                          <div className="flex-1">
-                            <h3 className="font-bold text-gray-900 mb-2 text-xl">Two-Factor Authentication</h3>
-                            <p className="text-sm text-gray-600 mb-4">Add an extra layer of security to your account</p>
-                            <button className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold border-none cursor-pointer hover:shadow-lg transition-all">
-                              Enable 2FA
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-8 bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl border-2 border-red-200">
-                        <div className="flex items-start gap-4 mb-4">
-                          <div className="text-4xl">⚠️</div>
-                          <div className="flex-1">
-                            <h3 className="font-bold text-red-700 mb-2 text-xl">Danger Zone</h3>
-                            <p className="text-sm text-red-600 mb-4">Permanently delete your account and all data. This action cannot be undone.</p>
-                            <button className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold border-none cursor-pointer hover:shadow-lg transition-all">
-                              Delete Account
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                {/* Danger Zone */}
+                <div style={{ padding: '1.5rem', background: '#fef2f2', borderRadius: '16px', border: '2px solid #fecaca' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                      ⚠️
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#dc2626', marginBottom: '0.25rem', margin: 0 }}>Danger Zone</h3>
+                      <p style={{ fontSize: '0.875rem', color: '#991b1b', margin: 0 }}>Permanently delete your account</p>
                     </div>
                   </div>
-                )}
+                  <button style={{ width: '100%', padding: '0.75rem 1.5rem', background: 'white', color: '#dc2626', border: '2px solid #dc2626', borderRadius: '10px', fontWeight: '600', fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = 'white'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#dc2626'; }}
+                  >
+                    Delete Account
+                  </button>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

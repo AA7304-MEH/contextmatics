@@ -6,28 +6,14 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   base: '/',
-  css: {
-    postcss: './postcss.config.js',
-  },
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: false,
-  },
   server: {
     port: 3000,
+    strictPort: false,
     host: true,
-    open: true,
-  },
-  define: {
-    global: 'globalThis',
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom'],
   },
   resolve: {
     alias: {
-      '@': path.resolve('./src'),
+      '@': path.resolve(__dirname, './src'),
     },
   },
 })

@@ -1,3 +1,5 @@
+import type { RazorpayOptions, RazorpayPaymentSuccessResponse } from '../types'
+
 declare global {
   interface Window {
     paypal: any
@@ -46,7 +48,7 @@ export class PayPalService {
       }
 
       // Initialize PayPal Buttons
-      window.paypal.Buttons({
+      await window.paypal.Buttons({
         createOrder: (_data: any, actions: any) => {
           return actions.order.create({
             purchase_units: [{
@@ -58,7 +60,8 @@ export class PayPalService {
             }],
             application_context: {
               brand_name: 'ContextMatic',
-              shipping_preference: 'NO_SHIPPING'
+              shipping_preference: 'NO_SHIPPING',
+              user_action: 'PAY_NOW'
             }
           })
         },
@@ -74,7 +77,16 @@ export class PayPalService {
         },
         onError: (error: any) => {
           console.error('PayPal payment error:', error)
-          alert('Payment failed. Please try again or contact support if the issue persists.')
+
+          // specific check for the "No ack for postMessage onCancel" error
+          const errorMessage = error?.message || JSON.stringify(error) || 'Unknown error'
+
+          if (errorMessage.includes('No ack for postMessage onCancel')) {
+            console.log('Suppressing "No ack" error as it usually indicates window closure/cancellation')
+            return
+          }
+
+          alert(`Payment failed: ${errorMessage}. Please check your configuration.`)
         }
       }).render('#paypal-button-container')
     } catch (error) {
@@ -106,7 +118,7 @@ export class PayPalService {
       status: 'success',
       method: 'paypal'
     }
-    
+
     try {
       localStorage.setItem('lastPayment', JSON.stringify(paymentInfo))
     } catch (e) {
@@ -133,15 +145,19 @@ export class PayPalService {
 
       // Get PayPal Client ID
       const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID
-      
+
       if (!clientId) {
+        console.error('Failed to load PayPal SDK')
         reject(new Error('PayPal Client ID not configured. Please add VITE_PAYPAL_CLIENT_ID to your environment variables.'))
         return
       }
 
       // Load PayPal SDK script
       const script = document.createElement('script')
-      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=${currency}&components=buttons&enable-funding=card,credit&disable-funding=paylater`
+      // Disable Venmo and PayLater. Enable Card for guest checkout.
+      const sdkUrl = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=${currency}&components=buttons&enable-funding=card&disable-funding=paylater,venmo`
+      console.log('Loading PayPal SDK:', sdkUrl)
+      script.src = sdkUrl
       script.async = true
       script.onload = () => {
         console.log('PayPal SDK loaded successfully')

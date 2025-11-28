@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { SignIn, SignUp, useSignUp } from '@clerk/clerk-react';
 import { useAuth } from '@/context/AuthContext';
 import { getEnvironmentInfo } from '@/utils/envCheck';
+import { CountrySelector } from './CountrySelector';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -10,6 +11,8 @@ const Auth: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [useEmailSignup] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState('US');
+  const { updateUserCountry } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -38,9 +41,8 @@ const Auth: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? 'bg-white/95 backdrop-blur-xl shadow-sm' : 'bg-transparent'
-      }`}>
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-xl shadow-sm' : 'bg-transparent'
+        }`}>
         <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex justify-between items-center">
             <button
@@ -52,7 +54,7 @@ const Auth: React.FC = () => {
               </div>
               <span className="text-2xl font-bold text-gray-900">ContextMatics</span>
             </button>
-            
+
             <div className="flex items-center space-x-10">
               <button
                 onClick={() => navigate('/pricing')}
@@ -84,11 +86,43 @@ const Auth: React.FC = () => {
             </p>
           </div>
 
+          {/* Country Selection */}
+          <div className="mb-8">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 text-center">
+              Select Your Region <span className="text-red-500">*</span>
+            </label>
+            <CountrySelector
+              value={selectedCountry}
+              onChange={(code) => {
+                setSelectedCountry(code);
+                updateUserCountry(code);
+              }}
+              className="max-w-xs mx-auto"
+            />
+            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg max-w-md mx-auto">
+              <div className="flex items-start gap-2">
+                <span className="text-amber-600 text-lg flex-shrink-0">⚠️</span>
+                <div>
+                  <p className="text-xs font-semibold text-amber-800 mb-1">Important: Permanent Selection</p>
+                  <p className="text-xs text-amber-700">
+                    Your selected region will determine your pricing and available payment methods. This cannot be changed after account creation.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Auth Card */}
           <div className="bg-white rounded-3xl p-10 shadow-2xl border border-gray-100 relative">
             <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-3xl blur-xl opacity-50"></div>
             <div className="relative">
-              {envInfo.isClerkKeyValid ? (
+              {!selectedCountry ? (
+                <div className="p-8 text-center">
+                  <div className="text-6xl mb-4">🌍</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Select Your Region First</h3>
+                  <p className="text-gray-600">Please select your region above to continue with authentication.</p>
+                </div>
+              ) : envInfo.isClerkKeyValid ? (
                 isLogin ? (
                   <SignIn routing="hash" signUpUrl="#/signup" afterSignInUrl="#/dashboard" />
                 ) : (
@@ -108,7 +142,7 @@ const Auth: React.FC = () => {
                       const mockUser = {
                         id: 'dev_user_' + Date.now(),
                         email: 'dev@contextmatic.example.com',
-                        countryCode: 'IN',
+                        countryCode: selectedCountry,
                         plan: 'free',
                         processingCredits: 10,
                       };
@@ -243,11 +277,10 @@ const EmailSignUp: React.FC<{ onDone: () => void }> = ({ onDone }) => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 rounded-xl text-base font-bold transition-all ${
-              loading
-                ? 'bg-indigo-300 cursor-not-allowed'
-                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-xl hover:scale-105'
-            } text-white`}
+            className={`w-full py-3 rounded-xl text-base font-bold transition-all ${loading
+              ? 'bg-indigo-300 cursor-not-allowed'
+              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-xl hover:scale-105'
+              } text-white`}
           >
             {loading ? 'Please wait...' : 'Continue'}
           </button>
@@ -278,11 +311,10 @@ const EmailSignUp: React.FC<{ onDone: () => void }> = ({ onDone }) => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 rounded-xl text-base font-bold transition-all ${
-              loading
-                ? 'bg-indigo-300 cursor-not-allowed'
-                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-xl hover:scale-105'
-            } text-white`}
+            className={`w-full py-3 rounded-xl text-base font-bold transition-all ${loading
+              ? 'bg-indigo-300 cursor-not-allowed'
+              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-xl hover:scale-105'
+              } text-white`}
           >
             {loading ? 'Verifying…' : 'Verify & Continue'}
           </button>

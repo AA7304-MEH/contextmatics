@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { getEnvironmentInfo } from '@/utils/envCheck';
+
 import type { User, PlanId, SubscriptionInfo } from '../types';
 import { subscriptionService } from '../services/subscriptionService';
 
@@ -16,6 +16,7 @@ interface AuthContextType {
     renewSubscription: () => void;
     cancelSubscription: (cancelAtPeriodEnd?: boolean) => void;
     checkSubscriptionStatus: () => void;
+    updateUserCountry: (countryCode: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,28 +30,32 @@ const AuthProviderWithClerk: React.FC<{ children: React.ReactNode }> = ({ childr
     // Helper function to detect user location
     const detectUserLocation = async (): Promise<string> => {
         try {
+            // First check for manually selected country
+            const storedCountry = localStorage.getItem('user_country_preference')
+            if (storedCountry) return storedCountry
+
             // First try to get location from browser timezone and language
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
             const lang = navigator.language || ''
-            
+
             if (tz === 'Asia/Kolkata' || lang.toLowerCase().includes('-in')) {
                 return 'IN'
             }
-            
+
             // If timezone detection fails, try to detect from IP (you can integrate a geolocation service here)
             // For now, we'll use a simple heuristic based on timezone
-            
+
             // Common Indian timezones
             const indianTimezones = [
                 'Asia/Kolkata',
                 'Asia/Calcutta',
                 'Asia/Kolkata'
             ]
-            
+
             if (indianTimezones.includes(tz)) {
                 return 'IN'
             }
-            
+
             // Check for other common countries (you can expand this)
             if (tz.startsWith('Europe/')) return 'EU'
             if (tz.startsWith('Asia/')) {
@@ -58,7 +63,7 @@ const AuthProviderWithClerk: React.FC<{ children: React.ReactNode }> = ({ childr
                 if (tz.includes('Shanghai') || tz.includes('Hong_Kong')) return 'CN'
                 return 'AS' // Other Asian countries default to Asia
             }
-            
+
             return 'US' // Default fallback
         } catch (error) {
             console.warn('Location detection failed, defaulting to US:', error)
@@ -68,25 +73,11 @@ const AuthProviderWithClerk: React.FC<{ children: React.ReactNode }> = ({ childr
 
     useEffect(() => {
         if (isLoaded) {
-            // Check for development mode mock user first
-            const mockUserStr = localStorage.getItem('devMockUser');
-            if (mockUserStr) {
-                try {
-                    const mockUser = JSON.parse(mockUserStr);
-                    setUser(mockUser);
-                    setLoading(false);
-                    return;
-                } catch (e) {
-                    console.error('Failed to parse mock user:', e);
-                    localStorage.removeItem('devMockUser');
-                }
-            }
-
             if (clerkUser) {
                 // Detect user location and create mapped user
                 const createUser = async () => {
                     const detectedCountryCode = await detectUserLocation()
-                    
+
                     const mappedUser: User = {
                         id: clerkUser.id,
                         email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || '',
@@ -96,7 +87,7 @@ const AuthProviderWithClerk: React.FC<{ children: React.ReactNode }> = ({ childr
                     };
                     setUser(mappedUser);
                 }
-                
+
                 createUser()
             } else {
                 setUser(null);
@@ -114,12 +105,6 @@ const AuthProviderWithClerk: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     const logout = async () => {
-        // Clear mock user if in development mode
-        if (localStorage.getItem('devMockUser')) {
-            localStorage.removeItem('devMockUser');
-            window.location.reload();
-            return;
-        }
         await signOut();
     };
 
@@ -176,89 +161,14 @@ const AuthProviderWithClerk: React.FC<{ children: React.ReactNode }> = ({ childr
         }
     };
 
-    return (
-        <AuthContext.Provider value={{
-            user,
-            isAuthenticated: !!user,
-            loading,
-            login,
-            signup,
-            logout,
-            upgradePlan,
-            decrementCredits,
-            renewSubscription,
-            cancelSubscription,
-            checkSubscriptionStatus: checkSubscriptionStatusHandler
-        }}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
+    const updateUserCountry = (countryCode: string) => {
+        // Always save preference to localStorage so it persists through sign-up/login
+        localStorage.setItem('user_country_preference', countryCode);
 
-const AuthProviderNoClerk: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [loading] = useState(false);
-
-    // Check for development mode mock user
-    useEffect(() => {
-        const mockUserStr = localStorage.getItem('devMockUser');
-        if (mockUserStr) {
-            try {
-                const mockUser = JSON.parse(mockUserStr);
-                setUser(mockUser);
-            } catch (e) {
-                console.error('Failed to parse mock user:', e);
-                localStorage.removeItem('devMockUser');
-            }
-        }
-    }, []);
-
-    const login = async (_email: string, _password: string) => { 
-        // In development mode, you could implement mock authentication here
-        console.log('Development mode: Authentication is disabled. Use mock user.');
-    };
-    
-    const signup = async (_email: string, _countryCode: string, _visitorId: string, _userData?: any) => {
-        console.log('Development mode: Signup is disabled. Use mock user.');
-    };
-    
-    const logout = () => {
-        localStorage.removeItem('devMockUser');
-        setUser(null);
-        window.location.reload();
-    };
-    
-    const upgradePlan = (_plan: PlanId) => {
         if (user) {
-            let credits = 0;
-            if (_plan === 'pro') credits = 10;
-            else if (_plan === 'business') credits = 50;
-            else if (_plan === 'enterprise') credits = 500;
-            const updatedUser = { ...user, plan: _plan, processingCredits: credits };
+            const updatedUser = { ...user, countryCode };
             setUser(updatedUser);
         }
-    };
-    
-    const decrementCredits = () => {
-        if (user && user.processingCredits > 0) {
-            const updatedUser = { ...user, processingCredits: user.processingCredits - 1 };
-            setUser(updatedUser);
-        }
-    };
-    
-    const renewSubscription = () => {
-        // Development mode - no subscription service
-        console.log('Development mode: Subscription renewal not implemented');
-    };
-    
-    const cancelSubscription = (_cancelAtPeriodEnd: boolean = true) => {
-        // Development mode - no subscription service
-        console.log('Development mode: Subscription cancellation not implemented');
-    };
-    
-    const checkSubscriptionStatusHandler = () => {
-        // Development mode - no subscription service
-        console.log('Development mode: Subscription status check not implemented');
     };
 
     return (
@@ -273,7 +183,8 @@ const AuthProviderNoClerk: React.FC<{ children: React.ReactNode }> = ({ children
             decrementCredits,
             renewSubscription,
             cancelSubscription,
-            checkSubscriptionStatus: checkSubscriptionStatusHandler
+            checkSubscriptionStatus: checkSubscriptionStatusHandler,
+            updateUserCountry
         }}>
             {children}
         </AuthContext.Provider>
@@ -281,10 +192,6 @@ const AuthProviderNoClerk: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { isClerkKeyValid } = getEnvironmentInfo();
-    if (!isClerkKeyValid) {
-        return <AuthProviderNoClerk>{children}</AuthProviderNoClerk>;
-    }
     return <AuthProviderWithClerk>{children}</AuthProviderWithClerk>;
 };
 

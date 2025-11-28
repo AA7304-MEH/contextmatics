@@ -117,7 +117,7 @@ export class RazorpayService {
       timestamp: Date.now(),
       status: 'success'
     }
-    
+
     try {
       localStorage.setItem('lastPayment', JSON.stringify(paymentInfo))
     } catch (e) {
@@ -134,16 +134,14 @@ export class RazorpayService {
   /**
    * Create subscription order
    */
-  async createSubscriptionOrder(planId: string, amount: number): Promise<string> {
+  async createSubscriptionOrder(planId: string, amount: number): Promise<string | undefined> {
     // In a real application, this would call your backend API
     // to create an order and return the order ID
 
-    // For now, we'll simulate order creation
-    const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
-
-    console.log(`Created order ${orderId} for plan ${planId} with amount ${amount}`)
-
-    return orderId
+    // For client-side only demo, we don't create an order ID
+    // Razorpay will treat this as a direct payment
+    console.log(`Skipping order creation for plan ${planId} with amount ${amount} (Client-side mode)`)
+    return undefined
   }
 
   /**

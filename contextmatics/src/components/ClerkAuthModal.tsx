@@ -1,6 +1,9 @@
 import React from 'react';
 import { SignIn, SignUp } from '@clerk/clerk-react';
 import { getEnvironmentInfo } from '@/utils/envCheck';
+import { CountrySelector } from './CountrySelector';
+import { useAuth } from '@/context/AuthContext';
+import { useState } from 'react';
 
 interface ClerkAuthModalProps {
   isOpen: boolean;
@@ -9,35 +12,38 @@ interface ClerkAuthModalProps {
   onToggleMode: () => void;
 }
 
-export const ClerkAuthModal: React.FC<ClerkAuthModalProps> = ({ 
-  isOpen, 
-  onClose, 
+export const ClerkAuthModal: React.FC<ClerkAuthModalProps> = ({
+  isOpen,
+  onClose,
   isLogin,
-  onToggleMode 
+  onToggleMode
 }) => {
+  const [selectedCountry, setSelectedCountry] = useState('US');
+  const { updateUserCountry } = useAuth();
+
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       onClick={onClose}
-      style={{ 
-        position: 'fixed', 
-        inset: 0, 
-        backgroundColor: 'rgba(0,0,0,0.5)', 
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
         backdropFilter: 'blur(4px)',
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         zIndex: 100,
         padding: '1rem'
       }}
     >
-      <div 
+      <div
         onClick={(e) => e.stopPropagation()}
-        style={{ 
-          backgroundColor: 'white', 
-          borderRadius: '16px', 
-          maxWidth: '480px', 
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          maxWidth: '480px',
           width: '100%',
           maxHeight: '90vh',
           overflowY: 'auto',
@@ -71,7 +77,39 @@ export const ClerkAuthModal: React.FC<ClerkAuthModalProps> = ({
         </button>
 
         <div style={{ marginTop: '1rem' }}>
-          {getEnvironmentInfo().isClerkKeyValid ? (
+          {/* Country Selection */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem', textAlign: 'center' }}>
+              Select Your Region <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <CountrySelector
+              value={selectedCountry}
+              onChange={(code) => {
+                setSelectedCountry(code);
+                updateUserCountry(code);
+              }}
+              className="max-w-xs mx-auto"
+            />
+            <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
+                <div>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#92400e', marginBottom: '0.25rem' }}>Important: Permanent Selection</p>
+                  <p style={{ fontSize: '0.75rem', color: '#b45309', margin: 0 }}>
+                    Your selected region will determine your pricing and available payment methods. This cannot be changed after account creation.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {!selectedCountry ? (
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌍</div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>Select Your Region First</h3>
+              <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Please select your region above to continue with authentication.</p>
+            </div>
+          ) : getEnvironmentInfo().isClerkKeyValid ? (
             isLogin ? (
               <SignIn routing="hash" signUpUrl="#/signup" afterSignInUrl="/#/dashboard" />
             ) : (

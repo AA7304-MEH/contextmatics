@@ -24,7 +24,7 @@ export const ClerkWrapper: React.FC<ClerkWrapperProps> = ({ children }) => {
 // Hook to get Clerk user data
 export const useClerkUser = () => {
   const { user, isLoaded, isSignedIn } = useUser();
-  
+
   return {
     user: user ? {
       id: user.id,
@@ -44,6 +44,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     const { isAuthenticated } = useAuth();
     return isAuthenticated ? <>{children}</> : <>{/* fallback */}<a href="#/auth">Login</a></>;
   }
+
   return (
     <>
       <SignedIn>{children}</SignedIn>
