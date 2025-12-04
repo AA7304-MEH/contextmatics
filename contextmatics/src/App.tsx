@@ -104,6 +104,8 @@ function App() {
                           <VideoEditor />
                         </ProtectedRoute>
                       } />
+                      {/* Catch-all route for hash links like #cta, #features etc. */}
+                      <Route path="*" element={<NewLandingPage />} />
                     </Routes>
                   </Suspense>
                 </div>

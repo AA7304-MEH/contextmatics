@@ -1,10 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const NewLandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const location = useLocation();
+
+  useEffect(() => {
+    // Handle hash-style routing for sections (e.g. /#cta -> /cta path)
+    if (location.pathname !== '/') {
+      const sectionId = location.pathname.replace('/', '');
+      const element = document.getElementById(sectionId);
+      if (element) {
+        // Small delay to ensure DOM is ready and layout is stable
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, [location]);
 
   useEffect(() => {
     // Scroll animations
