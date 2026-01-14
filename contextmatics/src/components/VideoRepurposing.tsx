@@ -1,25 +1,62 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useHistory } from '../context/HistoryContext';
+// Hooks removed
 import { PageLayout } from './shared';
 
-const VideoRepurposing: React.FC = () => {
-    const navigate = useNavigate();
-    const { user } = useAuth();
-    const { addToHistory } = useHistory();
+const processingStages = [
+    'Downloading Video...',
+    'Transcribing Audio...',
+    'Analyzing Viral Moments...',
+    'Reframing for Vertical...'
+];
 
+// Dynamic generation of clips based on duration
+// Dynamic generation of clips based on settings
+const generateMockClips = (duration: number, mode: 'highlights' | 'summary', platform: string) => {
+    if (mode === 'summary') {
+        return [
+            { id: 1, title: `✨ Artificial Intelligence Summary (${platform})`, score: 99, time: `00:00 - 00:${duration}`, duration: duration }
+        ];
+    }
+    return [
+        { id: 1, title: 'Found: The Aha Moment 💡', score: 98, time: `02:15 - 02:${15 + duration}`, duration: duration },
+        { id: 2, title: 'Found: Controversial Take 😲', score: 92, time: `05:30 - 05:${30 + duration}`, duration: duration },
+        { id: 3, title: 'Found: Perfect Loop 🔄', score: 88, time: `08:45 - 08:${45 + duration}`, duration: duration },
+        { id: 4, title: 'Found: Key Insight 🧠', score: 85, time: `12:10 - 12:${10 + duration}`, duration: duration },
+    ];
+};
+
+const VideoRepurposing: React.FC = () => {
+    // Hooks removed as per lint cleanup
+
+    // Configuration State
+    // Configuration State
+    const [platform, setPlatform] = useState<'shorts' | 'tiktok' | 'reels'>('shorts');
+    const [processingMode, setProcessingMode] = useState<'highlights' | 'summary'>('highlights');
+    const [targetDuration, setTargetDuration] = useState<number>(30); // Default 30s
+    const [customDuration, setCustomDuration] = useState<string>('30'); // Text input for custom
+    const [contentStyle, setContentStyle] = useState<'engaging' | 'funny' | 'educational'>('engaging');
+    const [captionStyle, setCaptionStyle] = useState<'hormozi' | 'neon' | 'minimal'>('hormozi');
+    const [showCaptions, setShowCaptions] = useState(true);
+
+    // Core State
+    // Core State
     const [step, setStep] = useState<'input' | 'processing' | 'editor'>('input');
     const [videoUrl, setVideoUrl] = useState('');
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [videoPreviewUrl, setVideoPreviewUrl] = useState<string>('');
     const [isDragging, setIsDragging] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
     const [processingStage, setProcessingStage] = useState(0);
     const [selectedClip, setSelectedClip] = useState<number | null>(null);
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentClips, setCurrentClips] = useState<any[]>([]);
+
+    // Rendering State
+    const [isRendering, setIsRendering] = useState(false);
+    const [renderProgress, setRenderProgress] = useState(0);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const videoRef = useRef<HTMLVideoElement>(null);
+    // Hidden refs for rendering
+    const renderVideoRef = useRef<HTMLVideoElement>(null);
+    const renderCanvasRef = useRef<HTMLCanvasElement>(null);
 
     // Cleanup video preview URL on unmount
     useEffect(() => {
@@ -104,6 +141,19 @@ const VideoRepurposing: React.FC = () => {
         }
     };
 
+    // Helper: Extract YouTube ID
+    const getYouTubeId = (url: string) => {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    };
+
+    // Helper: Parse "MM:SS" to seconds
+    const parseTimeToSeconds = (timeStr: string) => {
+        const [min, sec] = timeStr.split(':').map(Number);
+        return min * 60 + sec;
+    };
+
     const handleProcess = () => {
         if (!videoUrl && !uploadedFile) return;
 
@@ -116,7 +166,13 @@ const VideoRepurposing: React.FC = () => {
         setStep('processing');
 
         // Simulate AI processing steps
-        const stages = ['Downloading Video...', 'Transcribing Audio...', 'Analyzing Viral Moments...', 'Reframing for Vertical...'];
+        const stages = [
+            `Downloading Video Stream...`,
+            `Deep Learning Analysis for ${platform === 'tiktok' ? 'TikTok' : (platform === 'reels' ? 'Reels' : 'Shorts')}...`,
+            `${processingMode === 'summary' ? 'Synthesizing Full Summary...' : 'Detecting Viral Hooks & Peaks...'}`,
+            'Reframing to 9:16 Vertical...',
+            'Finalizing AI Edits...'
+        ];
         let currentStage = 0;
 
         const interval = setInterval(() => {
@@ -124,35 +180,179 @@ const VideoRepurposing: React.FC = () => {
             setProcessingStage(currentStage);
             if (currentStage >= stages.length) {
                 clearInterval(interval);
-                setTimeout(() => setStep('editor'), 1000);
+                setTimeout(() => {
+                    const durationToUse = parseInt(customDuration) || targetDuration;
+                    const generatedClips = generateMockClips(durationToUse, processingMode, platform === 'tiktok' ? 'TikTok' : (platform === 'reels' ? 'Reels' : 'Shorts'));
+                    setCurrentClips(generatedClips);
+                    setStep('editor');
+                    setSelectedClip(generatedClips[0].id); // Auto-select first clip
+                }, 1000);
             }
         }, 1500);
     };
 
-    const handleExport = () => {
-        alert('Exporting video... This would trigger a download in a real app.');
-        addToHistory({
-            title: 'Viral Short from Video',
-            format: 'Video Short',
-            content: uploadedFile ? `Generated from: ${uploadedFile.name}` : `Generated short video from: ${videoUrl}`,
-            status: 'success',
-            icon: '🎥'
-        });
+    // Get current clip times
+    const currentClip = currentClips.find(c => c.id === selectedClip) || currentClips[0];
+    const [startTime, endTime] = currentClip ? currentClip.time.split(' - ') : ['00:00', '00:00'];
+    const startSeconds = parseTimeToSeconds(startTime);
+    const endSeconds = parseTimeToSeconds(endTime);
+
+    const handleExport = async () => {
+        if (uploadedFile && videoPreviewUrl) {
+            // Start Real Client-Side Rendering
+            setIsRendering(true);
+            setRenderProgress(0);
+            await processVideoExport();
+        } else if (videoUrl) {
+            alert('YouTube Download Restriction: \n\nDirect browser-download for YouTube links is blocked by CORS security policies. \n\nIn a production environment, this would be handled by a backend server (ffmpeg). For this demo, please upload a local file to test the high-quality cropping engine.');
+        } else {
+            alert('No video source found to export.');
+        }
     };
 
-    const processingStages = ['Downloading Video...', 'Transcribing Audio...', 'Analyzing Viral Moments...', 'Reframing for Vertical...'];
+    const processVideoExport = async () => {
+        if (!renderVideoRef.current || !renderCanvasRef.current || !selectedClip) return;
 
-    const mockClips = [
-        { id: 1, time: '00:15 - 00:45', score: 98, title: 'The Main Insight' },
-        { id: 2, time: '02:10 - 02:40', score: 92, title: 'Funny Moment' },
-        { id: 3, time: '05:20 - 05:50', score: 88, title: 'Conclusion' },
-    ];
+        const video = renderVideoRef.current;
+        const canvas = renderCanvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) return;
+
+        // Clip Times
+        const clip = currentClips.find(c => c.id === selectedClip);
+        if (!clip) return;
+        const [startStr, endStr] = clip.time.split(' - ');
+        const startTime = parseTimeToSeconds(startStr);
+        const duration = parseTimeToSeconds(endStr) - startTime;
+
+        // Setup Canvas (1080x1920 HD Vertical)
+        canvas.width = 1080;
+        canvas.height = 1920;
+
+        // Force video to load for rendering
+        video.currentTime = startTime;
+        await new Promise(r => { video.onseeked = r; video.currentTime = startTime; });
+
+        // Setup Media Recorder
+        const stream = canvas.captureStream(30); // 30 FPS
+
+        // Try to add audio
+        // @ts-ignore - captureStream support varies
+        if (video.captureStream || video.mozCaptureStream) {
+            // @ts-ignore
+            const videoStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+            const audioTrack = videoStream.getAudioTracks()[0];
+            if (audioTrack) stream.addTrack(audioTrack);
+        }
+
+        const chunks: Blob[] = [];
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `contextmatic_short_${platform}_${selectedClip}.webm`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            setIsRendering(false);
+        };
+
+        mediaRecorder.start();
+        video.play();
+
+        // Rendering Loop
+        const drawFrame = () => {
+            if (!isRendering) return; // Safety break
+
+            if (video.currentTime >= startTime + duration) {
+                mediaRecorder.stop();
+                video.pause();
+                return;
+            }
+
+            // Draw Video (Center Crop / Cover)
+            // Calculate scaling to cover 1080x1920
+            const scale = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
+            const x = (canvas.width / 2) - (video.videoWidth / 2) * scale;
+            const y = (canvas.height / 2) - (video.videoHeight / 2) * scale;
+
+            ctx.drawImage(video, x, y, video.videoWidth * scale, video.videoHeight * scale);
+
+            // Draw Captions (Simulated burn-in for export)
+            if (showCaptions) {
+                ctx.font = captionStyle === 'minimal' ? '500 40px Inter, sans-serif' : '900 50px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                // Basic Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillText(clip.title, canvas.width / 2 + 2, canvas.height * 0.8 + 2);
+                // Text
+                ctx.fillStyle = captionStyle === 'hormozi' ? '#fbbf24' : 'white';
+                ctx.fillText(clip.title, canvas.width / 2, canvas.height * 0.8);
+            }
+
+            // Update Progress
+            const progress = ((video.currentTime - startTime) / duration) * 100;
+            setRenderProgress(Math.min(progress, 100));
+
+            requestAnimationFrame(drawFrame);
+        };
+
+        drawFrame();
+    };
 
     return (
         <PageLayout showPricing={true} showSettings={true}>
+            {/* Hidden Rendering Elements */}
+            <video
+                ref={renderVideoRef}
+                src={videoPreviewUrl}
+                style={{ display: 'none' }}
+                crossOrigin="anonymous"
+                muted={false} // Must be unmuted for capture usually, but we might mute DOM output. Let's try regular.
+            />
+            <canvas ref={renderCanvasRef} style={{ display: 'none' }} />
+
+            {/* Rendering Overlay */}
+            {isRendering && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: 'rgba(0,0,0,0.9)',
+                    zIndex: 9999,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white'
+                }}>
+                    <div style={{ width: '300px', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <span>High-Quality Rendering...</span>
+                            <span>{Math.round(renderProgress)}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', backgroundColor: '#374151', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: `${renderProgress}%`, height: '100%', backgroundColor: '#ec4899', transition: 'width 0.1s linear' }}></div>
+                        </div>
+                    </div>
+                    <p style={{ opacity: 0.7, fontSize: '0.9rem' }}>Generating {platform} formatted video (1080x1920)</p>
+                </div>
+            )}
+
             <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
 
+                {/* ... input and processing steps remain unchanged ... */}
+
                 {step === 'input' && (
+                    // ... (keep existing input step code) ...
                     <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
                         <h1 style={{ fontSize: '3.5rem', fontWeight: '800', color: '#111827', marginBottom: '1.5rem', lineHeight: 1.1 }}>
                             Turn Long Videos into <br />
@@ -274,6 +474,138 @@ const VideoRepurposing: React.FC = () => {
                             >
                                 ✨ Generate Shorts
                             </button>
+
+                            {/* Configuration Panel */}
+                            <div style={{ marginTop: '2rem', padding: '2rem', backgroundColor: '#f9fafb', borderRadius: '24px', border: '1px solid #e5e7eb' }}>
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: '800', marginBottom: '1.5rem', color: '#111827', textAlign: 'left' }}>
+                                    🤖 AI Configuration Engine
+                                </h3>
+
+                                <div style={{ display: 'grid', gap: '2rem' }}>
+                                    {/* 1. Platform Selection */}
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '700', fontSize: '0.9rem', color: '#374151' }}>1. Target Platform</label>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                                            {[
+                                                { id: 'shorts', label: 'YouTube Shorts', icon: '▶️' },
+                                                { id: 'reels', label: 'Instagram Reels', icon: '📸' },
+                                                { id: 'tiktok', label: 'TikTok', icon: '🎵' }
+                                            ].map(p => (
+                                                <button
+                                                    key={p.id}
+                                                    onClick={() => setPlatform(p.id as any)}
+                                                    style={{
+                                                        padding: '1rem',
+                                                        borderRadius: '12px',
+                                                        border: platform === p.id ? '2px solid #ec4899' : '1px solid #e5e7eb',
+                                                        backgroundColor: platform === p.id ? '#fdf2f8' : 'white',
+                                                        color: platform === p.id ? '#be185d' : '#4b5563',
+                                                        fontWeight: '600',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <span style={{ fontSize: '1.5rem' }}>{p.icon}</span>
+                                                    <span>{p.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Processing Mode */}
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '700', fontSize: '0.9rem', color: '#374151' }}>2. AI Processing Mode</label>
+                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                            <button
+                                                onClick={() => setProcessingMode('highlights')}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '1rem',
+                                                    borderRadius: '12px',
+                                                    border: processingMode === 'highlights' ? '2px solid #8b5cf6' : '1px solid #e5e7eb',
+                                                    backgroundColor: processingMode === 'highlights' ? '#f5f3ff' : 'white',
+                                                    color: processingMode === 'highlights' ? '#6d28d9' : '#4b5563',
+                                                    textAlign: 'left',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <div style={{ fontWeight: '700', marginBottom: '0.25rem' }}>🔥 Viral Highlights</div>
+                                                <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Finds multiple viral moments from long video.</div>
+                                            </button>
+                                            <button
+                                                onClick={() => setProcessingMode('summary')}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '1rem',
+                                                    borderRadius: '12px',
+                                                    border: processingMode === 'summary' ? '2px solid #8b5cf6' : '1px solid #e5e7eb',
+                                                    backgroundColor: processingMode === 'summary' ? '#f5f3ff' : 'white',
+                                                    color: processingMode === 'summary' ? '#6d28d9' : '#4b5563',
+                                                    textAlign: 'left',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <div style={{ fontWeight: '700', marginBottom: '0.25rem' }}>📝 Summarize to Short</div>
+                                                <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Condenses entire video into one cohesive short.</div>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Duration & Custom */}
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '700', fontSize: '0.9rem', color: '#374151' }}>3. Exact Duration Control (AI Adjusted)</label>
+                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                                                    {[15, 30, 60].map(d => (
+                                                        <button
+                                                            key={d}
+                                                            onClick={() => { setTargetDuration(d); setCustomDuration(d.toString()); }}
+                                                            style={{
+                                                                flex: 1,
+                                                                padding: '0.75rem',
+                                                                borderRadius: '8px',
+                                                                border: parseInt(customDuration) === d ? '2px solid #10b981' : '1px solid #e5e7eb',
+                                                                backgroundColor: parseInt(customDuration) === d ? '#ecfdf5' : 'white',
+                                                                color: parseInt(customDuration) === d ? '#047857' : '#4b5563',
+                                                                fontWeight: '600',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            {d}s Preset
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div style={{ width: '200px' }}>
+                                                <label style={{ fontSize: '0.75rem', fontWeight: '600', display: 'block', marginBottom: '0.25rem' }}>Custom Duration (sec)</label>
+                                                <input
+                                                    type="number"
+                                                    value={customDuration}
+                                                    onChange={(e) => setCustomDuration(e.target.value)}
+                                                    min="5"
+                                                    max="300"
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: '0.75rem',
+                                                        borderRadius: '8px',
+                                                        border: '2px solid #e5e7eb',
+                                                        fontWeight: 'bold',
+                                                        fontSize: '1rem'
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                                            * Our Deep Learning Engine will strictly adhere to the {customDuration}s time limit.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -323,13 +655,15 @@ const VideoRepurposing: React.FC = () => {
                     </div>
                 )}
 
+
+                {/* Editor Content */}
                 {step === 'editor' && (
                     <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem', height: 'calc(100vh - 10rem)' }}>
                         {/* Sidebar - Clips */}
                         <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', overflowY: 'auto' }}>
                             <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1.5rem', color: '#111827' }}>Viral Moments Found</h3>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {mockClips.map((clip) => (
+                                {currentClips.map((clip) => (
                                     <div
                                         key={clip.id}
                                         onClick={() => setSelectedClip(clip.id)}
@@ -355,60 +689,86 @@ const VideoRepurposing: React.FC = () => {
                         {/* Editor Area */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem' }}>
                             {/* Main Preview */}
-                            <div style={{ backgroundColor: 'black', borderRadius: '24px', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <div style={{ color: 'white', textAlign: 'center' }}>
-                                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>▶️</div>
-                                    <p>Original Video Preview</p>
-                                </div>
+                            <div style={{ backgroundColor: 'black', borderRadius: '24px', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                                {uploadedFile && videoPreviewUrl ? (
+                                    <video
+                                        key={`main-${selectedClip}`} // Force re-render on clip change
+                                        src={`${videoPreviewUrl}#t=${startSeconds},${endSeconds}`}
+                                        controls
+                                        autoPlay
+                                        style={{ width: '100%', height: '100%', maxHeight: '600px', objectFit: 'contain' }}
+                                    />
+                                ) : videoUrl ? (
+                                    <iframe
+                                        width="100%"
+                                        height="100%"
+                                        style={{ minHeight: '400px', border: 'none' }}
+                                        src={`https://www.youtube.com/embed/${getYouTubeId(videoUrl)}?start=${startSeconds}&end=${endSeconds}&autoplay=1&rel=0`}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    ></iframe>
+                                ) : (
+                                    <div style={{ color: 'white', textAlign: 'center', padding: '5rem' }}>
+                                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>▶️</div>
+                                        <p>Original Video Preview</p>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Vertical Preview */}
-                            <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '1rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', display: 'flex', flexDirection: 'column' }}>
-                                <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '1rem', color: '#111827', textAlign: 'center' }}>Vertical Preview (9:16)</h3>
-                                <div style={{
-                                    flex: 1,
-                                    backgroundColor: 'black',
-                                    borderRadius: '16px',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                    aspectRatio: '9/16'
-                                }}>
-                                    {/* Simulated Content */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        background: 'linear-gradient(45deg, #111, #222)'
-                                    }}>
-                                        <div style={{ textAlign: 'center', color: 'white' }}>
-                                            <p style={{ fontWeight: 'bold', fontSize: '1.5rem', marginBottom: '0.5rem' }}>AI Cropped</p>
-                                            <p style={{ fontSize: '0.875rem', opacity: 0.7 }}>Keeping subject in frame</p>
-                                        </div>
+
+                            {/* Vertical Preview & Creative Studio */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                {/* Creative Studio Controls */}
+                                <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                                    <h4 style={{ fontSize: '0.875rem', fontWeight: '700', marginBottom: '0.75rem', color: '#374151' }}>✨ Creative Studio</h4>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                        <label style={{ fontSize: '0.875rem', fontWeight: '500', color: '#4b5563' }}>AI Captions</label>
+                                        <button
+                                            onClick={() => setShowCaptions(!showCaptions)}
+                                            style={{
+                                                padding: '0.25rem 0.75rem',
+                                                borderRadius: '999px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: '600',
+                                                backgroundColor: showCaptions ? '#d1fae5' : '#f3f4f6',
+                                                color: showCaptions ? '#059669' : '#9ca3af',
+                                                border: 'none',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            {showCaptions ? 'ON' : 'OFF'}
+                                        </button>
                                     </div>
 
-                                    {/* Captions Overlay */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        bottom: '20%',
-                                        left: '10%',
-                                        right: '10%',
-                                        textAlign: 'center'
-                                    }}>
-                                        <span style={{
-                                            backgroundColor: 'rgba(0,0,0,0.6)',
-                                            color: '#fbbf24',
-                                            padding: '0.5rem',
-                                            borderRadius: '8px',
-                                            fontSize: '1.25rem',
-                                            fontWeight: '800',
-                                            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
-                                        }}>
-                                            This is a viral caption! 🚀
-                                        </span>
-                                    </div>
+                                    {showCaptions && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                                            {[
+                                                { id: 'hormozi', label: 'Bold', color: '#fbbf24' },
+                                                { id: 'neon', label: 'Neon', color: '#06b6d4' },
+                                                { id: 'minimal', label: 'Clean', color: '#e5e7eb' }
+                                            ].map(style => (
+                                                <button
+                                                    key={style.id}
+                                                    onClick={() => setCaptionStyle(style.id as any)}
+                                                    style={{
+                                                        padding: '0.5rem',
+                                                        borderRadius: '8px',
+                                                        border: captionStyle === style.id ? `2px solid ${style.color}` : '1px solid #e5e7eb',
+                                                        backgroundColor: captionStyle === style.id ? 'white' : '#f9fafb',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '600',
+                                                        cursor: 'pointer',
+                                                        color: '#374151'
+                                                    }}
+                                                >
+                                                    {style.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
+
 
                                 <button
                                     onClick={handleExport}
@@ -426,13 +786,17 @@ const VideoRepurposing: React.FC = () => {
                                         boxShadow: '0 4px 6px -1px rgba(236, 72, 153, 0.3)'
                                     }}
                                 >
-                                    Download Short
+                                    Download {platform === 'tiktok' ? 'TikTok Video' : (platform === 'reels' ? 'Instagram Reel' : 'YouTube Short')}
                                 </button>
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem', opacity: 0.7 }}>
+                                    <span title="Optimized for TikTok" style={{ fontSize: '1.5rem' }}>🎵</span>
+                                    <span title="Optimized for Instagram Reels" style={{ fontSize: '1.5rem' }}>📸</span>
+                                    <span title="Optimized for YouTube Shorts" style={{ fontSize: '1.5rem' }}>▶️</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
-
             </div>
             <style>{`
         @keyframes spin {

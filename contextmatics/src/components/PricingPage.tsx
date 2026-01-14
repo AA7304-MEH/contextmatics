@@ -60,14 +60,30 @@ const PricingPage: React.FC = () => {
   const userCountry = user?.countryCode || 'DEFAULT';
   const plans = countryPlans[userCountry] || countryPlans['DEFAULT'];
 
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
   // Validate payment SDK configuration
   useEffect(() => {
     if (isIndia) {
       const key = import.meta.env.VITE_RAZORPAY_KEY_ID;
-      if (!key || key.includes('dummy')) setConfigError('Razorpay not configured');
+      if (!key) {
+        setConfigError('Razorpay not configured');
+      } else if (key.includes('dummy')) {
+        setIsDemoMode(true);
+        setConfigError(null);
+      } else {
+        setConfigError(null);
+      }
     } else {
       const id = import.meta.env.VITE_PAYPAL_CLIENT_ID;
-      if (!id || id.includes('dummy')) setConfigError('PayPal not configured');
+      if (!id) {
+        setConfigError('PayPal not configured');
+      } else if (id.includes('dummy')) {
+        setIsDemoMode(true);
+        setConfigError(null);
+      } else {
+        setConfigError(null);
+      }
     }
   }, [isIndia]);
 
@@ -112,6 +128,13 @@ const PricingPage: React.FC = () => {
             <div style={{ maxWidth: '600px', margin: '0 auto 2rem', padding: '1rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#b91c1c', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
               <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
               <span style={{ fontWeight: '600' }}>{configError}</span>
+            </div>
+          )}
+
+          {isDemoMode && !configError && (
+            <div style={{ maxWidth: '600px', margin: '0 auto 2rem', padding: '1rem', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+              <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              <span style={{ fontWeight: '600' }}>Demo Mode Active: Payments are simulated</span>
             </div>
           )}
           {/* Billing Toggle */}

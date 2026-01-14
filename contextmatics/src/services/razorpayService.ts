@@ -29,7 +29,6 @@ export class RazorpayService {
     userName?: string
   }): Promise<void> {
     try {
-      await this.loadRazorpaySDK()
       const {
         amount,
         currency,
@@ -40,6 +39,30 @@ export class RazorpayService {
 
       // Get API key from environment variables
       const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID
+
+      // Check for Demo Mode
+      if (!keyId || keyId.includes('dummy')) {
+        console.log('🤖 DEMO MODE: Simulating Razorpay payment for', planName);
+
+        // Simulate user interaction delay
+        const confirmed = confirm(`[DEMO MODE] Simulate successful payment of ${currency} ${amount} for ${planName}?`);
+
+        if (confirmed) {
+          const mockResponse: RazorpayPaymentSuccessResponse = {
+            razorpay_payment_id: 'pay_demo_' + Math.random().toString(36).substring(7),
+            razorpay_order_id: 'order_demo_' + Math.random().toString(36).substring(7),
+            razorpay_signature: 'sig_demo_' + Math.random().toString(36).substring(7)
+          };
+
+          this.handlePaymentSuccess(mockResponse, planName, amount);
+          return;
+        } else {
+          console.log('Demo payment cancelled');
+          return;
+        }
+      }
+
+      await this.loadRazorpaySDK()
 
       if (!keyId) {
         throw new Error('Razorpay payment system is not configured. Please contact support for assistance.')

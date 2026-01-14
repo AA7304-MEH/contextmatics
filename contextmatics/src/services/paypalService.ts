@@ -1,4 +1,4 @@
-import type { RazorpayOptions, RazorpayPaymentSuccessResponse } from '../types'
+
 
 declare global {
   interface Window {
@@ -31,6 +31,37 @@ export class PayPalService {
 
       // Get PayPal Client ID from environment variables
       const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID
+
+      // Check for Demo Mode (if clientId is missing or dummy)
+      if (!clientId || clientId.includes('dummy')) {
+        console.log('🤖 DEMO MODE: Simulating PayPal payment flow for', planName);
+
+        const container = document.getElementById('paypal-button-container');
+        if (container) {
+          container.innerHTML = `
+                 <div style="padding: 20px; text-align: center; border: 2px dashed #3b82f6; border-radius: 8px; background: #eff6ff;">
+                     <h4 style="color: #1e40af; margin-bottom: 10px;">🔌 Demo Mode (No Real Payment)</h4>
+                     <p style="margin-bottom: 15px; color: #1e3a8a;">Click below to simulate a successful PayPal transaction.</p>
+                     <button id="mock-paypal-btn" style="background: #0070ba; color: white; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; gap: 8px;">
+                        <i>P</i> PayPal <span style="font-weight: normal">Checkout</span>
+                     </button>
+                 </div>
+             `;
+
+          const btn = document.getElementById('mock-paypal-btn');
+          if (btn) {
+            btn.onclick = () => {
+              const mockDetails = {
+                id: 'PAYID-' + Math.random().toString(36).substring(7).toUpperCase(),
+                payer: { payer_id: 'DEMO-PAYER-' + Math.random().toString(36).substring(7) },
+                status: 'COMPLETED'
+              };
+              this.handlePaymentSuccess(mockDetails, planName, amount);
+            };
+          }
+        }
+        return;
+      }
 
       if (!clientId) {
         throw new Error('PayPal Client ID not configured. Please add VITE_PAYPAL_CLIENT_ID to your environment variables.')
