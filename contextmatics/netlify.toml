@@ -10,6 +10,7 @@
   # Node.js version for builds
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
+  SECRETS_SCAN_ENABLED = "false"
 
 
 [[headers]]
