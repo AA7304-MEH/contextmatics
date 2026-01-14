@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+// actually the lint said useAuth is declared but not read in ContentCreator.ts, so I should see usage.
+// Wait, this tool call is for ContentCreator.tsx
 import { useHistory } from '../context/HistoryContext';
 import { generateContent } from '../services/geminiService';
 import { REPURPOSE_OPTIONS } from '../constants';

@@ -34,7 +34,6 @@ const VideoRepurposing: React.FC = () => {
     const [processingMode, setProcessingMode] = useState<'highlights' | 'summary'>('highlights');
     const [targetDuration, setTargetDuration] = useState<number>(30); // Default 30s
     const [customDuration, setCustomDuration] = useState<string>('30'); // Text input for custom
-    const [contentStyle, setContentStyle] = useState<'engaging' | 'funny' | 'educational'>('engaging');
     const [captionStyle, setCaptionStyle] = useState<'hormozi' | 'neon' | 'minimal'>('hormozi');
     const [showCaptions, setShowCaptions] = useState(true);
 
@@ -767,6 +766,7 @@ const VideoRepurposing: React.FC = () => {
                                             ))}
                                         </div>
                                     )}
+                                    {/* Content Style Removed as per cleanup */}
                                 </div>
 
 
