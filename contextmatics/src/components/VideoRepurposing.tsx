@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-// Hooks removed
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { PageLayout } from './shared';
 
 const processingStages = [
@@ -26,7 +27,8 @@ const generateMockClips = (duration: number, mode: 'highlights' | 'summary', pla
 };
 
 const VideoRepurposing: React.FC = () => {
-    // Hooks removed as per lint cleanup
+    const navigate = useNavigate();
+    const { user, decrementCredits } = useAuth();
 
     // Configuration State
     // Configuration State
@@ -156,6 +158,13 @@ const VideoRepurposing: React.FC = () => {
     const handleProcess = () => {
         if (!videoUrl && !uploadedFile) return;
 
+        // Credit validation before processing
+        if (!user || user.processingCredits <= 0) {
+            alert('No credits remaining! Please upgrade your plan to continue processing videos.');
+            navigate('/pricing');
+            return;
+        }
+
         // Validate YouTube URL if provided
         if (videoUrl && !validateYouTubeUrl(videoUrl)) {
             alert('Invalid YouTube URL. Please enter a valid YouTube link.');
@@ -185,6 +194,9 @@ const VideoRepurposing: React.FC = () => {
                     setCurrentClips(generatedClips);
                     setStep('editor');
                     setSelectedClip(generatedClips[0].id); // Auto-select first clip
+
+                    // Deduct credit after successful processing
+                    decrementCredits();
                 }, 1000);
             }
         }, 1500);

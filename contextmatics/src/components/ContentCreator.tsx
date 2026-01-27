@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// actually the lint said useAuth is declared but not read in ContentCreator.ts, so I should see usage.
-// Wait, this tool call is for ContentCreator.tsx
+import { useAuth } from '../context/AuthContext';
 import { useHistory } from '../context/HistoryContext';
 import { generateContent } from '../services/geminiService';
 import { REPURPOSE_OPTIONS } from '../constants';
 import { PageLayout } from './shared';
+
 
 interface ContentCreatorProps {
   onGenerate?: (content: string, format: string) => void;
@@ -13,6 +13,7 @@ interface ContentCreatorProps {
 
 const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
 
+  const { user, decrementCredits } = useAuth();
   const { addToHistory } = useHistory();
   const navigate = useNavigate();
   const [inputContent, setInputContent] = useState('');
@@ -26,12 +27,22 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
       return;
     }
 
+    // Credit validation before generation
+    if (!user || user.processingCredits <= 0) {
+      alert('No credits remaining! Please upgrade your plan to continue generating content.');
+      navigate('/pricing');
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratedResult('');
 
     try {
       const result = await generateContent(inputContent, selectedFormat);
       setGeneratedResult(result);
+
+      // Deduct credit after successful generation
+      decrementCredits();
 
       // Save to history
       addToHistory({
@@ -52,6 +63,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
       setIsGenerating(false);
     }
   };
+
 
   const getIconForFormat = (format: string) => {
     switch (format) {

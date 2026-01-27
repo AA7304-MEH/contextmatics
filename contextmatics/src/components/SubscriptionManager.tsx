@@ -1,10 +1,34 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { PageLayout } from './shared'
+
+// Plan credit limits for usage calculation
+const PLAN_CREDITS: Record<string, number> = {
+  free: 3,
+  pro: 10,
+  business: 50,
+  enterprise: 500
+}
+
+const PLAN_NAMES: Record<string, string> = {
+  free: 'Free Plan',
+  pro: 'Pro Plan',
+  business: 'Business Plan',
+  enterprise: 'Enterprise Plan'
+}
 
 const SubscriptionManager: React.FC = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [showCancelModal, setShowCancelModal] = useState(false)
+
+  // Calculate usage based on actual user data
+  const planLimit = user ? PLAN_CREDITS[user.plan] || 3 : 3
+  const creditsRemaining = user?.processingCredits || 0
+  const creditsUsed = planLimit - creditsRemaining
+  const usagePercent = planLimit > 0 ? ((creditsUsed / planLimit) * 100) : 0
+  const remainingPercent = 100 - usagePercent
 
   return (
     <PageLayout showPricing={true} showSettings={true}>
@@ -23,12 +47,13 @@ const SubscriptionManager: React.FC = () => {
             <div style={{ maxWidth: '28rem', margin: '0 auto' }}>
               <div style={{ backgroundColor: '#dbeafe', border: '2px solid #2563eb', borderRadius: '16px', padding: '2rem' }}>
                 <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚡</div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#111827' }}>Pro Plan</h3>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#111827' }}>
+                  {user ? PLAN_NAMES[user.plan] || 'Free Plan' : 'Free Plan'}
+                </h3>
                 <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem' }}>
-                  $29<span style={{ fontSize: '1.125rem', color: '#6b7280' }}>/month</span>
+                  {planLimit}<span style={{ fontSize: '1.125rem', color: '#6b7280' }}> credits/month</span>
                 </div>
-                <p style={{ color: '#6b7280', marginBottom: '0.5rem' }}>1,000 content generations/month</p>
-                <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Next billing: January 1, 2025</p>
+                <p style={{ color: '#6b7280', marginBottom: '0.5rem' }}>{creditsRemaining} credits remaining</p>
               </div>
             </div>
 
@@ -81,48 +106,50 @@ const SubscriptionManager: React.FC = () => {
           <div style={{ marginBottom: '3rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
               <span style={{ color: '#6b7280' }}>Monthly Usage</span>
-              <span style={{ fontWeight: 'bold', color: '#111827' }}>847 / 1,000</span>
+              <span style={{ fontWeight: 'bold', color: '#111827' }}>{creditsUsed} / {planLimit}</span>
             </div>
             <div style={{ height: '1rem', backgroundColor: '#e5e7eb', borderRadius: '9999px', overflow: 'hidden' }}>
               <div
                 style={{
                   height: '100%',
-                  width: '84.7%',
-                  backgroundColor: '#2563eb',
+                  width: `${Math.min(usagePercent, 100)}%`,
+                  backgroundColor: usagePercent > 80 ? '#ef4444' : '#2563eb',
                   borderRadius: '9999px',
                   transition: 'width 0.5s'
                 }}
               />
             </div>
-            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>15.3% remaining this billing cycle</p>
+            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>{remainingPercent.toFixed(1)}% remaining this billing cycle</p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
             <div style={{ backgroundColor: '#dbeafe', border: '1px solid #93c5fd', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📝</div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
-                847
+                {creditsUsed}
               </div>
-              <div style={{ color: '#6b7280', fontWeight: '500' }}>Content Generated</div>
+              <div style={{ color: '#6b7280', fontWeight: '500' }}>Credits Used</div>
               <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>This month</div>
             </div>
 
             <div style={{ backgroundColor: '#d1fae5', border: '1px solid #6ee7b7', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🎯</div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
-                1,000
+                {planLimit}
               </div>
               <div style={{ color: '#6b7280', fontWeight: '500' }}>Monthly Limit</div>
-              <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>Pro plan</div>
+              <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>{user ? PLAN_NAMES[user.plan] : 'Free Plan'}</div>
             </div>
 
-            <div style={{ backgroundColor: '#fae8ff', border: '1px solid #e9d5ff', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>⚡</div>
+            <div style={{ backgroundColor: creditsRemaining > 0 ? '#d1fae5' : '#fee2e2', border: `1px solid ${creditsRemaining > 0 ? '#6ee7b7' : '#fecaca'}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>{creditsRemaining > 0 ? '✅' : '⚠️'}</div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
-                84.7%
+                {creditsRemaining}
               </div>
-              <div style={{ color: '#6b7280', fontWeight: '500' }}>Usage Rate</div>
-              <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>Very active!</div>
+              <div style={{ color: '#6b7280', fontWeight: '500' }}>Credits Remaining</div>
+              <div style={{ fontSize: '0.875rem', color: creditsRemaining > 0 ? '#059669' : '#dc2626', marginTop: '0.25rem' }}>
+                {creditsRemaining > 0 ? 'Ready to create!' : 'Upgrade needed'}
+              </div>
             </div>
           </div>
         </div>
