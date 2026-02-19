@@ -2,261 +2,232 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useHistory } from '../context/HistoryContext';
+import { useToast } from '../context/ToastContext';
 import { PageLayout } from './shared';
 
 const History: React.FC = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const { historyItems, deleteFromHistory } = useHistory();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterFormat, setFilterFormat] = useState<string>('all');
+  const { historyItems, deleteFromHistory, clearHistory } = useHistory();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showConfirmClear, setShowConfirmClear] = useState(false);
 
-  const filteredItems = historyItems.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterFormat === 'all' || item.format === filterFormat;
-    return matchesSearch && matchesFilter;
-  });
+  if (!user) return null;
 
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffHours < 1) return 'Just now';
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    return date.toLocaleDateString();
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'success': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+      case 'failed': return 'text-red-400 bg-red-500/10 border-red-500/20';
+      default: return 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20';
+    }
   };
 
-  if (!user) {
-    return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem', textAlign: 'center', maxWidth: '28rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem' }}>Please Log In</h2>
-          <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>You need to be logged in to view history.</p>
-          <button
-            onClick={() => navigate('/')}
-            style={{ backgroundColor: '#2563eb', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer' }}
-          >
-            Go to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - new Date(date).getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+  };
+
+  // Get unique formats for filter
+  const uniqueFormats = Array.from(new Set(historyItems.map(i => i.format)));
+
+  const filteredItems = historyItems.filter(item =>
+    item.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (filterType === 'all' || item.format === filterType)
+  );
+
+  const handleDelete = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteFromHistory(id);
+  };
+
+  const handleCopy = (content: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(content);
+    showToast('Content copied to clipboard!', 'success');
+  };
 
   return (
     <PageLayout showPricing={true} showSettings={true}>
-      <div style={{ maxWidth: '1152px', margin: '0 auto' }}>
+      <div className="container mx-auto px-6 py-12">
         {/* Header */}
-        <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>Content History</h1>
-          <p style={{ fontSize: '1.125rem', color: '#6b7280' }}>View and manage all your generated content</p>
-        </div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-fade-in">
+          <div>
+            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 mb-2">History</h1>
+            <p className="text-[var(--color-text-secondary)]">
+              {historyItems.length} generation{historyItems.length !== 1 ? 's' : ''} total
+            </p>
+          </div>
 
-        {/* Search and Filter Bar */}
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '2rem', marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="flex gap-3 items-center">
             {/* Search */}
-            <div style={{ flex: 1 }}>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  placeholder="Search content..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: '100%',
-                    paddingLeft: '2.5rem',
-                    paddingRight: '1rem',
-                    paddingTop: '0.75rem',
-                    paddingBottom: '0.75rem',
-                    border: '2px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    transition: 'all 0.2s'
-                  }}
-                />
-                <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '20px', height: '20px', color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
+            <div className="relative group w-full md:w-64">
+              <input
+                type="text"
+                placeholder="Search history..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-[var(--color-text-muted)]"
+              />
+              <svg className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
 
-            {/* Filter */}
+            {/* Format Filter */}
             <select
-              value={filterFormat}
-              onChange={(e) => setFilterFormat(e.target.value)}
-              style={{
-                padding: '0.75rem 1rem',
-                border: '2px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                outline: 'none',
-                transition: 'all 0.2s',
-                backgroundColor: 'white'
-              }}
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-blue-500/50 appearance-none cursor-pointer"
             >
               <option value="all">All Formats</option>
-              <option value="Blog Post">Blog Posts</option>
-              <option value="Twitter Thread">Twitter Threads</option>
-              <option value="Email Newsletter">Newsletters</option>
-              <option value="LinkedIn Post">LinkedIn Posts</option>
-              <option value="Summary">Summaries</option>
+              {uniqueFormats.map(f => (
+                <option key={f} value={f}>{f}</option>
+              ))}
             </select>
+
+            {/* Clear All */}
+            {historyItems.length > 0 && (
+              <button
+                onClick={() => setShowConfirmClear(true)}
+                className="p-2.5 rounded-xl bg-black/40 border border-white/10 text-[var(--color-text-secondary)] hover:text-red-400 hover:border-red-500/30 transition-all"
+                title="Clear all history"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-          <div style={{ background: 'linear-gradient(to bottom right, #dbeafe, #bfdbfe)', border: '1px solid #93c5fd', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>{historyItems.length}</div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Total Items</div>
+        {/* Confirm Clear Modal */}
+        {showConfirmClear && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="card p-8 max-w-sm mx-auto border border-white/10 bg-[var(--color-background-surface)]">
+              <h3 className="text-lg font-semibold text-white mb-3">Clear All History?</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-6">This action cannot be undone. All {historyItems.length} items will be removed.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowConfirmClear(false)} className="btn btn-secondary flex-1">Cancel</button>
+                <button
+                  onClick={() => { clearHistory(); setShowConfirmClear(false); }}
+                  className="btn flex-1 bg-red-600 text-white hover:bg-red-700 border-none"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
           </div>
-          <div style={{ background: 'linear-gradient(to bottom right, #d1fae5, #a7f3d0)', border: '1px solid #6ee7b7', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>5</div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>This Week</div>
+        )}
+
+        {/* Empty State */}
+        {filteredItems.length === 0 && (
+          <div className="card p-16 border border-white/5 bg-[var(--color-background-surface)]/30 text-center animate-fade-in">
+            <span className="text-5xl block mb-4">{searchTerm ? '🔍' : '📭'}</span>
+            <h3 className="text-xl font-semibold text-white mb-2">
+              {searchTerm ? 'No matches found' : 'No history yet'}
+            </h3>
+            <p className="text-[var(--color-text-secondary)] mb-6">
+              {searchTerm ? 'Try a different search term.' : 'Generate some content to see your history here.'}
+            </p>
+            {!searchTerm && (
+              <button onClick={() => navigate('/content-creator')} className="btn btn-primary bg-gradient-to-r from-blue-600 to-violet-600 border-none px-6">
+                Create Content ✨
+              </button>
+            )}
           </div>
-          <div style={{ background: 'linear-gradient(to bottom right, #e9d5ff, #d8b4fe)', border: '1px solid #c084fc', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>100%</div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Success Rate</div>
-          </div>
-          <div style={{ background: 'linear-gradient(to bottom right, #fed7aa, #fdba74)', border: '1px solid #fb923c', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>3.2k</div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Words Generated</div>
-          </div>
-        </div>
+        )}
 
         {/* History List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {filteredItems.length === 0 ? (
-            <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '3rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔍</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>No content found</h3>
-              <p style={{ color: '#6b7280' }}>Try adjusting your search or filters</p>
-            </div>
-          ) : (
-            filteredItems.map((item) => (
-              <div
-                key={item.id}
+        <div className="grid grid-cols-1 gap-3 animate-fade-in">
+          {filteredItems.map((item, index) => (
+            <div
+              key={item.id}
+              onMouseMove={handleMouseMove}
+              onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+              className="card group relative rounded-2xl border border-white/5 bg-[var(--color-background-surface)]/50 overflow-hidden cursor-pointer transition-all hover:border-white/10"
+              style={{ animationDelay: `${index * 40}ms` }}
+            >
+              {/* Spotlight Effect */}
+              <div className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100 transition duration-300"
                 style={{
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '16px',
-                  padding: '1.5rem',
-                  transition: 'all 0.2s',
-                  cursor: 'pointer'
+                  background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.06), transparent 40%)`
                 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-                  {/* Icon */}
-                  <div style={{
-                    width: '56px',
-                    height: '56px',
-                    backgroundColor: '#dbeafe',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.5rem',
-                    flexShrink: 0
-                  }}>
+              />
+
+              {/* Main Row */}
+              <div className="p-5 flex items-center justify-between gap-4 relative z-10">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-xl shrink-0 shadow-inner">
                     {item.icon}
                   </div>
-
-                  {/* Content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                      <div>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>{item.title}</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                          <span style={{ backgroundColor: '#dbeafe', color: '#1d4ed8', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: '500' }}>
-                            {item.format}
-                          </span>
-                          <span>{formatDate(item.createdAt)}</span>
-                        </div>
-                      </div>
-                      <span style={{
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '8px',
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                        backgroundColor: item.status === 'success' ? '#d1fae5' : '#fee2e2',
-                        color: item.status === 'success' ? '#065f46' : '#dc2626'
-                      }}>
-                        {item.status === 'success' ? '✓ Success' : '✗ Failed'}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem', lineHeight: '1.5' }}>{item.content}</p>
-
-                    {/* Actions */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <button style={{
-                        backgroundColor: '#dbeafe',
-                        border: '1px solid #93c5fd',
-                        color: '#1d4ed8',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}>
-                        📋 Copy
-                      </button>
-                      <button style={{
-                        backgroundColor: '#d1fae5',
-                        border: '1px solid #6ee7b7',
-                        color: '#047857',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}>
-                        📤 Export
-                      </button>
-                      <button style={{
-                        backgroundColor: '#e9d5ff',
-                        border: '1px solid #c084fc',
-                        color: '#7c3aed',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}>
-                        🔄 Regenerate
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteFromHistory(item.id);
-                        }}
-                        style={{
-                          backgroundColor: '#fee2e2',
-                          border: '1px solid #fca5a5',
-                          color: '#dc2626',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '8px',
-                          fontSize: '0.875rem',
-                          fontWeight: '500',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}>
-                        🗑️ Delete
-                      </button>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-medium text-white group-hover:text-white transition-colors truncate">{item.title}</h3>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-[var(--color-text-secondary)]">
+                      <span className="capitalize">{item.format}</span>
+                      <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                      <span>{getTimeAgo(item.createdAt)}</span>
                     </div>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(item.status)}`}>
+                    {item.status}
+                  </span>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      onClick={(e) => handleCopy(item.content, e)}
+                      className="p-2 rounded-lg hover:bg-white/10 text-[var(--color-text-secondary)] hover:text-white transition-colors"
+                      title="Copy content"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(item.id, e)}
+                      className="p-2 rounded-lg hover:bg-white/10 text-[var(--color-text-secondary)] hover:text-red-400 transition-colors"
+                      title="Delete"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                  <svg className={`w-4 h-4 text-[var(--color-text-secondary)] transition-transform ${expandedId === item.id ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
               </div>
-            ))
-          )}
+
+              {/* Expanded Content */}
+              {expandedId === item.id && (
+                <div className="px-5 pb-5 pt-0 border-t border-white/5 animate-fade-in relative z-10">
+                  <div className="mt-4 bg-black/30 rounded-xl p-5 border border-white/5 max-h-[300px] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#333 transparent' }}>
+                    <pre className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap font-mono leading-relaxed">{item.content}</pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </PageLayout>

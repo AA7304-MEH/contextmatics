@@ -1,4 +1,5 @@
 import type { RazorpayOptions, RazorpayPaymentSuccessResponse } from '../types'
+import { supabase } from '../lib/supabaseClient'
 
 declare global {
   interface Window {
@@ -7,6 +8,11 @@ declare global {
     }
   }
 }
+
+// Production-safe notification helper (works outside React tree)
+const notify = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  window.dispatchEvent(new CustomEvent('app-toast', { detail: { message, type } }));
+};
 
 export class RazorpayService {
   private static instance: RazorpayService
@@ -42,24 +48,18 @@ export class RazorpayService {
 
       // Check for Demo Mode
       if (!keyId || keyId.includes('dummy')) {
-        console.log('🤖 DEMO MODE: Simulating Razorpay payment for', planName);
+        console.debug('[Demo] Simulating Razorpay payment for', planName);
 
         // Simulate user interaction delay
-        const confirmed = confirm(`[DEMO MODE] Simulate successful payment of ${currency} ${amount} for ${planName}?`);
+        // Auto-simulate in demo mode
+        const mockResponse: RazorpayPaymentSuccessResponse = {
+          razorpay_payment_id: 'pay_demo_' + Math.random().toString(36).substring(7),
+          razorpay_order_id: 'order_demo_' + Math.random().toString(36).substring(7),
+          razorpay_signature: 'sig_demo_' + Math.random().toString(36).substring(7)
+        };
 
-        if (confirmed) {
-          const mockResponse: RazorpayPaymentSuccessResponse = {
-            razorpay_payment_id: 'pay_demo_' + Math.random().toString(36).substring(7),
-            razorpay_order_id: 'order_demo_' + Math.random().toString(36).substring(7),
-            razorpay_signature: 'sig_demo_' + Math.random().toString(36).substring(7)
-          };
-
-          this.handlePaymentSuccess(mockResponse, planName, amount);
-          return;
-        } else {
-          console.log('Demo payment cancelled');
-          return;
-        }
+        this.handlePaymentSuccess(mockResponse, planName, amount, options.userEmail);
+        return;
       }
 
       await this.loadRazorpaySDK()
@@ -87,8 +87,7 @@ export class RazorpayService {
         description: `${planName} Subscription`,
         ...(orderId ? { order_id: orderId } : {}),
         handler: (response: RazorpayPaymentSuccessResponse) => {
-          console.log('Payment successful:', response)
-          this.handlePaymentSuccess(response, planName, amount)
+          this.handlePaymentSuccess(response, planName, amount, userEmail)
         },
         prefill: {
           name: userName,
@@ -115,55 +114,84 @@ export class RazorpayService {
   /**
    * Handle successful payment
    */
-  private handlePaymentSuccess(response: RazorpayPaymentSuccessResponse, planName: string, amount: number): void {
-    // Here you would typically:
-    // 1. Verify payment with your backend
-    // 2. Update user's subscription status
-    // 3. Send confirmation email
-    // 4. Redirect to success page
-
-    console.log('Payment completed successfully', {
-      razorpay_payment_id: response.razorpay_payment_id,
-      razorpay_order_id: response.razorpay_order_id,
-      razorpay_signature: response.razorpay_signature,
-      plan: planName,
-      amount: amount,
-    })
-
-    // Store payment info in localStorage for demo purposes
-    // In production, this should be verified and stored on backend
-    const paymentInfo = {
-      paymentId: response.razorpay_payment_id,
-      orderId: response.razorpay_order_id,
-      plan: planName,
-      amount: amount,
-      timestamp: Date.now(),
-      status: 'success'
-    }
+  private async handlePaymentSuccess(_response: RazorpayPaymentSuccessResponse, planName: string, _amount: number, userEmail: string): Promise<void> {
 
     try {
-      localStorage.setItem('lastPayment', JSON.stringify(paymentInfo))
-    } catch (e) {
-      console.error('Failed to store payment info:', e)
+      // Determine credits based on plan
+      // Matching PricingPage.tsx: Pro = 200, Enterprise = Unlimited (10000 for now)
+      let credits = 10;
+      let planId = 'free';
+
+      if (planName.toLowerCase().includes('pro')) {
+        credits = 200;
+        planId = 'pro';
+      } else if (planName.toLowerCase().includes('enterprise')) {
+        credits = 10000;
+        planId = 'enterprise';
+      }
+
+      // 1. Update Profile in Supabase
+      // We need to find the user by email since we don't have ID passed explicitly here, 
+      // OR we should have passed userId to initiatePayment. 
+      // Ideally checking auth.users but we can only update public profiles if RLS allows.
+      // For MVP, we'll assume the currently logged in user is the one paying, 
+      // but to be safe let's query by email or passed User ID if we modify initiatePayment signature.
+
+      // BETTER: Let's assume the email is unique in profiles or just fetch the user from auth session wrapper if possible? 
+      // No, `razorpayService` is a singleton. 
+      // Let's rely on finding the profile by email which should be unique.
+
+      await supabase
+        .from('profiles') // Assuming profiles is user_id keyed, but we need to find ID by email if we don't have it.
+        // Actually, profiles table usually uses ID as PK. 
+        // We should pass userId to initiatePayment.
+        .select('id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      // If we can't rely on auth.getUser() inside this callback (async/context issues?), 
+      // we should pass userId in options. 
+
+      // Let's assume we are logged in.
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+      if (currentUser && currentUser.email === userEmail) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            plan: planId,
+            credits_remaining: credits,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentUser.id);
+
+        if (updateError) throw updateError;
+
+        // 2. Log Subscription (Optional/Future)
+      } else {
+        console.warn('Payment email mismatch — skipping DB update.');
+      }
+
+    } catch (err) {
+      console.error("Failed to update database after payment:", err);
+      notify('Payment successful but failed to update account. Please contact support.', 'error');
+      return;
     }
 
     // Show success message or redirect
-    alert(`Payment successful! Thank you for subscribing to ${planName} plan.`)
-
-    // Redirect to dashboard
-    window.location.href = '/dashboard'
+    notify(`Payment successful! You now have ${planName} access.`, 'success');
+    window.location.href = '/#/dashboard';
   }
 
   /**
    * Create subscription order
    */
-  async createSubscriptionOrder(planId: string, amount: number): Promise<string | undefined> {
+  async createSubscriptionOrder(_planId: string, _amount: number): Promise<string | undefined> {
     // In a real application, this would call your backend API
     // to create an order and return the order ID
 
     // For client-side only demo, we don't create an order ID
     // Razorpay will treat this as a direct payment
-    console.log(`Skipping order creation for plan ${planId} with amount ${amount} (Client-side mode)`)
     return undefined
   }
 

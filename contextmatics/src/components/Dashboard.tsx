@@ -1,552 +1,223 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useHistory } from '../context/HistoryContext';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { PageLayout } from './shared';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { historyItems } = useHistory();
   const navigate = useNavigate();
 
-  if (!user) {
-    return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(to bottom, #f9fafb, #ffffff)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 2rem' }}>
-        <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '3rem', textAlign: 'center', maxWidth: '28rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #f3f4f6' }}>
-          <div style={{ fontSize: '3.75rem', marginBottom: '1.5rem' }}>🔒</div>
-          <h2 style={{ fontSize: '2.25rem', fontWeight: '800', color: '#111827', marginBottom: '1rem' }}>Please Log In</h2>
-          <p style={{ fontSize: '1.25rem', color: '#4b5563', marginBottom: '2rem' }}>You need to be logged in to access the dashboard.</p>
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              background: 'linear-gradient(to right, #4f46e5, #9333ea)',
-              color: 'white',
-              padding: '1rem 2rem',
-              borderRadius: '12px',
-              fontWeight: 'bold',
-              fontSize: '1.125rem',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-            }}
-          >
-            Go to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (!user) return null;
+
+  // Derive real stats from context
+  const totalContentPieces = historyItems.length;
+  const mockVideosRaw = JSON.parse(localStorage.getItem('mock_videos') || '[]');
+  const totalVideos = mockVideosRaw.length;
+  const creditsRemaining = user.processingCredits;
+  const planLabel = user.plan.charAt(0).toUpperCase() + user.plan.slice(1);
+
+  // Mock weekly data (would come from analytics API in production)
+  const weeklyData = [
+    { name: 'Mon', snippets: 2, videos: 1 },
+    { name: 'Tue', snippets: 4, videos: 0 },
+    { name: 'Wed', snippets: 1, videos: 2 },
+    { name: 'Thu', snippets: 3, videos: 1 },
+    { name: 'Fri', snippets: 5, videos: 3 },
+    { name: 'Sat', snippets: 2, videos: 1 },
+    { name: 'Sun', snippets: 1, videos: 0 },
+  ];
+
+  const stats = [
+    { label: 'Credits Left', value: creditsRemaining >= 999999 ? '∞' : creditsRemaining, color: 'blue', icon: '⚡' },
+    { label: 'Content Created', value: totalContentPieces, color: 'violet', icon: '📝' },
+    { label: 'Videos Generated', value: totalVideos, color: 'emerald', icon: '🎬' },
+    { label: 'Current Plan', value: planLabel, color: 'amber', icon: '👑' },
+  ];
+
+  const quickActions = [
+    { label: 'Create Content', desc: 'AI-powered text generation', icon: '✨', path: '/content-creator', gradient: 'from-blue-600 to-cyan-500' },
+    { label: 'Generate Video', desc: 'Text to video in seconds', icon: '🎬', path: '/video-generator', gradient: 'from-violet-600 to-purple-500' },
+    { label: 'Faceless Studio', desc: 'AI faceless video creator', icon: '🎞️', path: '/faceless-studio', gradient: 'from-indigo-600 to-violet-500' },
+    { label: 'Repurpose Video', desc: 'Transform existing videos', icon: '🔄', path: '/video-repurpose', gradient: 'from-emerald-600 to-teal-500' },
+    { label: 'Video Editor', desc: 'Edit and polish videos', icon: '✂️', path: '/video-editor', gradient: 'from-orange-600 to-red-500' },
+    { label: 'Templates', desc: 'Pre-built prompt library', icon: '📚', path: '/templates', gradient: 'from-pink-600 to-rose-500' },
+    { label: 'Analytics', desc: 'Usage insights & trends', icon: '📊', path: '/analytics', gradient: 'from-indigo-600 to-blue-500' },
+  ];
+
+  const recentItems = historyItems.slice(0, 5);
+
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - new Date(date).getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
 
   return (
     <PageLayout showPricing={true} showSettings={true}>
-      <div style={{ paddingLeft: '2rem', paddingRight: '2rem' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          {/* Welcome Header */}
-          <div style={{ marginBottom: '4rem', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '3.75rem', fontWeight: '800', color: '#111827', marginBottom: '1rem', letterSpacing: '-0.025em' }}>
-              Welcome Back! 👋
-            </h1>
-            <p style={{ fontSize: '1.25rem', color: '#4b5563', lineHeight: '1.625' }}>
-              You're logged in as <span style={{ fontWeight: '600', color: '#4f46e5' }}>{user.email}</span>
-            </p>
-          </div>
+      <div className="container mx-auto px-6 py-12">
 
-          {/* Stats Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
-            {/* Credits Card */}
-            <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', border: '1px solid #f3f4f6', transition: 'all 0.3s' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <h3 style={{ fontSize: '0.875rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Credits Remaining</h3>
-                  <p style={{ fontSize: '3rem', fontWeight: '800', background: 'linear-gradient(to right, #4f46e5, #9333ea)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    {user.processingCredits}
-                  </p>
-                </div>
-                <div style={{ fontSize: '3.75rem' }}>💎</div>
-              </div>
-              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #f3f4f6' }}>
-                <p style={{ fontSize: '0.875rem', color: '#4b5563' }}>Use credits to generate content</p>
-              </div>
-            </div>
+        {/* Header */}
+        <div className="mb-12 animate-fade-in">
+          <h1 className="text-4xl font-bold tracking-tight text-white mb-2">
+            Welcome back{user.email ? `, ${user.email.split('@')[0]}` : ''} 👋
+          </h1>
+          <p className="text-lg text-[var(--color-text-secondary)]">
+            Here's your creative workspace overview.
+          </p>
+        </div>
 
-            {/* Plan Card */}
-            <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', border: '1px solid #f3f4f6', transition: 'all 0.3s' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <h3 style={{ fontSize: '0.875rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Current Plan</h3>
-                  <p style={{ fontSize: '3rem', fontWeight: '800', background: 'linear-gradient(to right, #16a34a, #059669)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textTransform: 'capitalize' }}>
-                    {user.plan}
-                  </p>
-                </div>
-                <div style={{ fontSize: '3.75rem' }}>🚀</div>
-              </div>
-              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #f3f4f6' }}>
-                <button
-                  onClick={() => navigate('/pricing')}
-                  style={{ fontSize: '0.875rem', color: '#4f46e5', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                >
-                  Upgrade Plan →
-                </button>
-              </div>
-            </div>
-
-            {/* Status Card */}
-            <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', border: '1px solid #f3f4f6', transition: 'all 0.3s' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <h3 style={{ fontSize: '0.875rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Account Status</h3>
-                  <p style={{ fontSize: '3rem', fontWeight: '800', background: 'linear-gradient(to right, #2563eb, #0891b2)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    Active
-                  </p>
-                </div>
-                <div style={{ fontSize: '3.75rem' }}>✨</div>
-              </div>
-              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #f3f4f6' }}>
-                <p style={{ fontSize: '0.875rem', color: '#4b5563' }}>All systems operational</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #f3f4f6', marginBottom: '3rem' }}>
-            <h2 style={{ fontSize: '1.875rem', fontWeight: '700', color: '#111827', marginBottom: '2rem' }}>Quick Actions</h2>
-            {/* Quick Actions Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 'clamp(1rem, 2vw, 2rem)', marginBottom: '4rem' }}>
-              {/* Create Content Card */}
-              <div
-                onClick={() => navigate('/content-creator')}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '24px',
-                  padding: '2rem',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: '1px solid rgba(0,0,0,0.05)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                }}
-              >
-                <div style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, #4f46e5, #9333ea)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '1.5rem',
-                  color: 'white',
-                  fontSize: '2rem'
-                }}>
-                  ✨
-                </div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>Create Content</h3>
-                <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
-                  Generate blog posts, threads, and newsletters instantly with AI.
-                </p>
-              </div>
-
-              {/* Video Repurposing Card */}
-              <div
-                onClick={() => navigate('/video-repurpose')}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '24px',
-                  padding: '2rem',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: '1px solid rgba(0,0,0,0.05)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                }}
-              >
-                <div style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '1.5rem',
-                  color: 'white',
-                  fontSize: '2rem'
-                }}>
-                  🎥
-                </div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>Video to Shorts</h3>
-                <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
-                  Turn long videos into viral shorts and reels automatically.
-                </p>
-              </div>
-
-              {/* Video Editor Card */}
-              <div
-                onClick={() => navigate('/video-editor')}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '24px',
-                  padding: '2rem',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: '1px solid rgba(0,0,0,0.05)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                }}
-              >
-                <div style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, #f43f5e, #e11d48)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '1.5rem',
-                  color: 'white',
-                  fontSize: '2rem'
-                }}>
-                  🎬
-                </div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>Video Editor</h3>
-                <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
-                  Manually edit, trim, and enhance your videos.
-                </p>
-              </div>
-
-              {/* View History Card */}
-              <div
-                onClick={() => navigate('/history')}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '24px',
-                  padding: '2rem',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: '1px solid rgba(0,0,0,0.05)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                }}
-              >
-                <div style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '1.5rem',
-                  color: 'white',
-                  fontSize: '2rem'
-                }}>
-                  📚
-                </div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>View History</h3>
-                <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
-                  Access all your generated content and past projects.
-                </p>
-              </div>
-
-              {/* Manage Subscription Card */}
-              <div
-                onClick={() => navigate('/subscription')}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '24px',
-                  padding: '2rem',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: '1px solid rgba(0,0,0,0.05)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                }}
-              >
-                <div style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '1.5rem',
-                  color: 'white',
-                  fontSize: '2rem'
-                }}>
-                  💳
-                </div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>Manage Subscription</h3>
-                <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
-                  Upgrade your plan, view invoices, and manage billing.
-                </p>
-              </div>
-
-              {/* Social Scheduler Card */}
-              <div
-                onClick={() => {
-                  if (user.plan === 'free') {
-                    if (confirm('This feature is available on Pro and Business plans. Would you like to upgrade?')) {
-                      navigate('/pricing');
-                    }
-                  } else {
-                    alert('Social Scheduler coming soon!');
-                  }
-                }}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: 'clamp(16px, 3vw, 24px)',
-                  padding: 'clamp(1.5rem, 3vw, 2rem)',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: '1px solid rgba(0,0,0,0.05)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  minHeight: '200px',
-                  opacity: user.plan === 'free' ? 0.9 : 1
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                }}
-              >
-                {user.plan === 'free' && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '1rem',
-                    right: '1rem',
-                    backgroundColor: '#f3f4f6',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    color: '#4b5563',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}>
-                    <span>🔒</span> Pro
-                  </div>
-                )}
-                <div style={{
-                  width: 'clamp(50px, 10vw, 60px)',
-                  height: 'clamp(50px, 10vw, 60px)',
-                  borderRadius: 'clamp(12px, 2.5vw, 16px)',
-                  background: user.plan === 'free'
-                    ? 'linear-gradient(135deg, #9ca3af, #6b7280)'
-                    : 'linear-gradient(135deg, #0ea5e9, #2563eb)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 'clamp(1rem, 2vw, 1.5rem)',
-                  color: 'white',
-                  fontSize: 'clamp(1.5rem, 3vw, 2rem)'
-                }}>
-                  📅
-                </div>
-                <h3 style={{ fontSize: 'clamp(1.25rem, 2.5vw, 1.5rem)', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>Social Scheduler</h3>
-                <p style={{ color: '#6b7280', lineHeight: '1.6', fontSize: 'clamp(0.9rem, 1.5vw, 1rem)' }}>
-                  Schedule and manage your social media posts.
-                </p>
-              </div>
-
-              {/* Trend Hunter Card */}
-              <div
-                onClick={() => {
-                  if (user.plan === 'free') {
-                    if (confirm('This feature is available on Pro and Business plans. Would you like to upgrade?')) {
-                      navigate('/pricing');
-                    }
-                  } else {
-                    alert('Trend Hunter coming soon!');
-                  }
-                }}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: 'clamp(16px, 3vw, 24px)',
-                  padding: 'clamp(1.5rem, 3vw, 2rem)',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: '1px solid rgba(0,0,0,0.05)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  minHeight: '200px',
-                  opacity: user.plan === 'free' ? 0.9 : 1
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                }}
-              >
-                {user.plan === 'free' && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '1rem',
-                    right: '1rem',
-                    backgroundColor: '#f3f4f6',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    color: '#4b5563',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}>
-                    <span>🔒</span> Pro
-                  </div>
-                )}
-                <div style={{
-                  width: 'clamp(50px, 10vw, 60px)',
-                  height: 'clamp(50px, 10vw, 60px)',
-                  borderRadius: 'clamp(12px, 2.5vw, 16px)',
-                  background: user.plan === 'free'
-                    ? 'linear-gradient(135deg, #9ca3af, #6b7280)'
-                    : 'linear-gradient(135deg, #8b5cf6, #d946ef)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 'clamp(1rem, 2vw, 1.5rem)',
-                  color: 'white',
-                  fontSize: 'clamp(1.5rem, 3vw, 2rem)'
-                }}>
-                  📈
-                </div>
-                <h3 style={{ fontSize: 'clamp(1.25rem, 2.5vw, 1.5rem)', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>Trend Hunter</h3>
-                <p style={{ color: '#6b7280', lineHeight: '1.6', fontSize: 'clamp(0.9rem, 1.5vw, 1rem)' }}>
-                  Discover viral topics and trending hashtags.
-                </p>
-              </div>
-
-              {/* Account Settings Card */}
-              <div
-                onClick={() => navigate('/settings')}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '24px',
-                  padding: '2rem',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: '1px solid rgba(0,0,0,0.05)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                }}
-              >
-                <div style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, #6b7280, #1f2937)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '1.5rem',
-                  color: 'white',
-                  fontSize: '2rem'
-                }}>
-                  ⚙️
-                </div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>Account Settings</h3>
-                <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
-                  Update your profile, security, and notification preferences.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Getting Started Section */}
-          <div style={{
-            background: 'linear-gradient(to bottom right, #4f46e5, #9333ea)',
-            borderRadius: '24px',
-            padding: '3rem',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            textAlign: 'center',
-            color: 'white'
-          }}>
-            <h2 style={{ fontSize: '2.25rem', fontWeight: '800', marginBottom: '1rem' }}>Ready to Create Amazing Content?</h2>
-            <p style={{ fontSize: '1.25rem', marginBottom: '2rem', opacity: 0.9 }}>Transform your ideas into engaging content with AI</p>
-            <button
-              onClick={() => navigate('/content-creator')}
-              style={{
-                backgroundColor: 'white',
-                color: '#4f46e5',
-                padding: '1rem 2.5rem',
-                borderRadius: '12px',
-                fontWeight: '700',
-                fontSize: '1.125rem',
-                border: 'none',
-                cursor: 'pointer',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                transition: 'transform 0.2s'
-              }}
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12 animate-fade-in">
+          {stats.map((stat, i) => (
+            <div
+              key={stat.label}
+              className="card p-6 border border-white/5 bg-[var(--color-background-surface)]/50 hover:border-white/10 transition-all duration-300 group"
+              style={{ animationDelay: `${i * 80}ms` }}
             >
-              Start Creating →
-            </button>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-2xl">{stat.icon}</span>
+                <span className={`text-xs font-bold uppercase tracking-widest text-${stat.color}-400 opacity-60`}>
+                  {stat.label}
+                </span>
+              </div>
+              <p className="text-3xl font-bold text-white tracking-tight">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick Actions Grid */}
+        <div className="mb-12 animate-fade-in">
+          <h2 className="text-xl font-semibold text-white tracking-tight mb-6">Quick Actions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {quickActions.map((action, i) => (
+              <button
+                key={action.label}
+                onClick={() => navigate(action.path)}
+                className="group relative overflow-hidden rounded-2xl border border-white/5 bg-[var(--color-background-surface)]/50 p-6 text-left transition-all duration-300 hover:border-white/15 hover:-translate-y-1 hover:shadow-xl"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                {/* Gradient accent on hover */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-[0.06] transition-opacity duration-500`} />
+                <div className="relative z-10">
+                  <span className="text-3xl mb-4 block">{action.icon}</span>
+                  <h3 className="text-base font-semibold text-white mb-1">{action.label}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{action.desc}</p>
+                </div>
+                <svg className="absolute bottom-4 right-4 w-5 h-5 text-white/20 group-hover:text-white/50 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            ))}
           </div>
         </div>
+
+        {/* Analytics Chart */}
+        <div className="mb-12 animate-fade-in">
+          <h2 className="text-xl font-semibold text-white tracking-tight mb-6">Usage Overview</h2>
+          <div className="card p-6 border border-white/5 bg-[var(--color-background-surface)]/30 h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  stroke="#525252"
+                  tick={{ fill: '#737373', fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="#525252"
+                  tick={{ fill: '#737373', fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', borderRadius: '8px' }}
+                  itemStyle={{ color: '#fff' }}
+                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                />
+                <Bar dataKey="snippets" name="Snippets" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="videos" name="Videos" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="animate-fade-in">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-white tracking-tight">Recent Activity</h2>
+            {recentItems.length > 0 && (
+              <button
+                onClick={() => navigate('/history')}
+                className="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors"
+              >
+                View All →
+              </button>
+            )}
+          </div>
+
+          {recentItems.length === 0 ? (
+            <div className="card p-12 border border-white/5 bg-[var(--color-background-surface)]/30 text-center">
+              <span className="text-4xl mb-4 block">🚀</span>
+              <h3 className="text-lg font-semibold text-white mb-2">No activity yet</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-6">Start creating content or generating videos to see your activity here.</p>
+              <button
+                onClick={() => navigate('/content-creator')}
+                className="btn btn-primary bg-gradient-to-r from-blue-600 to-violet-600 border-none px-6"
+              >
+                Create Your First Piece ✨
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="card group p-5 border border-white/5 bg-[var(--color-background-surface)]/50 flex items-center justify-between gap-4 hover:border-white/10 transition-all duration-200 rounded-xl"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-lg shrink-0">
+                      {item.icon}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-white">{item.title}</h4>
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        {item.format} · {getTimeAgo(item.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${item.status === 'success'
+                      ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                      : 'text-red-400 bg-red-500/10 border-red-500/20'
+                      }`}>
+                      {item.status}
+                    </span>
+                    <button
+                      onClick={() => navigate('/history')}
+                      className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-white/10 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
     </PageLayout>
   );

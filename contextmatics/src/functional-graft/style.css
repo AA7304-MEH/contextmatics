@@ -1,0 +1,128 @@
+/* PHASE 3: CSS FOUNDATION WITH DESIGN TOKENS */
+/* Source: DESIGN_AUDIT.md */
+
+:root {
+    /* 1. CURSOR DESIGN TOKENS */
+
+    /* Colors */
+    --color-bg: #000101;
+    --color-surface: #0a0a0a;
+    --color-text: #ededed;
+    --color-text-muted: #a1a1aa;
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+
+    /* Typography */
+    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    --text-h1: clamp(3.5rem, 8vw, 6rem);
+    --font-weight-h1: 500;
+
+    /* Layout */
+    --container-width: 1400px;
+    --grid-gap: 24px;
+
+    /* Effects */
+    --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --radius: 16px;
+    --radius-btn: 9999px;
+}
+
+/* 2. GLOBAL RESET (PRESERVE INTERACTIVITY) */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-family);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+a {
+    font-family: inherit;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.container {
+    max-width: var(--container-width);
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* 3. CURSOR-STYLED COMPONENTS */
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 32px;
+    border-radius: var(--radius-btn);
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.btn--primary {
+    background: var(--color-primary);
+    color: white;
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+}
+
+.btn--primary:hover {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+}
+
+.btn--secondary {
+    background: transparent;
+    color: var(--color-text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn--secondary:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Cards */
+.card {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    padding: 32px;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+/* Typography Helpers */
+.text-h1 {
+    font-size: var(--text-h1);
+    font-weight: var(--font-weight-h1);
+    letter-spacing: -0.04em;
+    line-height: 1;
+}
+
+.text-muted {
+    color: var(--color-text-muted);
+}

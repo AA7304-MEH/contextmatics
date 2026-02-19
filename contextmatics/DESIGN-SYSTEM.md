@@ -1,123 +1,55 @@
 # ContextMatics Design System
 
-## 🎨 Modern Dark Theme
+## 🎨 Modern Tech SaaS Theme (Light Mode)
 
-All pages now feature a consistent, modern dark design with:
+A professional, trustworthy, and high-conversion aesthetic inspired by Vercel, Linear, and Stripe.
+
+### Design Principles
+- **Clean & Airy**: Generous whitespace, keeping layouts uncluttered.
+- **Confident**: Bold primary blue (`#2563eb`) for key actions.
+- **Technical**: Monospace accents, precise borders, and structured grids.
+- **Purposeful**: Every element has a clear function; distinct hierarchy.
 
 ### Color Palette
-- **Background**: Pure black (#0a0a0a) with animated gradient overlays
-- **Primary Gradients**: 
-  - Blue to Purple: `from-blue-500 to-purple-500`
-  - Purple to Pink: `from-purple-500 to-pink-500`
-  - Cyan to Blue: `from-cyan-500 to-blue-500`
-- **Text**: White with varying opacity for hierarchy
-- **Borders**: White with 10% opacity (`border-white/10`)
+
+#### Primary
+- **Blue**: `#2563eb` (Brand color, primary buttons, links)
+- **Blue Hover**: `#1d4ed8`
+- **Blue Highlight**: `#eff6ff` (Subtle backgrounds)
+
+#### Backgrounds
+- **Main**: `#ffffff` (Pure White)
+- **Subtle**: `#f8fafc` (Very light gray for distinct sections)
+- **Cards**: `#ffffff` with `border-gray-200`
+
+#### Typography Colors
+- **Headings**: `#111827` (Near Black)
+- **Body**: `#374151` (Dark Gray)
+- **Muted**: `#6b7280` (Gray)
 
 ### Components
 
-#### Cards
-- Background: `bg-white/5` with backdrop blur
-- Border: `border-white/10`
-- Hover: `hover:bg-white/10` with scale transform
-- Transition: Smooth 300ms duration
-
 #### Buttons
-- Primary: Gradient background with shadow
-- Secondary: White/10 background with border
-- Hover: Scale transform (105%) with enhanced shadows
+- **Primary**: Bold Blue background, White text. Rounded corners (`rounded-lg`). Subtle shadow.
+- **Secondary**: Light Gray background (`bg-gray-100`), Dark Gray text. Darker gray on hover.
+- **Outline**: Transparent background, `border-gray-200`.
 
-#### Navigation
-- Fixed position with backdrop blur
-- Black/80 background
-- Border bottom with white/10
+#### Cards
+- **Style**: Flat, white background.
+- **Border**: 1px solid `#e5e7eb` (gray-200).
+- **Shadow**: `shadow-sm` normally, `shadow-md` on hover.
+- **Transition**: Fast, precise `0.2s ease-out`.
 
-### Performance Optimizations
+#### Typography
+- **Font**: Inter (sans-serif)
+- **Headings**: Tight tracking (`-0.025em`), bold weights (600/700/800).
+- **Body**: Relaxed line-height (`1.6`), regular weight.
 
-1. **CSS Optimizations**
-   - Hardware-accelerated transforms
-   - Content visibility for images
-   - Reduced paint operations
+### Spacing & Layout
+- **Container**: Max W 1280px (`max-w-7xl`).
+- **Section Padding**: `py-16` to `py-24` (Generous vertical space).
+- **Grid Gap**: `gap-8` (2rem) standard.
 
-2. **JavaScript Optimizations**
-   - Intersection Observer for lazy animations
-   - RequestIdleCallback for non-critical tasks
-   - Smooth scroll behavior
-
-3. **Loading Speed**
-   - Minimal inline styles
-   - Optimized animations
-   - Preconnect to external resources
-
-### Animations
-
-- **Gradient Shift**: 15s infinite ease animation
-- **Pulse**: Built-in Tailwind animation
-- **Hover Effects**: Scale transforms (105-110%)
-- **Fade In**: Intersection Observer triggered
-
-### Typography
-
-- **Headings**: Font-black (900 weight)
-- **Body**: Regular weight with gray-400 color
-- **Gradients**: Text gradients for emphasis
-
-### Responsive Design
-
-- Mobile-first approach
-- Breakpoints: 480px, 768px, 1024px, 1200px
-- Grid layouts adapt from 3 columns to 1 column
-- Touch-friendly button sizes (min 44px)
-
-## 🚀 Pages Updated
-
-1. **Landing Page** (`/public/landing.html`)
-   - Split hero layout
-   - Animated gradients
-   - Browser mockup section
-   - Bento grid features
-
-2. **Pricing Page** (`/components/PricingPage.tsx`)
-   - Three-tier pricing cards
-   - Billing toggle (monthly/yearly)
-   - FAQ section
-   - Hover animations
-
-3. **Dashboard** (`/components/Dashboard.tsx`)
-   - Stats cards with gradients
-   - Content creator interface
-   - Recent activity timeline
-   - Welcome header
-
-4. **Subscription Manager** (`/components/SubscriptionManager.tsx`)
-   - Current plan display
-   - Usage statistics with progress bar
-   - Billing history
-   - Cancel modal
-
-5. **Content Creator** (`/components/ContentCreator.tsx`)
-   - Text input area
-   - Format selection buttons
-   - Generate button with loading state
-
-## 🎯 Design Principles
-
-1. **Consistency**: All pages share the same dark theme and component styles
-2. **Performance**: Fast loading with optimized animations
-3. **Accessibility**: High contrast, clear hierarchy, touch-friendly
-4. **Modern**: Glassmorphism, gradients, smooth transitions
-5. **Responsive**: Works perfectly on all screen sizes
-
-## 📱 Mobile Considerations
-
-- Simplified navigation on mobile
-- Stacked layouts for better readability
-- Larger touch targets
-- Reduced animation complexity
-- Optimized font sizes
-
-## 🔮 Future Enhancements
-
-- Dark/light mode toggle
-- Custom theme colors
-- Animation preferences
-- Accessibility settings
+### Interactive Elements
+- **Focus Rings**: All interactive elements must have a distinct `ring-2 ring-blue-500` on focus.
+- **Hover States**: Subtle vertical lift (`-translate-y-1`) for cards. Darkening for buttons.

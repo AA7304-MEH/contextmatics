@@ -3,13 +3,14 @@
  */
 
 export const validateEnvironmentVariables = () => {
-  const requiredVars = [
-    'VITE_RAZORPAY_KEY_ID',
-    'VITE_PAYPAL_CLIENT_ID', 
+  const REQUIRED_ENV_VARS = [
+    'VITE_SUPABASE_URL',
+    'VITE_SUPABASE_ANON_KEY',
+    // 'VITE_REPLICATE_API_KEY', // Optional for real AI
     'VITE_GEMINI_API_KEY'
   ];
 
-  const missingVars = requiredVars.filter(varName => {
+  const missingVars = REQUIRED_ENV_VARS.filter(varName => {
     const value = import.meta.env[varName];
     return !value || value === '';
   });
@@ -27,7 +28,7 @@ export const validateEnvironmentVariables = () => {
 
 export const getEnvironmentInfo = () => {
   const key = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) as string | undefined;
-  
+
   // Check if it's a development mode (missing or placeholder key)
   const isDevMode = import.meta.env.DEV && (
     !key ||
@@ -35,7 +36,7 @@ export const getEnvironmentInfo = () => {
     key.includes('your_clerk') ||
     key.includes('test_dummy')
   );
-  
+
   return {
     hasRazorpay: !!import.meta.env.VITE_RAZORPAY_KEY_ID && !import.meta.env.VITE_RAZORPAY_KEY_ID?.includes('dummy'),
     hasPaypal: !!import.meta.env.VITE_PAYPAL_CLIENT_ID && !import.meta.env.VITE_PAYPAL_CLIENT_ID?.includes('dummy'),

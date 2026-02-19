@@ -10,7 +10,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const generateContent = async (content: string, format: string): Promise<string> => {
     // Check for dummy or missing key for Demo Mode
     if (!API_KEY || API_KEY.includes('dummy')) {
-        console.log('🤖 DEMO MODE: Generating mock content for', format);
+        console.debug('[Demo] Generating mock content for', format);
         await delay(2000); // Simulate network latency
 
         // Return mock content based on format

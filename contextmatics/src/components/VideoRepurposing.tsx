@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { PageLayout } from './shared';
 
 const processingStages = [
@@ -11,7 +12,6 @@ const processingStages = [
 ];
 
 // Dynamic generation of clips based on duration
-// Dynamic generation of clips based on settings
 const generateMockClips = (duration: number, mode: 'highlights' | 'summary', platform: string) => {
     if (mode === 'summary') {
         return [
@@ -29,8 +29,8 @@ const generateMockClips = (duration: number, mode: 'highlights' | 'summary', pla
 const VideoRepurposing: React.FC = () => {
     const navigate = useNavigate();
     const { user, decrementCredits } = useAuth();
+    const { showToast } = useToast();
 
-    // Configuration State
     // Configuration State
     const [platform, setPlatform] = useState<'shorts' | 'tiktok' | 'reels'>('shorts');
     const [processingMode, setProcessingMode] = useState<'highlights' | 'summary'>('highlights');
@@ -39,7 +39,6 @@ const VideoRepurposing: React.FC = () => {
     const [captionStyle, setCaptionStyle] = useState<'hormozi' | 'neon' | 'minimal'>('hormozi');
     const [showCaptions, setShowCaptions] = useState(true);
 
-    // Core State
     // Core State
     const [step, setStep] = useState<'input' | 'processing' | 'editor'>('input');
     const [videoUrl, setVideoUrl] = useState('');
@@ -95,7 +94,7 @@ const VideoRepurposing: React.FC = () => {
         const validation = validateFile(file);
 
         if (!validation.valid) {
-            alert(validation.error);
+            showToast(validation.error || 'Invalid file', 'warning');
             return;
         }
 
@@ -160,14 +159,14 @@ const VideoRepurposing: React.FC = () => {
 
         // Credit validation before processing
         if (!user || user.processingCredits <= 0) {
-            alert('No credits remaining! Please upgrade your plan to continue processing videos.');
+            showToast('No credits remaining! Please upgrade your plan to continue processing videos.', 'error');
             navigate('/pricing');
             return;
         }
 
         // Validate YouTube URL if provided
         if (videoUrl && !validateYouTubeUrl(videoUrl)) {
-            alert('Invalid YouTube URL. Please enter a valid YouTube link.');
+            showToast('Invalid YouTube URL. Please enter a valid YouTube link.', 'warning');
             return;
         }
 
@@ -215,9 +214,9 @@ const VideoRepurposing: React.FC = () => {
             setRenderProgress(0);
             await processVideoExport();
         } else if (videoUrl) {
-            alert('YouTube Download Restriction: \n\nDirect browser-download for YouTube links is blocked by CORS security policies. \n\nIn a production environment, this would be handled by a backend server (ffmpeg). For this demo, please upload a local file to test the high-quality cropping engine.');
+            showToast('YouTube downloads require a backend server (ffmpeg). Upload a local file to test the cropping engine.', 'info');
         } else {
-            alert('No video source found to export.');
+            showToast('No video source found to export.', 'warning');
         }
     };
 
@@ -328,76 +327,56 @@ const VideoRepurposing: React.FC = () => {
                 src={videoPreviewUrl}
                 style={{ display: 'none' }}
                 crossOrigin="anonymous"
-                muted={false} // Must be unmuted for capture usually, but we might mute DOM output. Let's try regular.
+                muted={false}
             />
             <canvas ref={renderCanvasRef} style={{ display: 'none' }} />
 
             {/* Rendering Overlay */}
             {isRendering && (
-                <div style={{
-                    position: 'fixed',
-                    inset: 0,
-                    backgroundColor: 'rgba(0,0,0,0.9)',
-                    zIndex: 9999,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white'
-                }}>
-                    <div style={{ width: '300px', marginBottom: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center text-white backdrop-blur-md">
+                    <div className="w-[300px] mb-4">
+                        <div className="flex justify-between mb-2 text-sm font-bold">
                             <span>High-Quality Rendering...</span>
                             <span>{Math.round(renderProgress)}%</span>
                         </div>
-                        <div style={{ width: '100%', height: '8px', backgroundColor: '#374151', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: `${renderProgress}%`, height: '100%', backgroundColor: '#ec4899', transition: 'width 0.1s linear' }}></div>
+                        <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-pink-500 to-violet-500 transition-all duration-100 ease-linear"
+                                style={{ width: `${renderProgress}%` }}
+                            />
                         </div>
                     </div>
-                    <p style={{ opacity: 0.7, fontSize: '0.9rem' }}>Generating {platform} formatted video (1080x1920)</p>
+                    <p className="opacity-70 text-sm font-mono">Generating {platform} formatted video (1080x1920)</p>
                 </div>
             )}
 
-            <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-
-                {/* ... input and processing steps remain unchanged ... */}
+            <div className="cx-container py-12">
 
                 {step === 'input' && (
-                    // ... (keep existing input step code) ...
-                    <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-                        <h1 style={{ fontSize: '3.5rem', fontWeight: '800', color: '#111827', marginBottom: '1.5rem', lineHeight: 1.1 }}>
+                    <div className="max-w-4xl mx-auto text-center animate-fade-in-up">
+                        <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tighter text-white">
                             Turn Long Videos into <br />
-                            <span style={{ background: 'linear-gradient(to right, #ec4899, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Viral Shorts</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 animate-gradient-x">Viral Shorts</span>
                         </h1>
-                        <p style={{ fontSize: '1.25rem', color: '#4b5563', marginBottom: '3rem' }}>
+                        <p className="text-xl text-zinc-400 mb-12 max-w-2xl mx-auto font-light">
                             Paste a YouTube link or upload a video. Our AI will find the best moments and reframe them for TikTok, Reels, and Shorts.
                         </p>
 
-                        <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '3rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #f3f4f6' }}>
-                            <div style={{ marginBottom: '2rem' }}>
+                        <div className="card p-10 text-left border border-white/10 bg-white/5 backdrop-blur-sm">
+                            <div className="mb-8">
                                 <input
                                     type="text"
                                     placeholder="Paste YouTube URL here..."
                                     value={videoUrl}
                                     onChange={(e) => setVideoUrl(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '1.25rem',
-                                        borderRadius: '16px',
-                                        border: '2px solid #e5e7eb',
-                                        fontSize: '1.125rem',
-                                        outline: 'none',
-                                        transition: 'all 0.2s'
-                                    }}
-                                    onFocus={(e) => e.target.style.borderColor = '#ec4899'}
-                                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                                    className="input text-lg py-6 bg-black/40 border-white/10 focus:border-pink-500/50 focus:ring-pink-500/20 placeholder:text-zinc-600"
                                 />
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                                <div style={{ height: '1px', backgroundColor: '#e5e7eb', flex: 1 }}></div>
-                                <span style={{ color: '#9ca3af', fontWeight: '500' }}>OR</span>
-                                <div style={{ height: '1px', backgroundColor: '#e5e7eb', flex: 1 }}></div>
+                            <div className="flex items-center justify-center gap-4 mb-8">
+                                <div className="h-px bg-white/10 flex-1"></div>
+                                <span className="text-zinc-500 font-medium uppercase text-xs tracking-widest">Or Upload File</span>
+                                <div className="h-px bg-white/10 flex-1"></div>
                             </div>
 
                             {/* File Upload Area */}
@@ -406,7 +385,7 @@ const VideoRepurposing: React.FC = () => {
                                 type="file"
                                 accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
                                 onChange={handleFileInputChange}
-                                style={{ display: 'none' }}
+                                className="hidden"
                             />
 
                             <div
@@ -415,21 +394,17 @@ const VideoRepurposing: React.FC = () => {
                                 onDragOver={handleDragOver}
                                 onDragLeave={handleDragLeave}
                                 onDrop={handleDrop}
-                                style={{
-                                    border: `2px dashed ${isDragging ? '#ec4899' : '#e5e7eb'}`,
-                                    borderRadius: '16px',
-                                    padding: '3rem',
-                                    cursor: 'pointer',
-                                    backgroundColor: isDragging ? '#fdf2f8' : '#f9fafb',
-                                    transition: 'all 0.2s'
-                                }}
+                                className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${isDragging
+                                    ? 'border-pink-500 bg-pink-500/10 scale-[1.02]'
+                                    : 'border-white/10 bg-black/20 hover:border-white/20 hover:bg-black/30'
+                                    }`}
                             >
                                 {uploadedFile ? (
-                                    <div>
-                                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-                                        <p style={{ fontSize: '1.125rem', fontWeight: '600', color: '#10b981' }}>File uploaded successfully!</p>
-                                        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>{uploadedFile.name}</p>
-                                        <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                                    <div className="animate-fade-in-up">
+                                        <div className="text-5xl mb-4">✅</div>
+                                        <p className="text-lg font-bold text-emerald-400">File uploaded successfully!</p>
+                                        <p className="text-sm text-zinc-400 mt-1 font-medium">{uploadedFile.name}</p>
+                                        <p className="text-xs text-zinc-600 mt-1 font-mono">
                                             {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB
                                         </p>
                                         <button
@@ -439,28 +414,18 @@ const VideoRepurposing: React.FC = () => {
                                                 setVideoPreviewUrl('');
                                                 if (fileInputRef.current) fileInputRef.current.value = '';
                                             }}
-                                            style={{
-                                                marginTop: '1rem',
-                                                padding: '0.5rem 1rem',
-                                                backgroundColor: '#fee2e2',
-                                                color: '#dc2626',
-                                                border: 'none',
-                                                borderRadius: '8px',
-                                                cursor: 'pointer',
-                                                fontSize: '0.875rem',
-                                                fontWeight: '600'
-                                            }}
+                                            className="mt-6 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm font-bold hover:bg-red-500/20 transition-colors"
                                         >
                                             Remove File
                                         </button>
                                     </div>
                                 ) : (
                                     <div>
-                                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📁</div>
-                                        <p style={{ fontSize: '1.125rem', fontWeight: '600', color: '#4b5563' }}>
+                                        <div className="text-5xl mb-4 opacity-50 grayscale hover:grayscale-0 transition-all duration-300">📁</div>
+                                        <p className="text-lg font-bold text-zinc-300">
                                             {isDragging ? 'Drop video here' : 'Click to upload or drag & drop'}
                                         </p>
-                                        <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>MP4, MOV, AVI, WebM up to 1GB</p>
+                                        <p className="text-sm text-zinc-500 mt-2">MP4, MOV, AVI, WebM up to 1GB</p>
                                     </div>
                                 )}
                             </div>
@@ -468,59 +433,39 @@ const VideoRepurposing: React.FC = () => {
                             <button
                                 onClick={handleProcess}
                                 disabled={!videoUrl && !uploadedFile}
-                                style={{
-                                    width: '100%',
-                                    marginTop: '2rem',
-                                    padding: '1.25rem',
-                                    borderRadius: '16px',
-                                    fontSize: '1.25rem',
-                                    fontWeight: '700',
-                                    border: 'none',
-                                    cursor: !videoUrl ? 'not-allowed' : 'pointer',
-                                    background: !videoUrl ? '#e5e7eb' : 'linear-gradient(to right, #ec4899, #8b5cf6)',
-                                    color: !videoUrl ? '#9ca3af' : 'white',
-                                    transition: 'all 0.3s',
-                                    boxShadow: !videoUrl ? 'none' : '0 10px 15px -3px rgba(236, 72, 153, 0.3)'
-                                }}
+                                className={`btn w-full text-xl py-5 mt-8 font-bold tracking-wide transition-all duration-300 ${!videoUrl && !uploadedFile
+                                    ? 'btn--secondary opacity-50 cursor-not-allowed'
+                                    : 'btn--primary bg-gradient-to-r from-pink-600 to-violet-600 hover:shadow-lg hover:shadow-pink-500/20 hover:-translate-y-0.5'
+                                    }`}
                             >
                                 ✨ Generate Shorts
                             </button>
 
                             {/* Configuration Panel */}
-                            <div style={{ marginTop: '2rem', padding: '2rem', backgroundColor: '#f9fafb', borderRadius: '24px', border: '1px solid #e5e7eb' }}>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: '800', marginBottom: '1.5rem', color: '#111827', textAlign: 'left' }}>
-                                    🤖 AI Configuration Engine
+                            <div className="mt-8 p-8 bg-black/20 rounded-3xl border border-white/5">
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2">
+                                    <span className="text-lg">⚙️</span> AI Configuration Engine
                                 </h3>
 
-                                <div style={{ display: 'grid', gap: '2rem' }}>
+                                <div className="grid gap-8">
                                     {/* 1. Platform Selection */}
-                                    <div style={{ textAlign: 'left' }}>
-                                        <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '700', fontSize: '0.9rem', color: '#374151' }}>1. Target Platform</label>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                                    <div>
+                                        <label className="block mb-3 font-medium text-sm text-zinc-400">Target Platform</label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                             {[
-                                                { id: 'shorts', label: 'YouTube Shorts', icon: '▶️' },
-                                                { id: 'reels', label: 'Instagram Reels', icon: '📸' },
+                                                { id: 'shorts', label: 'Shorts', icon: '▶️' },
+                                                { id: 'reels', label: 'Reels', icon: '📸' },
                                                 { id: 'tiktok', label: 'TikTok', icon: '🎵' }
                                             ].map(p => (
                                                 <button
                                                     key={p.id}
                                                     onClick={() => setPlatform(p.id as any)}
-                                                    style={{
-                                                        padding: '1rem',
-                                                        borderRadius: '12px',
-                                                        border: platform === p.id ? '2px solid #ec4899' : '1px solid #e5e7eb',
-                                                        backgroundColor: platform === p.id ? '#fdf2f8' : 'white',
-                                                        color: platform === p.id ? '#be185d' : '#4b5563',
-                                                        fontWeight: '600',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        alignItems: 'center',
-                                                        gap: '0.5rem',
-                                                        transition: 'all 0.2s'
-                                                    }}
+                                                    className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${platform === p.id
+                                                        ? 'border-pink-500/50 bg-pink-500/10 text-pink-400 font-bold shadow-[0_0_15px_rgba(236,72,153,0.1)]'
+                                                        : 'border-white/5 bg-white/5 text-zinc-400 hover:bg-white/10 hover:border-white/10'
+                                                        }`}
                                                 >
-                                                    <span style={{ fontSize: '1.5rem' }}>{p.icon}</span>
+                                                    <span className="text-2xl">{p.icon}</span>
                                                     <span>{p.label}</span>
                                                 </button>
                                             ))}
@@ -528,92 +473,66 @@ const VideoRepurposing: React.FC = () => {
                                     </div>
 
                                     {/* 2. Processing Mode */}
-                                    <div style={{ textAlign: 'left' }}>
-                                        <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '700', fontSize: '0.9rem', color: '#374151' }}>2. AI Processing Mode</label>
-                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <div>
+                                        <label className="block mb-3 font-medium text-sm text-zinc-400">AI Logic</label>
+                                        <div className="flex gap-4 flex-col sm:flex-row">
                                             <button
                                                 onClick={() => setProcessingMode('highlights')}
-                                                style={{
-                                                    flex: 1,
-                                                    padding: '1rem',
-                                                    borderRadius: '12px',
-                                                    border: processingMode === 'highlights' ? '2px solid #8b5cf6' : '1px solid #e5e7eb',
-                                                    backgroundColor: processingMode === 'highlights' ? '#f5f3ff' : 'white',
-                                                    color: processingMode === 'highlights' ? '#6d28d9' : '#4b5563',
-                                                    textAlign: 'left',
-                                                    cursor: 'pointer'
-                                                }}
+                                                className={`flex-1 p-4 rounded-xl border text-left transition-all ${processingMode === 'highlights'
+                                                    ? 'border-violet-500/50 bg-violet-500/10 text-violet-300 shadow-[0_0_15px_rgba(139,92,246,0.1)]'
+                                                    : 'border-white/5 bg-white/5 text-zinc-400 hover:bg-white/10'
+                                                    }`}
                                             >
-                                                <div style={{ fontWeight: '700', marginBottom: '0.25rem' }}>🔥 Viral Highlights</div>
-                                                <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Finds multiple viral moments from long video.</div>
+                                                <div className="font-bold mb-1 flex items-center gap-2">🔥 Viral Highlights</div>
+                                                <div className="text-xs opacity-70">Finds multiple viral moments from long video.</div>
                                             </button>
                                             <button
                                                 onClick={() => setProcessingMode('summary')}
-                                                style={{
-                                                    flex: 1,
-                                                    padding: '1rem',
-                                                    borderRadius: '12px',
-                                                    border: processingMode === 'summary' ? '2px solid #8b5cf6' : '1px solid #e5e7eb',
-                                                    backgroundColor: processingMode === 'summary' ? '#f5f3ff' : 'white',
-                                                    color: processingMode === 'summary' ? '#6d28d9' : '#4b5563',
-                                                    textAlign: 'left',
-                                                    cursor: 'pointer'
-                                                }}
+                                                className={`flex-1 p-4 rounded-xl border text-left transition-all ${processingMode === 'summary'
+                                                    ? 'border-violet-500/50 bg-violet-500/10 text-violet-300 shadow-[0_0_15px_rgba(139,92,246,0.1)]'
+                                                    : 'border-white/5 bg-white/5 text-zinc-400 hover:bg-white/10'
+                                                    }`}
                                             >
-                                                <div style={{ fontWeight: '700', marginBottom: '0.25rem' }}>📝 Summarize to Short</div>
-                                                <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Condenses entire video into one cohesive short.</div>
+                                                <div className="font-bold mb-1 flex items-center gap-2">📝 Summarize</div>
+                                                <div className="text-xs opacity-70">Condenses entire video into one cohesive short.</div>
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* 3. Duration & Custom */}
-                                    <div style={{ textAlign: 'left' }}>
-                                        <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '700', fontSize: '0.9rem', color: '#374151' }}>3. Exact Duration Control (AI Adjusted)</label>
-                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                                    <div>
+                                        <label className="block mb-3 font-medium text-sm text-zinc-400">Duration Limit</label>
+                                        <div className="flex gap-4 items-start flex-col sm:flex-row">
+                                            <div className="flex-1 w-full">
+                                                <div className="flex gap-2 mb-2">
                                                     {[15, 30, 60].map(d => (
                                                         <button
                                                             key={d}
                                                             onClick={() => { setTargetDuration(d); setCustomDuration(d.toString()); }}
-                                                            style={{
-                                                                flex: 1,
-                                                                padding: '0.75rem',
-                                                                borderRadius: '8px',
-                                                                border: parseInt(customDuration) === d ? '2px solid #10b981' : '1px solid #e5e7eb',
-                                                                backgroundColor: parseInt(customDuration) === d ? '#ecfdf5' : 'white',
-                                                                color: parseInt(customDuration) === d ? '#047857' : '#4b5563',
-                                                                fontWeight: '600',
-                                                                cursor: 'pointer'
-                                                            }}
+                                                            className={`flex-1 py-3 rounded-lg border font-semibold transition-all text-sm ${parseInt(customDuration) === d
+                                                                ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
+                                                                : 'border-white/5 bg-white/5 text-zinc-400 hover:bg-white/10'
+                                                                }`}
                                                         >
-                                                            {d}s Preset
+                                                            {d}s
                                                         </button>
                                                     ))}
                                                 </div>
                                             </div>
-                                            <div style={{ width: '200px' }}>
-                                                <label style={{ fontSize: '0.75rem', fontWeight: '600', display: 'block', marginBottom: '0.25rem' }}>Custom Duration (sec)</label>
-                                                <input
-                                                    type="number"
-                                                    value={customDuration}
-                                                    onChange={(e) => setCustomDuration(e.target.value)}
-                                                    min="5"
-                                                    max="300"
-                                                    style={{
-                                                        width: '100%',
-                                                        padding: '0.75rem',
-                                                        borderRadius: '8px',
-                                                        border: '2px solid #e5e7eb',
-                                                        fontWeight: 'bold',
-                                                        fontSize: '1rem'
-                                                    }}
-                                                />
+                                            <div className="w-full sm:w-32">
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={customDuration}
+                                                        onChange={(e) => setCustomDuration(e.target.value)}
+                                                        min="5"
+                                                        max="300"
+                                                        className="input font-mono text-center pr-8"
+                                                    />
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">s</span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.5rem' }}>
-                                            * Our Deep Learning Engine will strictly adhere to the {customDuration}s time limit.
-                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -621,45 +540,26 @@ const VideoRepurposing: React.FC = () => {
                     </div>
                 )}
 
+                {/* Processing State */}
                 {step === 'processing' && (
-                    <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', paddingTop: '5rem' }}>
-                        <div style={{ marginBottom: '3rem' }}>
-                            <div style={{
-                                width: '80px',
-                                height: '80px',
-                                margin: '0 auto',
-                                border: '4px solid #f3f4f6',
-                                borderTop: '4px solid #ec4899',
-                                borderRadius: '50%',
-                                animation: 'spin 1s linear infinite'
-                            }}></div>
+                    <div className="max-w-xl mx-auto text-center pt-20 animate-fade-in">
+                        <div className="mb-12 relative">
+                            <div className="absolute inset-0 bg-pink-500/20 blur-3xl rounded-full"></div>
+                            <div className="w-24 h-24 mx-auto rounded-full border-4 border-white/5 border-t-pink-500 animate-spin relative z-10"></div>
                         </div>
-                        <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', marginBottom: '1rem' }}>
-                            AI is working its magic...
+                        <h2 className="text-3xl font-bold text-white mb-8 tracking-tight">
+                            AI is analyzing content...
                         </h2>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+                        <div className="flex flex-col gap-4 items-start max-w-sm mx-auto">
                             {processingStages.map((stage, index) => (
-                                <div key={index} style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '1rem',
-                                    opacity: index <= processingStage ? 1 : 0.4,
-                                    transition: 'opacity 0.5s'
-                                }}>
-                                    <div style={{
-                                        width: '24px',
-                                        height: '24px',
-                                        borderRadius: '50%',
-                                        backgroundColor: index < processingStage ? '#10b981' : (index === processingStage ? '#ec4899' : '#e5e7eb'),
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: 'white',
-                                        fontSize: '14px'
-                                    }}>
-                                        {index < processingStage ? '✓' : (index === processingStage ? '●' : '')}
+                                <div key={index} className={`flex items-center gap-4 transition-all duration-500 w-full ${index <= processingStage ? 'opacity-100 transform translate-x-2' : 'opacity-30'}`}>
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-black text-xs font-bold shadow-lg transition-all ${index < processingStage ? 'bg-emerald-400' : (index === processingStage ? 'bg-pink-500 animate-pulse scale-110' : 'bg-zinc-800')
+                                        }`}>
+                                        {index < processingStage ? '✓' : ''}
                                     </div>
-                                    <span style={{ fontSize: '1.125rem', fontWeight: index === processingStage ? '600' : '400', color: '#4b5563' }}>{stage}</span>
+                                    <span className={`text-base font-mono ${index === processingStage ? 'text-white' : 'text-zinc-500'}`}>
+                                        {stage}
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -669,91 +569,87 @@ const VideoRepurposing: React.FC = () => {
 
                 {/* Editor Content */}
                 {step === 'editor' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem', height: 'calc(100vh - 10rem)' }}>
+                    <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 h-[calc(100vh-10rem)] min-h-[600px]">
                         {/* Sidebar - Clips */}
-                        <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', overflowY: 'auto' }}>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1.5rem', color: '#111827' }}>Viral Moments Found</h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div className="sidebar-nav !w-full !static !h-full bg-black/20 border border-white/10 rounded-2xl">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 px-2">Viral Moments Found</h3>
+                            <div className="flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar flex-1">
                                 {currentClips.map((clip) => (
                                     <div
                                         key={clip.id}
                                         onClick={() => setSelectedClip(clip.id)}
-                                        style={{
-                                            padding: '1rem',
-                                            borderRadius: '12px',
-                                            backgroundColor: selectedClip === clip.id ? '#fdf2f8' : '#f9fafb',
-                                            border: selectedClip === clip.id ? '2px solid #ec4899' : '2px solid transparent',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                        }}
+                                        className={`p-4 rounded-xl border cursor-pointer transition-all group ${selectedClip === clip.id
+                                            ? 'border-pink-500/50 bg-pink-500/10 shadow-[0_0_15px_rgba(236,72,153,0.1)]'
+                                            : 'border-transparent hover:bg-white/5'
+                                            }`}
                                     >
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                            <span style={{ fontWeight: '600', color: '#111827' }}>{clip.title}</span>
-                                            <span style={{ backgroundColor: '#d1fae5', color: '#059669', padding: '0.125rem 0.5rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '700' }}>{clip.score} Viral Score</span>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className={`font-semibold text-sm leading-tight group-hover:text-white transition-colors ${selectedClip === clip.id ? 'text-white' : 'text-zinc-400'}`}>{clip.title}</span>
                                         </div>
-                                        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{clip.time}</div>
+                                        <div className="flex justify-between items-center mt-2">
+                                            <div className="text-[10px] font-mono text-zinc-500 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{clip.time}</div>
+                                            <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                                                🔥 {clip.score}
+                                            </span>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* Editor Area */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem' }}>
+                        <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 h-full">
                             {/* Main Preview */}
-                            <div style={{ backgroundColor: 'black', borderRadius: '24px', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                            <div className="card bg-black rounded-2xl overflow-hidden relative flex items-center justify-center border border-white/10 h-full max-h-[800px]">
                                 {uploadedFile && videoPreviewUrl ? (
                                     <video
-                                        key={`main-${selectedClip}`} // Force re-render on clip change
+                                        key={`main-${selectedClip}`}
                                         src={`${videoPreviewUrl}#t=${startSeconds},${endSeconds}`}
                                         controls
                                         autoPlay
-                                        style={{ width: '100%', height: '100%', maxHeight: '600px', objectFit: 'contain' }}
+                                        className="w-full h-full object-contain"
                                     />
                                 ) : videoUrl ? (
                                     <iframe
                                         width="100%"
                                         height="100%"
-                                        style={{ minHeight: '400px', border: 'none' }}
+                                        className="w-full h-full border-0 min-h-[400px]"
                                         src={`https://www.youtube.com/embed/${getYouTubeId(videoUrl)}?start=${startSeconds}&end=${endSeconds}&autoplay=1&rel=0`}
                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                         allowFullScreen
                                     ></iframe>
                                 ) : (
-                                    <div style={{ color: 'white', textAlign: 'center', padding: '5rem' }}>
-                                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>▶️</div>
-                                        <p>Original Video Preview</p>
+                                    <div className="text-zinc-600 text-center p-20">
+                                        <div className="text-6xl mb-4 opacity-50">▶️</div>
+                                        <p className="font-mono text-sm">Original Video Preview</p>
                                     </div>
                                 )}
                             </div>
 
 
                             {/* Vertical Preview & Creative Studio */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div className="flex flex-col gap-6 h-full overflow-y-auto">
                                 {/* Creative Studio Controls */}
-                                <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-                                    <h4 style={{ fontSize: '0.875rem', fontWeight: '700', marginBottom: '0.75rem', color: '#374151' }}>✨ Creative Studio</h4>
+                                <div className="card p-6 border border-white/10 bg-black/20">
+                                    <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2">
+                                        ✨ Creative Studio
+                                    </h4>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                        <label style={{ fontSize: '0.875rem', fontWeight: '500', color: '#4b5563' }}>AI Captions</label>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <label className="text-sm font-medium text-zinc-300">AI Captions</label>
                                         <button
                                             onClick={() => setShowCaptions(!showCaptions)}
-                                            style={{
-                                                padding: '0.25rem 0.75rem',
-                                                borderRadius: '999px',
-                                                fontSize: '0.75rem',
-                                                fontWeight: '600',
-                                                backgroundColor: showCaptions ? '#d1fae5' : '#f3f4f6',
-                                                color: showCaptions ? '#059669' : '#9ca3af',
-                                                border: 'none',
-                                                cursor: 'pointer'
-                                            }}
+                                            className={`px-3 py-1 rounded-full text-[10px] font-bold transition-colors ${showCaptions
+                                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
+                                                : 'bg-white/5 text-zinc-500 border border-white/5'
+                                                }`}
                                         >
                                             {showCaptions ? 'ON' : 'OFF'}
                                         </button>
                                     </div>
 
                                     {showCaptions && (
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                                        <div className="grid grid-cols-3 gap-2 mb-8">
                                             {[
                                                 { id: 'hormozi', label: 'Bold', color: '#fbbf24' },
                                                 { id: 'neon', label: 'Neon', color: '#06b6d4' },
@@ -762,60 +658,35 @@ const VideoRepurposing: React.FC = () => {
                                                 <button
                                                     key={style.id}
                                                     onClick={() => setCaptionStyle(style.id as any)}
-                                                    style={{
-                                                        padding: '0.5rem',
-                                                        borderRadius: '8px',
-                                                        border: captionStyle === style.id ? `2px solid ${style.color}` : '1px solid #e5e7eb',
-                                                        backgroundColor: captionStyle === style.id ? 'white' : '#f9fafb',
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: '600',
-                                                        cursor: 'pointer',
-                                                        color: '#374151'
-                                                    }}
+                                                    className={`py-2 px-1 rounded-lg border font-medium text-[10px] transition-all ${captionStyle === style.id
+                                                        ? 'bg-white/10 text-white border-white/20'
+                                                        : 'bg-transparent text-zinc-500 border-transparent hover:bg-white/5'
+                                                        }`}
+                                                    style={{ borderColor: captionStyle === style.id ? style.color : 'transparent', color: captionStyle === style.id ? style.color : undefined }}
                                                 >
                                                     {style.label}
                                                 </button>
                                             ))}
                                         </div>
                                     )}
-                                    {/* Content Style Removed as per cleanup */}
-                                </div>
 
-
-                                <button
-                                    onClick={handleExport}
-                                    style={{
-                                        width: '100%',
-                                        marginTop: '1.5rem',
-                                        padding: '1rem',
-                                        borderRadius: '12px',
-                                        fontSize: '1rem',
-                                        fontWeight: '700',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        background: 'linear-gradient(to right, #ec4899, #8b5cf6)',
-                                        color: 'white',
-                                        boxShadow: '0 4px 6px -1px rgba(236, 72, 153, 0.3)'
-                                    }}
-                                >
-                                    Download {platform === 'tiktok' ? 'TikTok Video' : (platform === 'reels' ? 'Instagram Reel' : 'YouTube Short')}
-                                </button>
-                                <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem', opacity: 0.7 }}>
-                                    <span title="Optimized for TikTok" style={{ fontSize: '1.5rem' }}>🎵</span>
-                                    <span title="Optimized for Instagram Reels" style={{ fontSize: '1.5rem' }}>📸</span>
-                                    <span title="Optimized for YouTube Shorts" style={{ fontSize: '1.5rem' }}>▶️</span>
+                                    <button
+                                        onClick={handleExport}
+                                        className="btn btn--primary w-full py-4 text-base font-bold bg-gradient-to-r from-pink-600 to-violet-600 hover:shadow-lg hover:shadow-pink-500/20"
+                                    >
+                                        Download {platform === 'tiktok' ? 'TikTok' : (platform === 'reels' ? 'Instagram Reel' : 'Short')}
+                                    </button>
+                                    <div className="flex justify-center gap-4 mt-4 opacity-30 grayscale hover:grayscale-0 transition-all duration-500">
+                                        <span title="Optimized for TikTok" className="text-xl cursor-help hover:scale-110 transition-transform">🎵</span>
+                                        <span title="Optimized for Instagram Reels" className="text-xl cursor-help hover:scale-110 transition-transform">📸</span>
+                                        <span title="Optimized for YouTube Shorts" className="text-xl cursor-help hover:scale-110 transition-transform">▶️</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
-            <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
         </PageLayout>
     );
 };

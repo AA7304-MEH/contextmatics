@@ -1,13 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PageLayout } from './shared';
+import { useToast } from '../context/ToastContext';
 
 const VideoEditor: React.FC = () => {
+    const { showToast } = useToast();
     const [videoFile, setVideoFile] = useState<File | null>(null);
     const [videoUrl, setVideoUrl] = useState<string>('');
     const [activeTab, setActiveTab] = useState<'trim' | 'filters' | 'text' | 'audio'>('trim');
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportProgress, setExportProgress] = useState(0);
 
     // Cleanup video URL
     useEffect(() => {
@@ -18,7 +23,7 @@ const VideoEditor: React.FC = () => {
 
     const handleFileSelect = (file: File) => {
         if (!file.type.startsWith('video/')) {
-            alert('Please upload a valid video file.');
+            showToast('Please upload a valid video file.', 'warning');
             return;
         }
         setVideoFile(file);
@@ -34,18 +39,135 @@ const VideoEditor: React.FC = () => {
         }
     };
 
-    const handleExport = () => {
-        alert('Exporting video... (Simulation)');
+    // Hidden rendering refs
+
+    const handleExport = async () => {
+        if (!videoFile || !videoRef.current) {
+            showToast('No video loaded to export.', 'warning');
+            return;
+        }
+
+        setIsExporting(true);
+        setExportProgress(0);
+
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Save current state
+        const wasPaused = video.paused;
+        const originalTime = video.currentTime;
+
+        // Setup Export
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Audio stream setup
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const dest = audioCtx.createMediaStreamDestination();
+        const source = audioCtx.createMediaElementSource(video);
+        source.connect(dest);
+        source.connect(audioCtx.destination); // Keep playing audio for user feedback if desired, or duplicate
+
+        // Combine canvas stream and audio
+        const canvasStream = canvas.captureStream(30); // 30 FPS
+        if (dest.stream.getAudioTracks().length > 0) {
+            canvasStream.addTrack(dest.stream.getAudioTracks()[0]);
+        }
+
+        const chunks: Blob[] = [];
+        const mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm;codecs=vp9' });
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `edited_video_${Date.now()}.webm`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Cleanup
+            setIsExporting(false);
+            video.currentTime = originalTime;
+            if (wasPaused) video.pause();
+        };
+
+        // Start Recording
+        mediaRecorder.start();
+        video.currentTime = 0;
+        await video.play();
+
+        const duration = video.duration;
+
+        // Render Loop
+        const processFrame = () => {
+            if (!isExporting && mediaRecorder.state === 'inactive') return;
+
+            if (video.ended || video.currentTime >= duration) {
+                mediaRecorder.stop();
+                video.pause();
+                return;
+            }
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Apply Filters (Simple examples)
+            // Note: Canvas filters are cleaner but ctx.filter support is good in modern browsers
+            if (activeTab === 'filters') {
+                // In a real app, state would track the selected filter specifically
+            }
+
+            // Overlay Text (Mock implementation based on activeTab check)
+            /* 
+            if (activeTab === 'text') {
+                ctx.font = "40px Arial";
+                ctx.fillStyle = "white";
+                ctx.fillText("Sample Text", 50, 100);
+            }
+            */
+
+            setExportProgress((video.currentTime / duration) * 100);
+            requestAnimationFrame(processFrame);
+        };
+
+        processFrame();
     };
 
     return (
         <PageLayout showPricing={true} showSettings={true}>
-            <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-                <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-                    <h1 style={{ fontSize: '3rem', fontWeight: '800', color: '#111827', marginBottom: '1rem' }}>
+            {/* Real Export Canvas */}
+            <canvas ref={canvasRef} className="hidden" />
+
+            {isExporting && (
+                <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center backdrop-blur-sm">
+                    <div className="w-64 mb-4">
+                        <div className="flex justify-between text-white mb-2 text-sm font-bold">
+                            <span>Exporting...</span>
+                            <span>{Math.round(exportProgress)}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-brand-primary transition-all duration-100" style={{ width: `${exportProgress}%` }}></div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="container mx-auto px-6 py-12">
+                <div className="text-center mb-12">
+                    <h1 className="text-4xl font-bold mb-4 tracking-tight text-white">
                         Video Editor Studio
                     </h1>
-                    <p style={{ fontSize: '1.25rem', color: '#6b7280' }}>
+                    <p className="text-lg text-text-secondary">
                         Edit, trim, and enhance your videos manually.
                     </p>
                 </div>
@@ -56,267 +178,174 @@ const VideoEditor: React.FC = () => {
                         onDragLeave={() => setIsDragging(false)}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        style={{
-                            border: `3px dashed ${isDragging ? '#4f46e5' : '#e5e7eb'}`,
-                            borderRadius: '24px',
-                            padding: '5rem 2rem',
-                            textAlign: 'center',
-                            backgroundColor: isDragging ? '#eef2ff' : 'white',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            maxWidth: '800px',
-                            margin: '0 auto'
-                        }}
+                        className={`max-w-3xl mx-auto border-2 border-dashed rounded-3xl p-20 text-center cursor-pointer transition-all duration-300 ${isDragging
+                            ? 'border-brand-primary bg-brand-primary/10 scale-[1.02]'
+                            : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
+                            }`}
                     >
                         <input
                             ref={fileInputRef}
                             type="file"
                             accept="video/*"
-                            style={{ display: 'none' }}
+                            className="hidden"
                             onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
                         />
-                        <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>🎬</div>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>
+                        <div className="text-6xl mb-6 opacity-80 decoration-slice">🎬</div>
+                        <h3 className="text-2xl font-bold mb-2 text-white">
                             Upload Video to Edit
                         </h3>
-                        <p style={{ color: '#6b7280' }}>Drag & drop or click to browse</p>
+                        <p className="text-text-muted">Drag & drop or click to browse</p>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem', height: 'calc(100vh - 12rem)' }}>
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8 h-[calc(100vh-12rem)] min-h-[600px]">
                         {/* Main Editor Area */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div className="flex flex-col gap-6 h-full">
                             {/* Video Player */}
-                            <div style={{
-                                flex: 1,
-                                backgroundColor: 'black',
-                                borderRadius: '24px',
-                                overflow: 'hidden',
-                                position: 'relative',
-                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-                            }}>
+                            <div className="flex-1 bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-white/10">
                                 <video
                                     ref={videoRef}
                                     src={videoUrl}
                                     controls
-                                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                    className="w-full h-full object-contain"
                                 />
                             </div>
 
                             {/* Timeline (Visual Mock) */}
-                            <div style={{
-                                backgroundColor: 'white',
-                                borderRadius: '16px',
-                                padding: '1.5rem',
-                                border: '1px solid #e5e7eb'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.875rem', color: '#6b7280', fontWeight: '600' }}>
+                            <div className="card p-6 border border-white/10 bg-black/20 rounded-xl">
+                                <div className="flex justify-between mb-2 text-xs font-mono text-text-muted">
                                     <span>00:00</span>
-                                    <span>Timeline</span>
+                                    <span className="uppercase tracking-widest text-[10px]">Timeline</span>
                                     <span>05:30</span>
                                 </div>
-                                <div style={{ height: '60px', backgroundColor: '#f3f4f6', borderRadius: '8px', position: 'relative', overflow: 'hidden' }}>
+                                <div className="h-16 bg-white/5 rounded-lg relative overflow-hidden group cursor-pointer border border-white/5">
                                     {/* Mock waveforms */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        inset: '10px 0',
-                                        background: 'repeating-linear-gradient(90deg, #d1d5db 0px, #d1d5db 2px, transparent 2px, transparent 8px)',
-                                        opacity: 0.5
-                                    }} />
+                                    <div className="absolute inset-y-2 inset-x-0 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.1)_0px,rgba(255,255,255,0.1)_2px,transparent_2px,transparent_8px)] opacity-30" />
                                     {/* Scrubber */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        left: '30%',
-                                        top: 0,
-                                        bottom: 0,
-                                        width: '2px',
-                                        backgroundColor: '#ef4444',
-                                        zIndex: 10
-                                    }}>
-                                        <div style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: '-6px',
-                                            width: '14px',
-                                            height: '14px',
-                                            backgroundColor: '#ef4444',
-                                            borderRadius: '50%'
-                                        }} />
+                                    <div className="absolute left-[30%] top-0 bottom-0 w-0.5 bg-brand-primary z-10 group-hover:bg-brand-accent transition-colors shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+                                        <div className="absolute top-0 -left-1.5 w-3.5 h-3.5 bg-brand-primary rounded-full shadow-sm ring-2 ring-black" />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Sidebar Controls */}
-                        <div style={{
-                            backgroundColor: 'white',
-                            borderRadius: '24px',
-                            padding: '1.5rem',
-                            border: '1px solid #e5e7eb',
-                            display: 'flex',
-                            flexDirection: 'column'
-                        }}>
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', padding: '0.25rem', backgroundColor: '#f3f4f6', borderRadius: '12px' }}>
+                        <div className="w-full h-full bg-background-surface/50 border border-white/10 rounded-2xl flex flex-col overflow-hidden">
+                            <div className="flex gap-1 mb-6 p-4 bg-black/20 border-b border-white/5 sticky top-0 z-10 backdrop-blur-md">
                                 {['trim', 'filters', 'text', 'audio'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab as any)}
-                                        style={{
-                                            flex: 1,
-                                            padding: '0.75rem',
-                                            borderRadius: '10px',
-                                            border: 'none',
-                                            fontSize: '0.875rem',
-                                            fontWeight: '600',
-                                            cursor: 'pointer',
-                                            backgroundColor: activeTab === tab ? 'white' : 'transparent',
-                                            color: activeTab === tab ? '#4f46e5' : '#6b7280',
-                                            boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                            transition: 'all 0.2s',
-                                            textTransform: 'capitalize'
-                                        }}
+                                        className={`flex-1 py-2 px-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${activeTab === tab
+                                            ? 'bg-white/10 text-white shadow-sm border border-white/10'
+                                            : 'text-text-muted hover:text-text-secondary hover:bg-white/5'
+                                            }`}
                                     >
                                         {tab}
                                     </button>
                                 ))}
                             </div>
 
-                            <div style={{ flex: 1 }}>
+                            <div className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
                                 {activeTab === 'trim' && (
-                                    <div>
-                                        <h3 style={{ fontSize: '1.125rem', fontWeight: '700', marginBottom: '1rem' }}>Trim Video</h3>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div className="animate-fade-in space-y-6">
+                                        <h3 className="text-sm font-bold uppercase tracking-widest text-text-muted border-b border-white/5 pb-2">Trim Segment</h3>
+                                        <div className="space-y-4">
                                             <div>
-                                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>Start Time</label>
-                                                <input type="text" defaultValue="00:00.00" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                                <label className="text-xs font-medium text-text-secondary mb-2 block">Start Time</label>
+                                                <input
+                                                    type="text"
+                                                    defaultValue="00:00.00"
+                                                    className="input w-full font-mono text-center tracking-widest bg-black/40 border-white/10 text-white rounded-lg p-2 focus:border-brand-primary/50 outline-none"
+                                                />
                                             </div>
                                             <div>
-                                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>End Time</label>
-                                                <input type="text" defaultValue="00:15.00" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                                <label className="text-xs font-medium text-text-secondary mb-2 block">End Time</label>
+                                                <input
+                                                    type="text"
+                                                    defaultValue="00:15.00"
+                                                    className="input w-full font-mono text-center tracking-widest bg-black/40 border-white/10 text-white rounded-lg p-2 focus:border-brand-primary/50 outline-none"
+                                                />
                                             </div>
                                         </div>
                                     </div>
                                 )}
                                 {activeTab === 'filters' && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className="grid grid-cols-2 gap-3 animate-fade-in">
                                         {['None', 'Warm', 'Cool', 'B&W', 'Vivid', 'Vintage'].map(filter => (
-                                            <button key={filter} style={{
-                                                padding: '1rem',
-                                                borderRadius: '8px',
-                                                border: '1px solid #e5e7eb',
-                                                backgroundColor: '#f9fafb',
-                                                cursor: 'pointer',
-                                                fontWeight: '500'
-                                            }}>{filter}</button>
+                                            <button key={filter} className="p-4 rounded-xl border border-white/5 bg-white/5 text-text-secondary hover:border-brand-primary/50 hover:bg-brand-primary/10 hover:text-brand-primary transition-all font-medium text-sm">
+                                                {filter}
+                                            </button>
                                         ))}
                                     </div>
                                 )}
                                 {activeTab === 'text' && (
-                                    <div>
-                                        <h3 style={{ fontSize: '1.125rem', fontWeight: '700', marginBottom: '1rem' }}>Add Text Overlay</h3>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div className="animate-fade-in space-y-6">
+                                        <h3 className="text-sm font-bold uppercase tracking-widest text-text-muted border-b border-white/5 pb-2">Overlay Text</h3>
+                                        <div className="space-y-4">
                                             <div>
-                                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>Text Content</label>
-                                                <input type="text" placeholder="Enter text here..." style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                                <label className="text-xs font-medium text-text-secondary mb-2 block">Content</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Enter text here..."
+                                                    className="input w-full bg-black/40 border-white/10 text-white rounded-lg p-2 focus:border-brand-primary/50 outline-none"
+                                                />
                                             </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                            <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>Font</label>
-                                                    <select style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: 'white' }}>
+                                                    <label className="text-xs font-medium text-text-secondary mb-2 block">Font</label>
+                                                    <select
+                                                        className="input w-full bg-black/40 border-white/10 text-sm text-white rounded-lg p-2 outline-none"
+                                                    >
                                                         <option>Sans Serif</option>
                                                         <option>Serif</option>
                                                         <option>Monospace</option>
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>Color</label>
-                                                    <input type="color" style={{ width: '100%', height: '42px', borderRadius: '8px', border: '1px solid #d1d5db', padding: '2px' }} />
+                                                    <label className="text-xs font-medium text-text-secondary mb-2 block">Color</label>
+                                                    <input type="color" className="w-full h-[38px] rounded-lg border border-white/10 p-1 cursor-pointer bg-black/40" />
                                                 </div>
                                             </div>
-                                            <button style={{
-                                                padding: '0.75rem',
-                                                borderRadius: '8px',
-                                                backgroundColor: '#e0e7ff',
-                                                color: '#4338ca',
-                                                border: 'none',
-                                                fontWeight: '600',
-                                                cursor: 'pointer',
-                                                marginTop: '0.5rem'
-                                            }}>
+                                            <button className="btn btn-secondary w-full border-dashed border border-white/10 text-text-muted hover:border-white/30 hover:text-white bg-transparent justify-center">
                                                 + Add Text Layer
                                             </button>
                                         </div>
                                     </div>
                                 )}
                                 {activeTab === 'audio' && (
-                                    <div>
-                                        <h3 style={{ fontSize: '1.125rem', fontWeight: '700', marginBottom: '1rem' }}>Background Music</h3>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <div className="animate-fade-in space-y-6">
+                                        <h3 className="text-sm font-bold uppercase tracking-widest text-text-muted border-b border-white/5 pb-2">Soundtrack</h3>
+                                        <div className="space-y-3">
                                             {['Upbeat Pop', 'Chill Lofi', 'Corporate Energetic', 'Cinematic Build'].map((track) => (
-                                                <div key={track} style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    padding: '0.75rem',
-                                                    borderRadius: '8px',
-                                                    border: '1px solid #e5e7eb',
-                                                    backgroundColor: '#f9fafb'
-                                                }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        <span>🎵</span>
-                                                        <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>{track}</span>
+                                                <div key={track} className="flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/5 hover:border-white/20 transition-colors group">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-lg opacity-50 group-hover:opacity-100 transition-opacity">🎵</span>
+                                                        <span className="text-sm font-medium text-text-secondary group-hover:text-white">{track}</span>
                                                     </div>
-                                                    <button style={{
-                                                        padding: '0.25rem 0.75rem',
-                                                        borderRadius: '6px',
-                                                        backgroundColor: 'white',
-                                                        border: '1px solid #d1d5db',
-                                                        fontSize: '0.75rem',
-                                                        cursor: 'pointer'
-                                                    }}>Add</button>
+                                                    <button className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white/10 border border-white/10 rounded text-text-muted hover:bg-brand-primary hover:border-brand-primary hover:text-white transition-all">Add</button>
                                                 </div>
                                             ))}
-                                            <div style={{ marginTop: '1rem' }}>
-                                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>Volume</label>
-                                                <input type="range" min="0" max="100" defaultValue="80" style={{ width: '100%' }} />
+                                            <div className="mt-6">
+                                                <label className="label mb-2 block text-text-secondary text-xs font-medium">Volume Mix</label>
+                                                <input type="range" min="0" max="100" defaultValue="80" className="w-full accent-brand-primary h-1 bg-white/10 rounded-lg appearance-none cursor-pointer" />
                                             </div>
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+                            <div className="mt-auto p-6 border-t border-white/10 space-y-3 bg-black/20">
                                 <button
                                     onClick={handleExport}
-                                    style={{
-                                        width: '100%',
-                                        padding: '1rem',
-                                        borderRadius: '12px',
-                                        backgroundColor: '#4f46e5',
-                                        color: 'white',
-                                        border: 'none',
-                                        fontWeight: '700',
-                                        fontSize: '1rem',
-                                        cursor: 'pointer',
-                                        boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
-                                    }}
+                                    className="btn btn-primary w-full shadow-lg hover:shadow-brand-primary/20 bg-gradient-to-r from-brand-primary to-brand-accent justify-center"
                                 >
                                     Export Video
                                 </button>
                                 <button
                                     onClick={() => { setVideoFile(null); setVideoUrl(''); }}
-                                    style={{
-                                        width: '100%',
-                                        marginTop: '0.75rem',
-                                        padding: '0.75rem',
-                                        borderRadius: '12px',
-                                        backgroundColor: 'transparent',
-                                        color: '#ef4444',
-                                        border: 'none',
-                                        fontWeight: '600',
-                                        cursor: 'pointer'
-                                    }}
+                                    className="btn w-full text-text-muted hover:text-red-400 hover:bg-red-500/5 transition-colors text-sm justify-center bg-transparent border-transparent"
                                 >
-                                    Cancel
+                                    Cancel Project
                                 </button>
                             </div>
                         </div>

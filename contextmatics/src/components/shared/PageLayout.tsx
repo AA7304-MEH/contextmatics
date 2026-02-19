@@ -1,29 +1,27 @@
-import React, { ReactNode } from 'react';
-import { GradientOrbs } from './GradientOrbs';
+import React from 'react';
 import { ModernNav } from './ModernNav';
+import { Footer } from './Footer';
 
-interface PageLayoutProps {
-    children: ReactNode;
-    showPricing?: boolean;
-    showSettings?: boolean;
-    showHistory?: boolean;
-}
-
-export const PageLayout: React.FC<PageLayoutProps> = ({
-    children,
-    showPricing = true,
-    showSettings = false,
-    showHistory = false
-}) => {
+export const PageLayout: React.FC<{ children: React.ReactNode; showPricing?: boolean; showSettings?: boolean }> = ({ children }) => {
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', color: '#111827', position: 'relative' }}>
-            <GradientOrbs />
-            <ModernNav showPricing={showPricing} showSettings={showSettings} showHistory={showHistory} />
-            <div style={{ paddingTop: '8rem', paddingBottom: '3rem', position: 'relative', zIndex: 10 }}>
+        <div className="min-h-screen bg-background-primary text-text-primary font-sans selection:bg-brand-primary/30 flex flex-col">
+
+            {/* 1. CURSOR-STYLE NAVBAR (Replaced with ModernNav) */}
+            <ModernNav />
+
+            {/* 2. MAIN CONTENT WRAPPER */}
+            <main className="pt-24 pb-20 px-6 container mx-auto relative z-10 animate-fade-in flex-grow w-full">
                 {children}
-            </div>
+            </main>
+
+            {/* 3. SHARED FOOTER */}
+            <Footer />
+
+            {/* Background Ambient (Subtle) */}
+            <div className="fixed top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-brand-primary/5 to-transparent pointer-events-none z-0"></div>
+
         </div>
     );
 };
 
-export default PageLayout;
+

@@ -7,6 +7,48 @@ export interface User {
     plan: PlanId;
     processingCredits: number;
     subscription?: SubscriptionInfo;
+    role: 'user' | 'admin';
+    // New fields mapped from 'profiles' table
+    username?: string;
+    fullName?: string;
+    avatarUrl?: string;
+}
+
+export interface Profile {
+    id: string;
+    username: string;
+    full_name: string;
+    avatar_url: string;
+    plan: PlanId;
+    credits_remaining: number;
+    stripe_customer_id?: string;
+    created_at: string;
+    countryCode?: string;
+}
+
+export interface Snippet {
+    id: string;
+    user_id: string;
+    title: string;
+    content: string;
+    tags: string[];
+    is_public: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Video {
+    id: string;
+    user_id: string;
+    snippet_id?: string;
+    prompt: string;
+    platform: 'tiktok' | 'reels' | 'shorts';
+    style: string;
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    url?: string;
+    thumbnail_url?: string;
+    audio_url?: string;
+    created_at: string;
 }
 
 export interface SubscriptionInfo {

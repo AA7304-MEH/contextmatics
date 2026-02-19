@@ -1,0 +1,201 @@
+/* 
+   VISUAL SKIN GRAFT: CURSOR.COM 
+   Source: VISUAL_AUDIT.md
+*/
+
+:root {
+    /* --- 1. Foundational Tokens --- */
+
+    /* Colors */
+    --c-bg-primary: #000101;
+    /* True Black */
+    --c-bg-surface: #0A0A0A;
+    /* Zinc-950 */
+    --c-text-primary: #EDEDED;
+    /* Gray-200 */
+    --c-text-secondary: #A1A1AA;
+    /* Zinc-400 */
+    --c-accent-primary: #2563EB;
+    /* Blue-600 */
+    --c-accent-hover: #1D4ED8;
+    /* Blue-700 */
+    --c-border: rgba(255, 255, 255, 0.08);
+
+    /* Typography */
+    --font-stack: 'Inter', system-ui, -apple-system, sans-serif;
+    --text-h1: clamp(3.5rem, 8vw, 6rem);
+    --weight-h1: 500;
+    --tracking-h1: -0.04em;
+
+    --text-h2: clamp(2rem, 5vw, 3.5rem);
+    --weight-h2: 500;
+    --tracking-h2: -0.03em;
+
+    --text-body: 1.125rem;
+    /* 18px */
+    --lh-body: 1.6;
+
+    /* Layout & Effects */
+    --container-max: 1400px;
+    --section-pad: 120px 0;
+
+    --radius-btn: 9999px;
+    --radius-card: 16px;
+
+    --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.3);
+}
+
+/* --- 2. Global Reset --- */
+body {
+    background-color: var(--c-bg-primary);
+    color: var(--c-text-primary);
+    font-family: var(--font-stack);
+    line-height: var(--lh-body);
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p {
+    margin: 0;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* --- 3. Component Classes --- */
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-btn);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-family: var(--font-stack);
+}
+
+.btn-primary {
+    background-color: var(--c-accent-primary);
+    color: white;
+    padding: 12px 32px;
+    box-shadow: var(--shadow-glow);
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: var(--c-accent-hover);
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--c-text-secondary);
+    padding: 12px 32px;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--c-text-primary);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Cards */
+.card {
+    background-color: var(--c-bg-surface);
+    border-radius: var(--radius-card);
+    padding: 32px;
+    box-shadow: var(--shadow-card);
+    transition: border-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* Visual hack for shadow border change */
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+/* Layout Containers */
+.container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* Typography Helpers */
+.text-hero {
+    font-size: var(--text-h1);
+    font-weight: var(--weight-h1);
+    letter-spacing: var(--tracking-h1);
+    line-height: 1;
+}
+
+.text-sub {
+    color: var(--c-text-secondary);
+    font-size: 1.25rem;
+    font-weight: 400;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Nav */
+.nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 64px;
+    background: rgba(0, 1, 1, 0.6);
+    /* Glass base */
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+}
+
+.nav-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* Animations */
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-enter {
+    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+}
+
+.delay-1 {
+    animation-delay: 0.1s;
+}
+
+.delay-2 {
+    animation-delay: 0.2s;
+}
+
+.delay-3 {
+    animation-delay: 0.3s;
+}

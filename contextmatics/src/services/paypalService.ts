@@ -1,10 +1,14 @@
 
-
 declare global {
   interface Window {
     paypal: any
   }
 }
+
+// Production-safe notification helper (works outside React tree)
+const notify = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  window.dispatchEvent(new CustomEvent('app-toast', { detail: { message, type } }));
+};
 
 export class PayPalService {
   private static instance: PayPalService
@@ -34,7 +38,7 @@ export class PayPalService {
 
       // Check for Demo Mode (if clientId is missing or dummy)
       if (!clientId || clientId.includes('dummy')) {
-        console.log('🤖 DEMO MODE: Simulating PayPal payment flow for', planName);
+        console.debug('[Demo] Simulating PayPal payment flow for', planName);
 
         const container = document.getElementById('paypal-button-container');
         if (container) {
@@ -104,7 +108,7 @@ export class PayPalService {
         },
         onCancel: (_data: any) => {
           console.log('PayPal payment cancelled by user:', _data)
-          alert('Payment was cancelled. You can try again when ready.')
+          notify('Payment was cancelled. You can try again when ready.', 'info')
         },
         onError: (error: any) => {
           console.error('PayPal payment error:', error)
@@ -117,7 +121,7 @@ export class PayPalService {
             return
           }
 
-          alert(`Payment failed: ${errorMessage}. Please check your configuration.`)
+          notify(`Payment failed: ${errorMessage}. Please check your configuration.`, 'error')
         }
       }).render('#paypal-button-container')
     } catch (error) {
@@ -130,13 +134,6 @@ export class PayPalService {
    * Handle successful payment
    */
   private handlePaymentSuccess(details: any, planName: string, amount: number): void {
-    console.log('PayPal payment completed successfully', {
-      orderId: details.id,
-      payerId: details.payer?.payer_id,
-      status: details.status,
-      plan: planName,
-      amount: amount
-    })
 
     // Store payment info in localStorage for demo purposes
     // In production, this should be verified and stored on backend
@@ -157,10 +154,10 @@ export class PayPalService {
     }
 
     // Show success message
-    alert(`PayPal payment successful! Thank you for subscribing to ${planName} plan.`)
+    notify(`PayPal payment successful! Thank you for subscribing to ${planName}.`, 'success')
 
     // Redirect to dashboard
-    window.location.href = '/dashboard'
+    window.location.href = '/#/dashboard'
   }
 
   /**
@@ -187,11 +184,9 @@ export class PayPalService {
       const script = document.createElement('script')
       // Disable Venmo and PayLater. Enable Card for guest checkout.
       const sdkUrl = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=${currency}&components=buttons&enable-funding=card&disable-funding=paylater,venmo`
-      console.log('Loading PayPal SDK:', sdkUrl)
       script.src = sdkUrl
       script.async = true
       script.onload = () => {
-        console.log('PayPal SDK loaded successfully')
         resolve()
       }
       script.onerror = () => {

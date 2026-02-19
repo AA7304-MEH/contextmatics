@@ -1,0 +1,12 @@
+Element on Cursor.com,CSS Property to Extract,Exact Value Found,Variable Name for CSS
+Page Background,background-color,#000101,--color-bg
+Main Headline (H1),font-size,class(3.5rem, 8vw, 6rem),--text-h1
+Main Headline (H1),font-weight,500,--text-h1-weight
+Primary Button (Normal),background-color,#2563EB,--color-primary
+Primary Button (Normal),border-radius,9999px,--radius-button
+Primary Button (Hover),background-color,#1D4ED8,--color-primary-hover
+Feature Card Background,background-color,#0A0A0A,--color-surface
+Feature Card,box-shadow,0 0 0 1px rgba(255,255,255,0.08),--shadow-card
+Feature Card (Hover),transform,translateY(-4px),N/A
+Main Content Container,max-width,1400px,--container-max-width
+Body Text,font-family,"'Inter', system-ui, -apple-system, sans-serif",--font-family
