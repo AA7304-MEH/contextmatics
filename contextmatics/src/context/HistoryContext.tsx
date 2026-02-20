@@ -58,6 +58,7 @@ export const HistoryProvider: React.FC<{ children: ReactNode }> = ({ children })
                 const { data, error } = await supabase
                     .from('snippets')
                     .select('*')
+                    .eq('user_id', user.id)
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;

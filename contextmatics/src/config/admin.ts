@@ -1,21 +1,18 @@
-export const ADMIN_EMAILS = [
-    'admin@com.com'
-];
+// Admin configuration
+// Set VITE_ADMIN_EMAILS in your environment (comma-separated) for production.
+// The hardcoded fallback below is for development only.
 
-export const ADMIN_PASSWORD = 'Password@123';
+const DEV_ADMIN_EMAILS = ['admin@com.com'];
+
+export const ADMIN_EMAILS = (() => {
+    const envAdmins = import.meta.env.VITE_ADMIN_EMAILS as string | undefined;
+    if (envAdmins) {
+        return envAdmins.split(',').map((e: string) => e.trim().toLowerCase());
+    }
+    return DEV_ADMIN_EMAILS;
+})();
 
 export const isAdminEmail = (email: string | undefined | null): boolean => {
     if (!email) return false;
-
-    // Check against hardcoded list
-    if (ADMIN_EMAILS.includes(email)) return true;
-
-    // Check against environment variable if available
-    const envAdmins = import.meta.env.VITE_ADMIN_EMAILS;
-    if (envAdmins) {
-        const envAdminList = envAdmins.split(',').map((e: string) => e.trim());
-        if (envAdminList.includes(email)) return true;
-    }
-
-    return false;
+    return ADMIN_EMAILS.includes(email.toLowerCase());
 };

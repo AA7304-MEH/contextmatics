@@ -36,7 +36,7 @@ export const generateContent = async (content: string, format: string): Promise<
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         let prompt = "";
         switch (format) {
