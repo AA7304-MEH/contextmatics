@@ -1,0 +1,9 @@
+# SPA fallback for client-side routing (works with HashRouter)
+/*    /index.html   200
+
+# API routes (if you add them later)
+/api/*  /.netlify/functions/:splat  200
+
+# Sitemap and robots.txt
+/sitemap.xml  /sitemap.xml  200
+/robots.txt   /robots.txt   200
