@@ -4,11 +4,11 @@
 
 ### Option 1: Direct URL
 ```
-http://localhost:3000/#/auth
+http://localhost:3003/sign-in
 ```
 
 ### Option 2: From Landing Page
-1. Go to http://localhost:3000/
+1. Go to http://localhost:3003/
 2. Click "Login" in navigation
 3. OR click "Get Started" button
 

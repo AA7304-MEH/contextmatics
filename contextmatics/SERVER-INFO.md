@@ -4,24 +4,24 @@
 
 ### 🌐 Correct URLs
 
-**Local URL:** http://localhost:3000/
+**Local URL:** http://localhost:3003/
 
-**Network URL:** http://192.168.1.106:3000/
+**Network URL:** http://192.168.1.106:3003/
 
-⚠️ **Note:** The server is running on port **3000**.
+⚠️ **Note:** The server is running on port **3003**.
 
 ---
 
 ## 📍 All Pages
 
 ```
-Landing Page:    http://localhost:3000/
-Dashboard:       http://localhost:3000/#/dashboard
-Pricing:         http://localhost:3000/#/pricing
-Settings:        http://localhost:3000/#/settings
-History:         http://localhost:3000/#/history
-Subscription:    http://localhost:3000/#/subscription
-Auth Page:       http://localhost:3000/#/auth
+Landing Page:    http://localhost:3003/
+Dashboard:       http://localhost:3003/dashboard
+Pricing:         http://localhost:3003/pricing
+Settings:        http://localhost:3003/settings
+History:         http://localhost:3003/history
+Subscription:    http://localhost:3003/subscription
+Auth Page:       http://localhost:3003/sign-in
 ```
 
 ---

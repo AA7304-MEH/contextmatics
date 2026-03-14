@@ -15,10 +15,10 @@ Any user logging in with these emails will automatically receive:
 ## 2. How to Access (Development Mode)
 Since the Admin button is hidden from normal users, follow these steps to access it in specific Development/Mock scenarios:
 
-1.  Open your browser to the login page with the admin flag:
-    **`http://localhost:3000/#/auth?admin=true`**
-2.  Click the **"Continue as Admin (Dev)"** button.
-3.  Enter the password: **`Password@123`**
+1.  Open your browser to the login page:
+    **`http://localhost:3003/sign-in`**
+2.  Sign in with email: **`admin@com.com`**
+3.  Enter the password: **`contestmatic@admin`**
 4.  You will be logged in as `admin@contextmatic.example.com`.
 
 ## 3. How to Access (Production / Real Auth)
