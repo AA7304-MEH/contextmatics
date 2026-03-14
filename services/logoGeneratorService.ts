@@ -34,95 +34,34 @@ export class LogoGeneratorService {
         return LogoGeneratorService.instance;
     }
 
-    private getApiKeys(type: 'huggingface' | 'openai'): string[] {
-        // In a real app, these should be handled securely. 
-        // For this port, we'll use the ones from the source if available, 
-        // but prefer env variables if they exist.
-
-        if (type === 'huggingface') {
-            const envKey = process.env.NEXT_PUBLIC_HUGGINGFACE_API_KEY;
-            return envKey ? [envKey] : [];
-        }
-
-        if (type === 'openai') {
-            const envKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-            return envKey ? [envKey] : [];
-        }
-
-        return [];
-    }
-
     async generate(request: LogoGenerationRequest): Promise<string> {
         const { prompt, width = 1024, height = 1024 } = request;
 
         console.log('Generating logo with waterfall approach...');
 
-        // 1. Try OpenAI (Premium Quality)
-        const openaiKeys = this.getApiKeys('openai');
-        if (openaiKeys.length > 0) {
-            console.log('Testing OpenAI (DALL-E 3)...');
-            for (const key of openaiKeys) {
-                try {
-                    const response = await fetch(this.config.premium.url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${key}`
-                        },
-                        body: JSON.stringify({
-                            model: "dall-e-3",
-                            prompt: prompt,
-                            n: 1,
-                            size: `${width}x${height}`,
-                            response_format: "b64_json"
-                        })
-                    });
+        // 1. Try secure server-side generation (OpenAI & HuggingFace)
+        console.log('Attempting secure server-side generation...');
+        try {
+            const response = await fetch('/api/ai/generate-logo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt, width, height })
+            });
 
-                    const data = await response.json();
-                    if (!data.error && data.data?.[0]?.b64_json) {
-                        return `data:image/png;base64,${data.data[0].b64_json}`;
-                    }
-                    console.error('OpenAI Error Details:', { status: response.status, error: data.error });
-                } catch (e) {
-                    console.warn('OpenAI fetch failed:', e);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.image) {
+                    console.log(`Success via server (${data.provider})`);
+                    return data.image;
                 }
+            } else {
+                const errData = await response.json();
+                console.warn('Server generation skipped/failed:', errData.error);
             }
-        }
-
-        // 2. Try HuggingFace (High Quality)
-        const hfKeys = this.getApiKeys('huggingface');
-        if (hfKeys.length > 0) {
-            console.log('Falling back to HuggingFace...');
-            for (const key of hfKeys) {
-                try {
-                    const model = this.config.basic.models[Math.floor(Math.random() * this.config.basic.models.length)];
-                    const response = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${key}`,
-                            'Content-Type': 'application/json',
-                            'x-use-cache': 'false',
-                            'x-wait-for-model': 'true'
-                        },
-                        body: JSON.stringify({ inputs: prompt })
-                    });
-
-                    if (response.ok) {
-                        const blob = await response.blob();
-                        return new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onloadend = () => resolve(reader.result as string);
-                            reader.onerror = reject;
-                            reader.readAsDataURL(blob);
-                        });
-                    } else {
-                        const err = await response.text();
-                        console.error('HuggingFace Error Details:', { status: response.status, error: err });
-                    }
-                } catch (e) {
-                    console.warn('HuggingFace failed:', e);
-                }
-            }
+        } catch (e) {
+            console.warn('Server-side generation request failed:', e);
         }
 
         // 3. Try Pollinations (Free - Robust)

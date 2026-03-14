@@ -6,10 +6,10 @@ export const env = {
     // Payments — Stripe
     STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
 
-    // AI
-    GEMINI_API_KEY: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '',
-    HUGGINGFACE_API_KEY: process.env.NEXT_PUBLIC_HUGGINGFACE_API_KEY || '',
-    OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY || '',
+    // AI (Server-side ONLY)
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+    HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY || '',
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
 
     // Runtime
     API_URL: process.env.NEXT_PUBLIC_API_URL || '/api',
@@ -49,7 +49,7 @@ export const validateEnv = () => {
     }
 
     const services = [
-        { name: 'Gemini AI', key: env.GEMINI_API_KEY, env: 'NEXT_PUBLIC_GEMINI_API_KEY' },
+        { name: 'Gemini AI', key: env.GEMINI_API_KEY, env: 'GEMINI_API_KEY' },
         { name: 'Stripe', key: env.STRIPE_PUBLISHABLE_KEY, env: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY' }
     ];
 

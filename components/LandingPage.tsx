@@ -128,89 +128,68 @@ const LandingPage: React.FC = () => {
       </nav>
 
 
-      {/* Hero Section - LOTS OF SPACE */}
-      <section className="pt-40 pb-32 px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-5xl mx-auto">
-            {/* Badge with lots of margin */}
-            <div className="inline-flex items-center px-5 py-2.5 rounded-full bg-indigo-50 border border-indigo-200 mb-12">
-              <span className="w-2 h-2 bg-indigo-600 rounded-full mr-3 animate-pulse"></span>
-              <span className="text-sm font-semibold text-indigo-700">Powered by Advanced AI Technology</span>
+      {/* Hero Section - Redesigned for Conversion */}
+      <section className="pt-40 pb-32 px-8 overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+          <div className="flex-1 text-left">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-indigo-50 border border-indigo-100 mb-8">
+              <span className="w-2 h-2 bg-indigo-600 rounded-full mr-3"></span>
+              <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider">The Future of Content Creation</span>
             </div>
 
-            {/* Spacious Headline */}
-            <h1 className="text-6xl md:text-8xl font-extrabold text-gray-900 mb-10 leading-tight tracking-tight">
-              Transform Your Content
-              <span className="block mt-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Into Anything
+            <h1 className="text-6xl md:text-7xl font-extrabold text-gray-900 mb-8 leading-tight tracking-tight">
+              Create Viral <br />
+              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Videos in Minutes
               </span>
             </h1>
 
-            {/* Spacious Subheadline */}
-            <p className="text-2xl md:text-3xl text-gray-600 mb-16 leading-relaxed font-light max-w-4xl mx-auto">
-              Repurpose your content into blog posts, social media threads, newsletters, and more—all with the power of AI. Save 10+ hours every week.
+            <p className="text-xl md:text-2xl text-gray-600 mb-12 leading-relaxed">
+              ContextMatic turns your snippets, blogs, and ideas into high-quality social media videos instantly.
+              The all-in-one AI engine for content creators.
             </p>
 
-            {/* CTA Buttons with space */}
-            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-20">
+            <div className="flex flex-col sm:flex-row gap-5">
               <button
                 onClick={() => navigate('/sign-in')}
-                className="group relative bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-10 py-5 rounded-2xl font-bold text-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
               >
-                <span className="relative z-10">Start Free Trial</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                Create My First Video
               </button>
-
               <button
-                onClick={() => navigate('/sign-in')}
-                className="bg-white border-2 border-gray-300 text-gray-700 px-10 py-5 rounded-2xl font-bold text-xl hover:border-gray-400 hover:shadow-xl transition-all duration-300"
+                onClick={() => navigate('/video-templates')}
+                className="bg-white border-2 border-gray-100 text-gray-700 px-8 py-4 rounded-xl font-bold text-lg hover:border-gray-200 transition-all"
               >
-                Watch Demo
+                Browse Templates
               </button>
             </div>
 
-            {/* Trust Indicators - well spaced */}
-            <div className="flex flex-wrap justify-center items-center gap-12 text-base text-gray-500">
-              <div className="flex items-center gap-3">
-                <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">14-day free trial</span>
+            <div className="mt-10 flex items-center gap-4 text-sm text-gray-500">
+              <div className="flex -space-x-2">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-200" />
+                ))}
               </div>
-              <div className="flex items-center gap-3">
-                <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">Email signup only</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">Cancel anytime</span>
-              </div>
+              <p>Join <span className="font-bold text-gray-900">2,000+</span> creators today</p>
             </div>
           </div>
 
-          {/* Hero Image - lots of space around it */}
-          <div className="mt-24">
-            <div className="relative max-w-6xl mx-auto">
-              <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-3xl blur-3xl"></div>
-              <div className="relative bg-white rounded-3xl shadow-2xl border border-gray-200 p-10">
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8">
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                    <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-                    <div className="w-4 h-4 rounded-full bg-green-500"></div>
+          <div className="flex-1 relative">
+            <div className="absolute -inset-10 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse" />
+            <div className="relative glass-effect rounded-3xl border border-white/40 shadow-2xl p-4 transform lg:rotate-2 hover:rotate-0 transition-transform duration-500">
+              <div className="bg-gray-900 rounded-2xl aspect-video relative overflow-hidden">
+                {/* Mock Video UI */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
+                    <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M4.5 3.5l11 6.5-11 6.5V3.5z" />
+                    </svg>
                   </div>
-                  <div className="space-y-5">
-                    <div className="h-6 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-lg w-3/4"></div>
-                    <div className="h-6 bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg w-full"></div>
-                    <div className="h-6 bg-gradient-to-r from-pink-200 to-orange-200 rounded-lg w-5/6"></div>
-                    <div className="h-40 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl mt-8 flex items-center justify-center">
-                      <span className="text-gray-500 text-lg font-medium">✨ AI-Generated Content</span>
-                    </div>
-                  </div>
+                </div>
+                {/* Visual Timeline Overlay */}
+                <div className="absolute bottom-4 left-4 right-4 h-12 bg-white/10 backdrop-blur-md rounded-lg flex items-center gap-2 px-3">
+                  <div className="h-4 w-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded" />
+                  <div className="h-4 w-1/2 bg-purple-500 rounded" />
                 </div>
               </div>
             </div>
@@ -323,10 +302,10 @@ const LandingPage: React.FC = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section >
 
       {/* How It Works - Clean and Spacious */}
-      <section id="how-it-works" className="py-40 px-8 bg-white">
+      < section id="how-it-works" className="py-40 px-8 bg-white" >
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
             <h2 className="text-5xl md:text-7xl font-extrabold text-gray-900 mb-8 tracking-tight">
@@ -365,10 +344,10 @@ const LandingPage: React.FC = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section >
 
       {/* CTA Section - Spacious */}
-      <section className="py-40 px-8 bg-gradient-to-br from-indigo-50 to-purple-50">
+      < section className="py-40 px-8 bg-gradient-to-br from-indigo-50 to-purple-50" >
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-5xl md:text-7xl font-extrabold text-gray-900 mb-10 tracking-tight">
             Ready to Transform
@@ -394,10 +373,10 @@ const LandingPage: React.FC = () => {
             </button>
           </div>
         </div>
-      </section>
+      </section >
 
       {/* Footer - Clean and Organized */}
-      <footer className="bg-gray-900 text-white py-20 px-8">
+      < footer className="bg-gray-900 text-white py-20 px-8" >
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-16 mb-16">
             <div className="md:col-span-2">
@@ -461,8 +440,8 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </footer>
-    </div>
+      </footer >
+    </div >
   )
 }
 

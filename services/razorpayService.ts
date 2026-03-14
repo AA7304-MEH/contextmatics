@@ -46,8 +46,11 @@ export class RazorpayService {
       // Get API key from environment variables
       const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
 
-      // Check for Demo Mode
-      if (!keyId || keyId.includes('dummy')) {
+      // Check for Demo Mode (Only allowed in development/preview)
+      const isTestKey = !keyId || keyId.includes('dummy') || keyId.includes('test');
+      const isDev = process.env.NODE_ENV !== 'production';
+
+      if (isTestKey && isDev) {
         // Auto-simulate in demo mode
         const mockResponse: RazorpayPaymentSuccessResponse = {
           razorpay_payment_id: 'pay_demo_' + Math.random().toString(36).substring(7),
@@ -57,6 +60,10 @@ export class RazorpayService {
 
         this.handlePaymentSuccess(mockResponse, planName, amount, options.userEmail);
         return;
+      }
+
+      if (isTestKey && !isDev) {
+        throw new Error('Production payment configuration error. Please contact support.');
       }
 
       await this.loadRazorpaySDK()
@@ -177,7 +184,7 @@ export class RazorpayService {
 
     // Show success message or redirect
     notify(`Payment successful! You now have ${planName} access.`, 'success');
-    window.location.href = '/#/dashboard';
+    window.location.href = '/dashboard';
   }
 
   /**

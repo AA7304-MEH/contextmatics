@@ -11,17 +11,17 @@ export const Footer: React.FC = () => {
                 <div>
                     <h4 className="text-white font-semibold mb-4">Product</h4>
                     <ul className="space-y-3">
-                        <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                        <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
-                        <li><a href="#" className="hover:text-white transition-colors">Changelog</a></li>
+                        <li><a href="/#features" className="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="/pricing" className="hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="/templates" className="hover:text-white transition-colors">Templates</a></li>
                     </ul>
                 </div>
                 <div>
                     <h4 className="text-white font-semibold mb-4">Company</h4>
                     <ul className="space-y-3">
-                        <li><a href="#" className="hover:text-white transition-colors">About</a></li>
-                        <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                        <li><a href="#" className="hover:text-white transition-colors">Legal</a></li>
+                        <li><a href="/privacy" className="hover:text-white transition-colors">Privacy</a></li>
+                        <li><a href="/terms" className="hover:text-white transition-colors">Terms</a></li>
+                        <li><a href="mailto:support@contextmatic.com" className="hover:text-white transition-colors">Support</a></li>
                     </ul>
                 </div>
             </div>

@@ -54,16 +54,6 @@ export async function middleware(request: NextRequest) {
         }
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError) {
-        console.error('[Middleware] Auth error:', authError.message);
-    }
-
-    if (user) {
-        console.log('[Middleware] Authenticated user:', user.email);
-    }
-
     const protectedRoutes = [
         '/dashboard',
         '/content-creator',
@@ -80,6 +70,16 @@ export async function middleware(request: NextRequest) {
     const isProtectedRoute = protectedRoutes.some(route =>
         request.nextUrl.pathname.startsWith(route)
     );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError && isProtectedRoute) {
+        console.error('[Middleware] Auth error:', authError.message);
+    }
+
+    if (user) {
+        console.log('[Middleware] Authenticated user:', user.email);
+    }
 
     if (!user && isProtectedRoute) {
         const url = request.nextUrl.clone();

@@ -137,7 +137,50 @@ CREATE INDEX IF NOT EXISTS idx_videos_user_id ON videos(user_id);
 CREATE INDEX IF NOT EXISTS idx_videos_created_at ON videos(created_at DESC);
 
 -- ============================================================
--- 5. VERIFICATION QUERIES (run these to confirm setup)
+-- 5. TEMPLATES TABLE
 -- ============================================================
--- SELECT * FROM pg_tables WHERE schemaname = 'public';
--- SELECT * FROM pg_policies WHERE schemaname = 'public';
+CREATE TABLE IF NOT EXISTS templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL,
+  preview_url TEXT,
+  project_data JSONB NOT NULL,
+  is_public BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- 6. COMMUNITY REMIXES
+-- ============================================================
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT false;
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS remix_count INTEGER DEFAULT 0;
+
+-- ============================================================
+-- 7. SECURITY FOR TEMPLATES
+-- ============================================================
+ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view public templates" ON templates;
+CREATE POLICY "Anyone can view public templates"
+  ON templates FOR SELECT
+  USING (is_public = true);
+
+-- ============================================================
+-- 8. FEEDBACK TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS video_feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  video_id UUID REFERENCES videos(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE video_feedback ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can insert own feedback" ON video_feedback;
+CREATE POLICY "Users can insert own feedback"
+  ON video_feedback FOR INSERT
+  WITH CHECK (auth.uid() = user_id);

@@ -62,7 +62,7 @@ export const ModernNav: React.FC<ModernNavProps> = ({
         { label: 'AI Video', path: '/video-generator', show: !!user },
         { label: 'Editor', path: '/video-editor', show: !!user },
         { label: 'History', path: '/history', show: !!user },
-        { label: 'Templates', path: '/templates', show: !!user },
+        { label: 'Video Templates', path: '/video-templates', show: !!user },
         { label: 'Logo Maker', path: '/logo-maker', show: !!user },
         { label: 'Analytics', path: '/analytics', show: !!user },
         { label: 'Settings', path: '/settings', show: showSettings && !!user },
@@ -74,7 +74,7 @@ export const ModernNav: React.FC<ModernNavProps> = ({
             <div className="max-w-7xl mx-auto px-6">
                 <div className="flex justify-between items-center h-20">
                     {/* Logo */}
-                    <button onClick={() => router.push(user ? '/dashboard' : '/')} className="flex items-center gap-3 group">
+                    <button id="nav-logo" onClick={() => router.push(user ? '/dashboard' : '/')} className="flex items-center gap-3 group">
                         <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
                             <span className="text-white font-bold text-lg">C</span>
                         </div>
@@ -91,17 +91,12 @@ export const ModernNav: React.FC<ModernNavProps> = ({
                                 >
                                     Features
                                 </button>
-                                <button
-                                    onClick={(e) => handleAnchorClick(e, 'pricing')}
-                                    className="text-sm font-medium text-[var(--color-text-secondary)] hover:text-white transition-colors"
-                                >
-                                    Pricing
-                                </button>
                             </>
                         )}
                         {navLinks.map((link) => (
                             <button
                                 key={link.path}
+                                id={`nav${link.path.replace(/\//g, '-')}`}
                                 onClick={() => router.push(link.path)}
                                 className={`text-sm font-medium transition-colors ${pathname === link.path ? 'text-white' : 'text-[var(--color-text-secondary)] hover:text-white'}`}
                             >

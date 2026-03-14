@@ -153,5 +153,43 @@ export const videoService = {
 
         if (error) throw error;
         return data as Video[];
+    },
+
+    /**
+     * Suggests a template based on snippet content
+     */
+    suggestTemplate: async (text: string): Promise<string | null> => {
+        const lowerText = text.toLowerCase();
+        const { data: templates, error } = await supabase
+            .from('templates')
+            .select('id, name, category');
+
+        if (error || !templates) return null;
+
+        // Simple keyword matching for suggestive templates
+        if (lowerText.includes('education') || lowerText.includes('learn') || lowerText.includes('how to')) {
+            return templates.find(t => t.category === 'Educational')?.id || templates[0].id;
+        }
+        if (lowerText.includes('sale') || lowerText.includes('offer') || lowerText.includes('buy')) {
+            return templates.find(t => t.category === 'Marketing')?.id || templates[0].id;
+        }
+
+        return templates[0].id; // Default to first
+    },
+
+    /**
+     * Submit user feedback for a video
+     */
+    submitFeedback: async (videoId: string, userId: string, rating: number, comment: string) => {
+        const { error } = await supabase
+            .from('video_feedback')
+            .insert({
+                video_id: videoId,
+                user_id: userId,
+                rating,
+                comment
+            });
+
+        if (error) throw error;
     }
 };
