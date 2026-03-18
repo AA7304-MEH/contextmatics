@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd contextmatics && npm install && npm run build",
+  "outputDirectory": "contextmatics/.next"
+}
