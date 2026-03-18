@@ -65,6 +65,10 @@ export async function middleware(request: NextRequest) {
         '/account',
         '/subscription',
         '/templates',
+        '/snippets',
+        '/studio',
+        '/projects',
+        '/admin',
     ];
 
     const isProtectedRoute = protectedRoutes.some(route =>

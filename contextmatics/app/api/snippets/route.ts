@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     if (!user) return new NextResponse('Unauthorized', { status: 401 });
 
     const body = await req.json();
-    const { content, title, tags } = body;
+    const { content, title, tags, source, is_public } = body;
 
     const { data, error } = await supabase
         .from('snippets')
@@ -56,6 +56,9 @@ export async function POST(req: Request) {
             content,
             title,
             tags,
+            source: source || 'gemini',
+            is_public: is_public || false,
+            updated_at: new Date().toISOString(),
         })
         .select()
         .single();

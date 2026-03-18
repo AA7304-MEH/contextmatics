@@ -59,6 +59,22 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
       // Deduct credit after successful generation
       decrementCredits();
 
+      // AUTO-SAVE AS SNIPPET
+      try {
+        await fetch('/api/snippets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `${selectedFormat} of Content`,
+            content: result,
+            tags: [selectedFormat.toLowerCase().replace(' ', '-'), 'ai-generated'],
+            source: 'gemini'
+          })
+        });
+      } catch (err) {
+        console.error('Failed to auto-save snippet:', err);
+      }
+
       // Save to history
       addToHistory({
         title: `${selectedFormat} of Content`,

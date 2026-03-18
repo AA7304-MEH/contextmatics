@@ -133,31 +133,37 @@ export class PayPalService {
   /**
    * Handle successful payment
    */
-  private handlePaymentSuccess(details: any, planName: string, amount: number): void {
-
-    // Store payment info in localStorage for demo purposes
-    // In production, this should be verified and stored on backend
-    const paymentInfo = {
-      paymentId: details.id,
-      payerId: details.payer?.payer_id,
-      plan: planName,
-      amount: amount,
-      timestamp: Date.now(),
-      status: 'success',
-      method: 'paypal'
-    }
-
+  private async handlePaymentSuccess(details: any, planName: string, _amount: number): Promise<void> {
     try {
-      localStorage.setItem('lastPayment', JSON.stringify(paymentInfo))
-    } catch (e) {
-      console.error('Failed to store payment info:', e)
+      // Call our backend verification API
+      const verifyResponse = await fetch('/api/payments/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          method: 'paypal',
+          paypal_details: details,
+          planName
+        }),
+      });
+
+      const result = await verifyResponse.json();
+
+      if (!verifyResponse.ok || !result.success) {
+        throw new Error(result.error || 'Verification failed');
+      }
+
+      // Show success message
+      notify(`PayPal payment successful! Thank you for subscribing to ${planName}.`, 'success');
+
+      // Redirect to dashboard
+      window.location.href = '/dashboard';
+
+    } catch (err: any) {
+      console.error("Failed to verify PayPal payment:", err);
+      notify(`Payment verification failed: ${err.message}. Please contact support.`, 'error');
     }
-
-    // Show success message
-    notify(`PayPal payment successful! Thank you for subscribing to ${planName}.`, 'success')
-
-    // Redirect to dashboard
-    window.location.href = '/#/dashboard'
   }
 
   /**

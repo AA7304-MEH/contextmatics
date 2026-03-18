@@ -6,6 +6,12 @@ export const metadata: Metadata = {
     description: 'Manage your AI content generations, view analytics, and access quick tools.',
 };
 
+import { VerifiedProtection } from '@/components/VerifiedProtection';
+
 export default function Page() {
-    return <DashboardClient />;
+    return (
+        <VerifiedProtection>
+            <DashboardClient />
+        </VerifiedProtection>
+    );
 }

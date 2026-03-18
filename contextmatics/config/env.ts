@@ -10,6 +10,13 @@ export const env = {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
     HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY || '',
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+    REPLICATE_API_TOKEN: process.env.REPLICATE_API_TOKEN || '',
+
+    // Payments
+    RAZORPAY_KEY_ID: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
+    RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || '',
+    PAYPAL_CLIENT_ID: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '',
+    PAYPAL_SECRET: process.env.PAYPAL_SECRET || '',
 
     // Runtime
     API_URL: process.env.NEXT_PUBLIC_API_URL || '/api',
@@ -50,7 +57,9 @@ export const validateEnv = () => {
 
     const services = [
         { name: 'Gemini AI', key: env.GEMINI_API_KEY, env: 'GEMINI_API_KEY' },
-        { name: 'Stripe', key: env.STRIPE_PUBLISHABLE_KEY, env: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY' }
+        { name: 'Replicate AI', key: env.REPLICATE_API_TOKEN, env: 'REPLICATE_API_TOKEN' },
+        { name: 'Razorpay', key: env.RAZORPAY_KEY_ID, env: 'NEXT_PUBLIC_RAZORPAY_KEY_ID' },
+        { name: 'PayPal', key: env.PAYPAL_CLIENT_ID, env: 'NEXT_PUBLIC_PAYPAL_CLIENT_ID' }
     ];
 
     services.forEach(service => {

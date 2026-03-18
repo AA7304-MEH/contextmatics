@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -37,22 +37,34 @@ export async function POST(req: Request) {
         credits_remaining: profile.credits_remaining - 1
     }).eq('id', authUser.id);
 
-    // 2. Insert Pending Job
-    const { data: job, error: insertError } = await supabase
-        .from('videos')
-        .insert({
-            user_id: authUser.id,
-            prompt,
-            style,
-            platform,
-            status: 'pending',
-            snippet_id: snippetId
-        })
-        .select()
-        .single();
+    // 2. Trigger AI Orchestration
+    try {
+        const { aiService } = await import('@/services/aiService');
+        const project = await aiService.generateFullVideoProject(supabase, authUser.id, prompt, style);
 
-    if (insertError) return new NextResponse(insertError.message, { status: 500 });
+        // 3. Log the "video" job for history (optional, since we now have "projects")
+        // But let's keep it for compatibility with the History UI
+        await supabase
+            .from('videos')
+            .insert({
+                user_id: authUser.id,
+                prompt,
+                style,
+                platform,
+                status: 'completed',
+                url: project.clips[0]?.url,
+                thumbnail_url: 'https://res.cloudinary.com/demo/video/upload/v1690989016/samples/sea-turtle.jpg',
+                snippet_id: snippetId
+            });
 
-    // 3. Return Job ID (Ideally we'd also enqueue a BullMQ job here)
-    return NextResponse.json({ jobId: job.id, status: 'pending' });
+        return NextResponse.json({ 
+            success: true,
+            projectId: project.projectId, 
+            message: 'Project generated successfully' 
+        });
+
+    } catch (err: any) {
+        console.error('[AI Generation Error]', err);
+        return new NextResponse(err.message, { status: 500 });
+    }
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import { useProjectStore } from '../../stores/projectStore';
-import { Clip, Effect } from '../../types/editor';
+import { useProjectStore } from '@/stores/projectStore';
+import { Clip, Effect } from '@/types/editor';
 import {
     Volume2,
     Sun,

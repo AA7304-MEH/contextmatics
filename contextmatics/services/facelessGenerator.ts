@@ -1,10 +1,5 @@
 // Faceless Video AI Script Generator — Advanced Edition
-// Gemini AI integration + 10 themes + multi-format atomization
-
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(API_KEY || '');
+// Server-side API integration + 10 themes + multi-format atomization
 
 export type ShotType = 'Close-up' | 'Wide' | 'Establishing' | 'Dynamic' | 'Overhead' | 'POV' | 'Tracking';
 export type MotionIntent = 'Slow zoom in' | 'Quick pan' | 'Parallax scroll' | 'Static' | 'Dolly out' | 'Tilt up' | 'Orbit';
@@ -168,7 +163,7 @@ export function getTheme(id: string) {
     return FACELESS_THEMES[id] || null;
 }
 
-// ── Gemini AI Script Generation ──────────────────────────────────
+// ── Gemini AI Script Generation (Server-side Call) ──────────────────
 
 async function generateAIScript(
     topic: string,
@@ -176,54 +171,20 @@ async function generateAIScript(
     purpose: string,
     targetDuration: number,
 ): Promise<{ title: string; scenes: Omit<Scene, 'id'>[]; keyPoints: string[] }> {
-    if (!API_KEY || API_KEY.includes('dummy')) {
-        return generateMockScript(topic, style, purpose, targetDuration);
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-        const sceneCount = Math.max(3, Math.ceil(targetDuration / 5));
+        const response = await fetch('/api/ai/video-script', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, style, purpose, targetDuration })
+        });
 
-        const prompt = `You are a professional faceless video scriptwriter for TikTok, Instagram Reels, and YouTube Shorts.
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Server-side AI generation failed');
+        }
 
-Create a ${targetDuration}-second faceless video script about: "${topic}"
-Style: ${style} | Purpose: ${purpose}
-
-Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
-{
-  "title": "catchy video title",
-  "keyPoints": ["point1", "point2", "point3"],
-  "scenes": [
-    {
-      "text": "narration text for this scene (max 15 words)",
-      "visualDescription": "what the viewer sees (be specific, cinematic)",
-      "duration": 4,
-      "shotType": "Close-up",
-      "motionIntent": "Slow zoom in",
-      "visualMotif": "descriptive style label",
-      "vfx": "none"
-    }
-  ]
-}
-
-Rules:
-- Generate exactly ${sceneCount} scenes
-- shotType must be one of: Close-up, Wide, Establishing, Dynamic, Overhead, POV, Tracking
-- motionIntent must be one of: Slow zoom in, Quick pan, Parallax scroll, Static, Dolly out, Tilt up, Orbit
-- vfx must be one of: light leaks, particle burst, glitch, film grain, chromatic aberration, none
-- Scene durations should sum to approximately ${targetDuration} seconds
-- First scene must be a hook that grabs attention
-- Last scene should be a CTA
-- Text should be punchy, conversational, and viral-worthy`;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        let text = response.text().trim();
-
-        // Strip markdown code blocks if present
-        text = text.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
-
-        const parsed = JSON.parse(text);
+        const parsed = await response.json();
+        
         return {
             title: parsed.title || `The Truth About ${topic}`,
             scenes: (parsed.scenes || []).map((s: any) => ({
@@ -238,7 +199,7 @@ Rules:
             keyPoints: parsed.keyPoints || ['Key insight'],
         };
     } catch (error) {
-        console.warn('Gemini AI generation failed, using mock:', error);
+        console.warn('Server-side AI generation failed, using mock:', error);
         return generateMockScript(topic, style, purpose, targetDuration);
     }
 }

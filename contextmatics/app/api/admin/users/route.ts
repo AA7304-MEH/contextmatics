@@ -17,10 +17,24 @@ export async function GET() {
         }
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
 
-    if (!user || !isAdminEmail(user.email)) {
+    if (!authUser) {
         return new NextResponse('Unauthorized', { status: 401 });
+    }
+
+    const isWhitelisted = isAdminEmail(authUser.email);
+
+    // Double-check role in DB for absolute sovereignty
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authUser.id)
+        .single();
+
+    if (profile?.role !== 'admin' && !isWhitelisted) {
+        console.warn(`[Security] Potential role bypass attempt by ${authUser.email}`);
+        return new NextResponse('Forbidden', { status: 403 });
     }
 
     const { data: profiles, error } = await supabase

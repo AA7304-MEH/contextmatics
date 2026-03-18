@@ -1,5 +1,4 @@
 import type { RazorpayOptions, RazorpayPaymentSuccessResponse } from '../types'
-import { supabase } from '../lib/supabaseClient'
 
 declare global {
   interface Window {
@@ -118,73 +117,38 @@ export class RazorpayService {
   /**
    * Handle successful payment
    */
-  private async handlePaymentSuccess(_response: RazorpayPaymentSuccessResponse, planName: string, _amount: number, userEmail: string): Promise<void> {
-
+  private async handlePaymentSuccess(response: RazorpayPaymentSuccessResponse, planName: string, _amount: number, userEmail: string): Promise<void> {
     try {
-      // Determine credits based on plan
-      // Matching PricingPage.tsx: Pro = 200, Enterprise = Unlimited (10000 for now)
-      let credits = 10;
-      let planId = 'free';
+      // Call our backend verification API
+      const verifyResponse = await fetch('/api/payments/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          method: 'razorpay',
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          planName,
+          userEmail
+        }),
+      });
 
-      if (planName.toLowerCase().includes('pro')) {
-        credits = 200;
-        planId = 'pro';
-      } else if (planName.toLowerCase().includes('enterprise')) {
-        credits = 10000;
-        planId = 'enterprise';
+      const result = await verifyResponse.json();
+
+      if (!verifyResponse.ok || !result.success) {
+        throw new Error(result.error || 'Verification failed');
       }
 
-      // 1. Update Profile in Supabase
-      // We need to find the user by email since we don't have ID passed explicitly here, 
-      // OR we should have passed userId to initiatePayment. 
-      // Ideally checking auth.users but we can only update public profiles if RLS allows.
-      // For MVP, we'll assume the currently logged in user is the one paying, 
-      // but to be safe let's query by email or passed User ID if we modify initiatePayment signature.
+      // Show success message or redirect
+      notify(`Payment successful! You now have ${planName} access.`, 'success');
+      window.location.href = '/dashboard';
 
-      // BETTER: Let's assume the email is unique in profiles or just fetch the user from auth session wrapper if possible? 
-      // No, `razorpayService` is a singleton. 
-      // Let's rely on finding the profile by email which should be unique.
-
-      await supabase
-        .from('profiles') // Assuming profiles is user_id keyed, but we need to find ID by email if we don't have it.
-        // Actually, profiles table usually uses ID as PK. 
-        // We should pass userId to initiatePayment.
-        .select('id')
-        .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      // If we can't rely on auth.getUser() inside this callback (async/context issues?), 
-      // we should pass userId in options. 
-
-      // Let's assume we are logged in.
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-
-      if (currentUser && currentUser.email === userEmail) {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            plan: planId,
-            credits_remaining: credits,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', currentUser.id);
-
-        if (updateError) throw updateError;
-
-        // 2. Log Subscription (Optional/Future)
-      } else {
-        console.warn('Payment email mismatch — skipping DB update.');
-      }
-
-    } catch (err) {
-      console.error("Failed to update database after payment:", err);
-      notify('Payment successful but failed to update account. Please contact support.', 'error');
-      return;
+    } catch (err: any) {
+      console.error("Failed to verify payment:", err);
+      notify(`Payment verification failed: ${err.message}. Please contact support.`, 'error');
     }
-
-    // Show success message or redirect
-    notify(`Payment successful! You now have ${planName} access.`, 'success');
-    window.location.href = '/dashboard';
   }
 
   /**

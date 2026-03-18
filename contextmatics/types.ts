@@ -174,6 +174,81 @@ export interface LogoResult {
     createdAt?: string;
 }
 
+// Types for Video Editor
+export type TrackType = 'video' | 'audio' | 'text' | 'image';
+
+export interface Clip {
+    id: string;
+    assetId: string;
+    type: TrackType;
+    name: string;
+    startTime: number; // in seconds
+    duration: number;
+    startOffset: number; // For trimming: where the clip starts in the source asset
+    trackId: string;
+    url?: string;
+    metadata?: any;
+    effects?: {
+        brightness?: number;
+        contrast?: number;
+        blur?: number;
+        grayscale?: number;
+        sepia?: number;
+    };
+    textConfig?: {
+        fontSize?: number;
+        color?: string;
+        backgroundColor?: string;
+        textAlign?: 'left' | 'center' | 'right';
+        fontWeight?: string;
+    };
+    audioConfig?: {
+        volume: number; // 0 to 100
+        fadeIn: number; // duration in seconds
+        fadeOut: number; // duration in seconds
+    };
+    transitions?: {
+        in?: { type: 'fade' | 'slide-left' | 'zoom-in', duration: number };
+        out?: { type: 'fade' | 'slide-right' | 'zoom-out', duration: number };
+    };
+}
+
+export interface Track {
+    id: string;
+    type: TrackType;
+    name: string;
+    order: number;
+}
+
+export interface Project {
+    id: string;
+    user_id: string;
+    title: string;
+    description?: string;
+    thumbnail_url?: string;
+    timeline_data: {
+        tracks: Track[];
+        clips: Clip[];
+        duration: number;
+        zoom: number;
+    };
+    status: 'draft' | 'rendering' | 'completed' | 'failed';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Asset {
+    id: string;
+    user_id: string;
+    name: string;
+    type: TrackType;
+    url: string;
+    thumbnail_url?: string;
+    metadata?: any;
+    created_at: string;
+    updated_at: string;
+}
+
 declare global {
     interface Window {
         Razorpay: new (options: RazorpayOptions) => {

@@ -1,17 +1,20 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useHistory } from '@/context/HistoryContext';
 import { UserManagement } from '@/components/UserManagement';
+import { TransactionManagement } from '@/components/TransactionManagement';
 import { PageLayout } from '@/components/shared';
 
 export default function AdminDashboardPage() {
     const { user } = useAuth();
     const { historyItems } = useHistory();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'activity'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'activity' | 'transactions'>('overview');
 
     if (!user || user.role !== 'admin') {
         return (
@@ -54,7 +57,7 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <div className="flex gap-2">
-                        {(['overview', 'users', 'activity'] as const).map(tab => (
+                        {(['overview', 'users', 'transactions', 'activity'] as const).map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
@@ -63,7 +66,7 @@ export default function AdminDashboardPage() {
                                     : 'text-text-muted hover:text-white hover:bg-white/5'
                                     }`}
                             >
-                                {tab === 'overview' ? 'Overview' : tab === 'users' ? 'User Management' : 'Activity Log'}
+                                {tab === 'overview' ? 'Overview' : tab === 'users' ? 'User Management' : tab === 'transactions' ? 'Transactions' : 'Activity Log'}
                             </button>
                         ))}
                     </div>
@@ -124,6 +127,12 @@ export default function AdminDashboardPage() {
                                     📊 View Analytics
                                 </button>
                                 <button
+                                    onClick={() => setActiveTab('transactions')}
+                                    className="btn btn-secondary"
+                                >
+                                    💳 View Transactions
+                                </button>
+                                <button
                                     onClick={() => setActiveTab('activity')}
                                     className="btn btn-secondary"
                                 >
@@ -165,6 +174,12 @@ export default function AdminDashboardPage() {
                 {activeTab === 'users' && (
                     <div className="animate-fade-in">
                         <UserManagement />
+                    </div>
+                )}
+
+                {activeTab === 'transactions' && (
+                    <div className="animate-fade-in">
+                        <TransactionManagement />
                     </div>
                 )}
 
