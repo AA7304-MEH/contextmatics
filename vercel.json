@@ -1,4 +1,12 @@
 {
   "buildCommand": "cd contextmatics && npm install && npm run build",
-  "outputDirectory": "contextmatics/.next"
+  "outputDirectory": "contextmatics/.next",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
 }
