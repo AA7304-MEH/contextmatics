@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -20,7 +20,7 @@ export async function GET() {
     if (!user) return new NextResponse('Unauthorized', { status: 401 });
 
     const { data, error } = await supabase
-        .from('snippets')
+        .from('assets')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -47,18 +47,17 @@ export async function POST(req: Request) {
     if (!user) return new NextResponse('Unauthorized', { status: 401 });
 
     const body = await req.json();
-    const { content, title, tags, source, is_public } = body;
+    const { name, type, url, thumbnail_url, metadata } = body;
 
     const { data, error } = await supabase
-        .from('snippets')
+        .from('assets')
         .insert({
             user_id: user.id,
-            content,
-            title,
-            tags,
-            source: source || 'gemini',
-            is_public: is_public || false,
-            updated_at: new Date().toISOString(),
+            name,
+            type,
+            url,
+            thumbnail_url,
+            metadata: metadata || {}
         })
         .select()
         .single();

@@ -1,8 +1,8 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-export async function DELETE(
+export async function GET(
     req: Request,
     { params }: { params: { id: string } }
 ) {
@@ -24,14 +24,15 @@ export async function DELETE(
 
     const { id } = params;
 
-    const { error } = await supabase
-        .from('snippets')
-        .delete()
+    const { data, error } = await supabase
+        .from('projects')
+        .select('*')
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .single();
 
     if (error) return new NextResponse(error.message, { status: 500 });
-    return new NextResponse(null, { status: 204 });
+    return NextResponse.json(data);
 }
 
 export async function PATCH(
@@ -56,16 +57,16 @@ export async function PATCH(
 
     const { id } = params;
     const body = await req.json();
-    const { title, content, tags, is_public, source } = body;
+    const { title, description, timeline_data, status, thumbnail_url } = body;
 
     const { data, error } = await supabase
-        .from('snippets')
+        .from('projects')
         .update({
             title,
-            content,
-            tags,
-            is_public,
-            source,
+            description,
+            timeline_data,
+            status,
+            thumbnail_url,
             updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -75,4 +76,36 @@ export async function PATCH(
 
     if (error) return new NextResponse(error.message, { status: 500 });
     return NextResponse.json(data);
+}
+
+export async function DELETE(
+    req: Request,
+    { params }: { params: { id: string } }
+) {
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return cookieStore.get(name)?.value;
+                },
+            },
+        }
+    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return new NextResponse('Unauthorized', { status: 401 });
+
+    const { id } = params;
+
+    const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+    if (error) return new NextResponse(error.message, { status: 500 });
+    return new NextResponse(null, { status: 204 });
 }

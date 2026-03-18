@@ -57,7 +57,7 @@ export const ModernNav: React.FC<ModernNavProps> = ({
 
     const navLinks = [
         { label: 'Dashboard', path: '/dashboard', show: !!user },
-        { label: 'Admin', path: '/admin/dashboard', show: !!user && user.role === 'admin' },
+        { label: 'Admin', path: '/admin', show: !!user && user.role === 'admin' },
         { label: 'Creator', path: '/content-creator', show: !!user },
         { label: 'AI Video', path: '/video-generator', show: !!user },
         { label: 'Editor', path: '/video-editor', show: !!user },

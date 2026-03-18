@@ -9,7 +9,17 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Video } from '@/types';
 
+import { VerifiedProtection } from '@/components/VerifiedProtection';
+
 export default function VideoGeneratorPage() {
+    return (
+        <VerifiedProtection>
+            <VideoGeneratorContent />
+        </VerifiedProtection>
+    );
+}
+
+function VideoGeneratorContent() {
     const { user, refreshProfile } = useAuth();
     const { showToast } = useToast();
     const router = useRouter();
@@ -49,8 +59,14 @@ export default function VideoGeneratorPage() {
                 userId: user.id,
                 platform: mappedPlatform
             });
-            setResult(data);
-            await refreshProfile();
+            
+            if (data.projectId) {
+                showToast('Video project generated! Redirecting to studio...', 'success');
+                router.push(`/studio/${data.projectId}`);
+            } else {
+                setResult(data);
+                await refreshProfile();
+            }
         } catch (error: any) {
             console.error("Generation failed", error);
             showToast(error.message || 'Failed to generate video. Please try again.', 'error');

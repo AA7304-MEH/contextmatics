@@ -9,7 +9,17 @@ import { generateContent } from '@/services/geminiService';
 import { REPURPOSE_OPTIONS } from '@/config/constants';
 import { PageLayout } from '@/components/shared';
 
+import { VerifiedProtection } from '@/components/VerifiedProtection';
+
 export default function ContentCreatorPage() {
+    return (
+        <VerifiedProtection>
+            <ContentCreatorContent />
+        </VerifiedProtection>
+    );
+}
+
+function ContentCreatorContent() {
     const { user, decrementCredits } = useAuth();
     const { addToHistory } = useHistory();
     const { showToast } = useToast();
@@ -64,6 +74,7 @@ export default function ContentCreatorPage() {
                 status: 'success',
                 icon: getIconForFormat(selectedFormat)
             });
+            showToast('Snippet saved to library ✨', 'success');
         } catch (error) {
             console.error(error);
             showToast('Failed to generate content. Check your API key and try again.', 'error');

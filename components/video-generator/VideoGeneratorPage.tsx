@@ -47,6 +47,22 @@ const VideoGeneratorPage: React.FC = () => {
             });
             setResult(data);
 
+            // AUTO-SAVE PROMPT AS SNIPPET
+            try {
+                await fetch('/api/snippets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: `Video Prompt for ${style}`,
+                        content: prompt,
+                        tags: ['video-prompt', style, mappedPlatform],
+                        source: 'video-generator'
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to auto-save snippet:', err);
+            }
+
             // Refresh profile to update credits in UI
             await refreshProfile();
 

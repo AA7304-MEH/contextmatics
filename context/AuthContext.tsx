@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabaseClient';
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
+    isVerified: boolean;
     loading: boolean;
     login: (email: string, password: string) => Promise<void>;
     signup: (email: string, countryCode: string, viewerId: string, userData?: any) => Promise<void>;
@@ -19,6 +20,7 @@ interface AuthContextType {
     cancelSubscription: (cancelAtPeriodEnd?: boolean) => void;
     checkSubscriptionStatus: () => void;
     updateUserCountry: (countryCode: string) => void;
+    updateProfile: (data: { username?: string, fullName?: string, avatarUrl?: string }) => Promise<void>;
     refreshProfile: () => Promise<void>;
 }
 
@@ -26,6 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
+    const [isVerified, setIsVerified] = useState(false);
     const [loading, setLoading] = useState(true);
 
     // Fetch user profile from 'profiles' table
@@ -38,7 +41,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .single();
 
             if (error) {
-                console.warn('Error fetching profile:', error);
+                if (error.code === 'PGRST116') {
+                    console.log('[Auth] No profile found for user yet (expected for new signups)');
+                } else {
+                    console.warn('Error fetching profile:', error.message);
+                }
                 return null;
             }
             return data as Profile;
@@ -57,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: sessionUser.email!,
             countryCode: 'US',
             plan: isAdmin ? 'enterprise' : 'free',
-            processingCredits: isAdmin ? 999999 : 3,
+            processingCredits: isAdmin ? 999999 : 5,
             role: isAdmin ? 'admin' : 'user',
         };
 
@@ -86,20 +93,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const initSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
-                // 1. Set base user immediately for fast UI response
                 const isAdmin = isAdminEmail(session.user.email);
+                setIsVerified(!!session.user.email_confirmed_at);
+                
                 const baseUser: User = {
                     id: session.user.id,
                     email: session.user.email!,
                     countryCode: 'US',
                     plan: isAdmin ? 'enterprise' : 'free',
-                    processingCredits: isAdmin ? 999999 : 3,
+                    processingCredits: isAdmin ? 999999 : 5,
                     role: isAdmin ? 'admin' : 'user',
                 };
                 setUser(baseUser);
                 setLoading(false);
 
-                // 2. Enrich with profile data in background
                 const mappedUser = await mapSessionToUser(session.user);
                 setUser(mappedUser);
             } else {
@@ -109,15 +116,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         initSession();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session?.user) {
                 const isAdmin = isAdminEmail(session.user.email);
+                setIsVerified(!!session.user.email_confirmed_at);
+
                 const baseUser: User = {
                     id: session.user.id,
                     email: session.user.email!,
                     countryCode: 'US',
                     plan: isAdmin ? 'enterprise' : 'free',
-                    processingCredits: isAdmin ? 999999 : 3,
+                    processingCredits: isAdmin ? 999999 : 5,
                     role: isAdmin ? 'admin' : 'user',
                 };
                 setUser(baseUser);
@@ -126,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(mappedUser);
             } else {
                 setUser(null);
+                setIsVerified(false);
             }
             setLoading(false);
         });
@@ -168,7 +178,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             options: {
                 data: {
                     full_name: userData?.fullName || email.split('@')[0],
-                    country_code: countryCode
+                    country_code: countryCode,
+                    plan: 'free',
+                    credits_remaining: 5
                 }
             }
         });
@@ -176,15 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (error) throw error;
 
         if (data.user) {
-            const { error: profileError } = await supabase.from('profiles').upsert({
-                id: data.user.id,
-                username: email.split('@')[0],
-                full_name: userData?.fullName,
-                plan: 'free',
-                credits_remaining: 5, // Per spec: Free tier gets 5 videos/month
-                country_code: countryCode
-            });
-            if (profileError) console.warn('Profile creation failed', profileError);
+            console.log('[Auth] Account created, profile will be initialized by DB trigger');
         }
     };
 
@@ -194,7 +198,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const upgradePlan = async (plan: PlanId) => {
-        if (user) {
+        // Weaponized Phase 10: sensitive updates MUST go through backend/payments
+        console.warn('[Auth] upgradePlan called from client. This should be handled via /api/payments/verify.');
+        if (user && process.env.NODE_ENV !== 'production') {
             const { error } = await supabase.from('profiles').update({ plan }).eq('id', user.id);
             if (!error) {
                 setUser({ ...user, plan });
@@ -205,8 +211,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const decrementCredits = async () => {
         if (user && user.processingCredits > 0) {
             const newCredits = user.processingCredits - 1;
-            const { error } = await supabase.from('profiles').update({ credits_remaining: newCredits }).eq('id', user.id);
-            if (!error) {
+            // Best practice: Use a DB function to decrement credits to prevent race conditions
+            const { error } = await supabase.rpc('decrement_user_credits');
+            
+            if (error) {
+                // Fallback for dev if RPC not yet applied
+                const { error: fallbackError } = await supabase.from('profiles').update({ credits_remaining: newCredits }).eq('id', user.id);
+                if (!fallbackError) setUser({ ...user, processingCredits: newCredits });
+            } else {
                 setUser({ ...user, processingCredits: newCredits });
             }
         }
@@ -244,10 +256,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const updateProfile = async (data: { username?: string, fullName?: string, avatarUrl?: string }) => {
+        if (!user) return;
+        
+        // Use the secure RPC for profile updates
+        const { error } = await supabase.rpc('update_profile_safe', {
+            new_username: data.username || user.username,
+            new_full_name: data.fullName || user.fullName,
+            new_avatar_url: data.avatarUrl || user.avatarUrl
+        });
+
+        if (error) {
+            console.error('[Auth] Profile update error:', error);
+            throw error;
+        }
+
+        await refreshProfile();
+    };
+
     const refreshProfile = async () => {
         if (user) {
-            const mappedUser = await mapSessionToUser({ id: user.id, email: user.email });
+            const { data: { session } } = await supabase.auth.getSession();
+            const mappedUser = await mapSessionToUser(session?.user || { id: user.id, email: user.email });
             setUser(mappedUser);
+            if (session?.user) setIsVerified(!!session.user.email_confirmed_at);
         }
     };
 
@@ -255,6 +287,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         <AuthContext.Provider value={{
             user,
             isAuthenticated: !!user,
+            isVerified,
             loading,
             login,
             signup,
@@ -265,6 +298,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             cancelSubscription,
             checkSubscriptionStatus,
             updateUserCountry,
+            updateProfile,
             refreshProfile
         }}>
             {children}
