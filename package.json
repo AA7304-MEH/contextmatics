@@ -10,7 +10,7 @@
     "start": "cd contextmatics && npm run preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["ai", "content-repurposing", "react", "typescript", "vite"],
+  "keywords": ["ai", "content-repurposing", "react", "typescript"],
   "author": "ContextMatic Team",
   "license": "MIT"
 }
