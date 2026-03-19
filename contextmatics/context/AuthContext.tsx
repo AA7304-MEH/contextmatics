@@ -72,11 +72,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const profile = await fetchProfile(sessionUser.id);
             if (profile) {
+                const finalPlan = (profile.role === 'admin' || isAdmin) ? 'enterprise' : (profile.plan as PlanId || baseUser.plan);
+                const finalCredits = (profile.role === 'admin' || isAdmin) ? 999999 : (profile.credits_remaining ?? baseUser.processingCredits);
+                
                 return {
                     ...baseUser,
                     countryCode: profile.country_code || baseUser.countryCode,
-                    plan: (profile.plan as PlanId) || baseUser.plan,
-                    processingCredits: profile.credits_remaining ?? baseUser.processingCredits,
+                    plan: finalPlan,
+                    processingCredits: finalCredits,
+                    role: (profile.role === 'admin' || isAdmin) ? 'admin' : 'user',
                     username: profile.username,
                     fullName: profile.full_name,
                     avatarUrl: profile.avatar_url

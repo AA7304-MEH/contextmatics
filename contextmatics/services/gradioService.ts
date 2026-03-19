@@ -8,8 +8,8 @@ export class GradioService {
     
     // Default high-performance models on HF Spaces
     private models = {
-        text: "HuggingFaceH4/zephyr-7b-beta", // More stable, lower latency for testing
-        image: "stabilityai/stable-diffusion-3-medium" // High quality, widely available
+        text: "HuggingFaceH4/zephyr-7b-beta",
+        image: "stabilityai/stable-diffusion-xl-base-1.0" // More reliable/standard SDXL
     };
 
     private constructor() {}

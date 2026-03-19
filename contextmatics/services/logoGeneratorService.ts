@@ -80,47 +80,12 @@ export class LogoGeneratorService {
 
     private async generatePollinations(prompt: string, width: number, height: number): Promise<string> {
         const cleanPrompt = prompt.replace(/[\n\r\t]/g, ' ').replace(/[^a-zA-Z0-9\s\-\,]/g, ' ').replace(/\s+/g, ' ').trim();
-        const url = `https://pollinations.ai/p/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&seed=${Math.floor(Math.random() * 1000000)}&nologo=true`;
-
-        try {
-            const response = await fetch(url);
-            if (response.ok) {
-                const blob = await response.blob();
-                if (blob.size > 2000) {
-                    return new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result as string);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-                }
-            }
-            throw new Error(`Pollinations returned status ${response.status}`);
-        } catch (e) {
-            console.warn('Pollinations fetch failed, returning URL directly if not 1033');
-            // If it's a 1033 we shouldn't return the URL as it won't load in img tag either
-            // But we don't know for sure without checking text. 
-            // For now, let's try to proceed to next fallback.
-            throw e;
-        }
+        return `https://pollinations.ai/p/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&seed=${Math.floor(Math.random() * 1000000)}&nologo=true`;
     }
 
     private async generateHercai(prompt: string): Promise<string> {
-        try {
-            const cleanPrompt = encodeURIComponent(prompt.substring(0, 400));
-            // Hercai v3 - Text to Image
-            const url = `https://hercai.onrender.com/v3/text2image?prompt=${cleanPrompt}`;
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (data.url) {
-                return data.url;
-            }
-            return '';
-        } catch (e) {
-            console.error('Hercai failed:', e);
-            return '';
-        }
+        const cleanPrompt = encodeURIComponent(prompt.substring(0, 400));
+        return `https://hercai.onrender.com/v3/text2image?prompt=${cleanPrompt}`;
     }
 
 }
