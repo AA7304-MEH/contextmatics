@@ -19,14 +19,6 @@ export async function POST(req: NextRequest) {
         console.log('[AI Repurpose] Key found:', apiKey ? `${apiKey.substring(0, 6)}...` : 'NONE');
         console.log('[AI Repurpose] Request format:', format);
 
-        if (!apiKey || apiKey.includes('dummy') || apiKey.length < 10) {
-            // Handle mock/demo mode on server side
-            return NextResponse.json({
-                text: `[DEMO MODE] This is server-side simulated content for ${format}. Please provide a valid GEMINI_API_KEY in environment variables for real generation.`,
-                isDemo: true
-            });
-        }
-
         let aiPrompt = "";
         switch (format) {
             case "Blog Post":

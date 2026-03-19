@@ -4,6 +4,8 @@ import OpenAI from "openai";
 import { embeddedAICore } from '@/services/embeddedAICore';
 import { ollamaService } from '@/services/ollamaService';
 
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434/api/chat";
+
 export async function POST(req: NextRequest) {
     try {
         const { topic, style, purpose, targetDuration } = await req.json();
@@ -13,13 +15,6 @@ export async function POST(req: NextRequest) {
         }
 
         const apiKey = process.env.GEMINI_API_KEY;
-
-        if (!apiKey || apiKey.includes('dummy')) {
-            return NextResponse.json({ 
-                error: 'GEMINI_API_KEY is not configured or in dummy mode.',
-                isDemo: true 
-            }, { status: 503 });
-        }
 
         const genAI = new GoogleGenerativeAI(apiKey);
         const sceneCount = Math.max(3, Math.ceil(targetDuration / 5));
