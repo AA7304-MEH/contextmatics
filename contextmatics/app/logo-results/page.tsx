@@ -42,15 +42,26 @@ export default function LogoResultsPage() {
         try {
             showToast('Preparing your high-res logo package...', 'info');
             
-            // Use server-side proxy to avoid CORS and ensure high quality
-            const downloadUrl = `/api/ai/download-logo?url=${encodeURIComponent(result.imageUrl)}`;
-            
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = `logo-package-${Date.now()}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            if (result.imageUrl.startsWith('data:')) {
+                // For base64 images, download directly (no proxy needed, no CORS)
+                const link = document.createElement('a');
+                link.href = result.imageUrl;
+                const mime = result.imageUrl.match(/:(.*?);/)?.[1] || 'image/png';
+                const ext = mime.split('/')[1] || 'png';
+                link.download = `logo-package-${Date.now()}.${ext}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                // For remote URLs, use server-side proxy to avoid CORS
+                const downloadUrl = `/api/ai/download-logo?url=${encodeURIComponent(result.imageUrl)}`;
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = `logo-package-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
 
             showToast('Download started!', 'success');
         } catch (error) {

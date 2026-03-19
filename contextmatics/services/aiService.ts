@@ -127,21 +127,18 @@ class AIService {
         const desc = scene.visualDescription.toLowerCase();
         const text = scene.text.toLowerCase();
 
-        // High-Quality Stock Fallbacks
+        // High-Quality Stock Fallbacks (Stable Cloudinary Samples)
         if (desc.includes('nature') || desc.includes('mountain') || text.includes('adventure')) {
-            return "https://res.cloudinary.com/demo/video/upload/v1690989016/samples/sea-turtle.mp4";
+            return "https://res.cloudinary.com/demo/video/upload/v1/samples/sea-turtle.mp4";
         }
-        if (desc.includes('tech') || desc.includes('city') || text.includes('future') || text.includes('ai')) {
-            return "https://res.cloudinary.com/demo/video/upload/v1710688000/samples/cld-sample-video.mp4"; // More modern tech feel
+        if (desc.includes('tech') || desc.includes('city') || text.includes('future') || text.includes('ai') || desc.includes('modern')) {
+            return "https://res.cloudinary.com/demo/video/upload/v1/samples/cld-sample-video.mp4";
         }
-        if (desc.includes('horror') || desc.includes('shadow') || text.includes('scary')) {
-            return "https://res.cloudinary.com/demo/video/upload/v1690989016/samples/elephants.mp4"; // Placeholder
-        }
-        if (desc.includes('cooking') || desc.includes('food')) {
-            return "https://res.cloudinary.com/demo/video/upload/v1690989016/samples/elephants.mp4"; // Placeholder
+        if (desc.includes('horror') || desc.includes('shadow') || text.includes('scary') || desc.includes('dark')) {
+            return "https://res.cloudinary.com/demo/video/upload/v1/samples/elephants.mp4"; 
         }
         
-        return "https://res.cloudinary.com/demo/video/upload/v1710688000/samples/cld-sample-video.mp4";
+        return "https://res.cloudinary.com/demo/video/upload/v1/samples/sea-turtle.mp4";
     }
 }
 

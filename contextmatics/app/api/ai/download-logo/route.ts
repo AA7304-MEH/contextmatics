@@ -10,32 +10,32 @@ export async function GET(req: NextRequest) {
 
     try {
         console.log(`[Logo Download] Proxying download for: ${imageUrl}`);
-        const response = await fetch(imageUrl);
+        const response = await fetch(imageUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
 
         if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.statusText}`);
+            console.error(`[Logo Download] External fetch failed: ${response.status} ${response.statusText}`);
+            return new NextResponse(`Error: Remote server returned ${response.status}`, { status: response.status });
         }
 
-        const blob = await response.blob();
-        const buffer = await blob.arrayBuffer();
-        
+        const buffer = await response.arrayBuffer();
         const contentType = response.headers.get('content-type') || 'image/png';
-        const extension = contentType.split('/')[1] || 'png';
+        const extension = contentType.split('/')[1]?.split(';')[0] || 'png';
         const filename = `contextmatic-logo-${Date.now()}.${extension}`;
 
         return new NextResponse(buffer, {
             headers: {
                 'Content-Type': contentType,
                 'Content-Disposition': `attachment; filename="${filename}"`,
-                'Cache-Control': 'no-cache'
+                'Cache-Control': 'public, max-age=3600'
             }
         });
 
     } catch (error) {
         console.error('[Logo Download Error]', error);
-        return NextResponse.json({ 
-            error: 'Failed to proxy download', 
-            details: error instanceof Error ? error.message : String(error) 
-        }, { status: 500 });
+        return new NextResponse(`Error: Internal proxy failure`, { status: 500 });
     }
 }
