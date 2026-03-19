@@ -92,8 +92,43 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // If both fail, the client will handle the free fallbacks (Pollinations/Hercai)
-        return NextResponse.json({ error: 'Server-side premium generation failed' }, { status: 503 });
+        // 3. Try Pollinations (Free Server-side - No CORS issues for client)
+        try {
+            console.log(`[AI Logo] Falling back to server-side Pollinations...`);
+            const cleanPrompt = prompt.replace(/[\n\r\t]/g, ' ').replace(/[^a-zA-Z0-9\s\-\,]/g, ' ').replace(/\s+/g, ' ').trim();
+            const pollinationUrl = `https://pollinations.ai/p/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&seed=${Math.floor(Math.random() * 1000000)}&nologo=true`;
+            
+            const response = await fetch(pollinationUrl);
+            if (response.ok) {
+                const blob = await response.blob();
+                const buffer = await blob.arrayBuffer();
+                const base64 = Buffer.from(buffer).toString('base64');
+                return NextResponse.json({ image: `data:image/png;base64,${base64}`, provider: 'pollinations-server' });
+            }
+        } catch (e) {
+            console.warn('[AI Logo] Server-side Pollinations failed:', e);
+        }
+
+        // 4. Try Hercai (Final Server-side Fallback)
+        try {
+            console.log(`[AI Logo] Falling back to server-side Hercai...`);
+            const hercaiUrl = `https://hercai.onrender.com/v3/text2image?prompt=${encodeURIComponent(prompt.substring(0, 400))}`;
+            const response = await fetch(hercaiUrl);
+            const data = await response.json();
+            if (data.url) {
+                const imgRes = await fetch(data.url);
+                if (imgRes.ok) {
+                    const blob = await imgRes.blob();
+                    const buffer = await blob.arrayBuffer();
+                    const base64 = Buffer.from(buffer).toString('base64');
+                    return NextResponse.json({ image: `data:image/png;base64,${base64}`, provider: 'hercai-server' });
+                }
+            }
+        } catch (e) {
+            console.warn('[AI Logo] Server-side Hercai failed:', e);
+        }
+
+        return NextResponse.json({ error: 'All server-side generation paths failed' }, { status: 503 });
 
     } catch (error) {
         console.error('Logo Generation API Error:', error);
