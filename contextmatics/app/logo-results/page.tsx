@@ -40,48 +40,21 @@ export default function LogoResultsPage() {
         if (!result) return;
 
         try {
-            showToast('Preparing your download...', 'info');
-            console.log('Attempting to download logo:', result.imageUrl);
-
-            let blob: Blob;
-            let extension = 'png';
-
-            if (result.imageUrl.startsWith('data:')) {
-                // Parse data URL to blob
-                const parts = result.imageUrl.split(',');
-                const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
-                const bstr = atob(parts[1]);
-                let n = bstr.length;
-                const u8arr = new Uint8Array(n);
-                while (n--) {
-                    u8arr[n] = bstr.charCodeAt(n);
-                }
-                blob = new Blob([u8arr], { type: mime });
-                extension = mime.split('/')[1] || 'png';
-            } else {
-                // Fetch remote URL
-                const response = await fetch(result.imageUrl);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-                const contentType = response.headers.get('content-type');
-                extension = contentType?.split('/')[1]?.split(';')[0] || 'png';
-                blob = await response.blob();
-            }
-
-            const blobUrl = window.URL.createObjectURL(blob);
+            showToast('Preparing your high-res logo package...', 'info');
+            
+            // Use server-side proxy to avoid CORS and ensure high quality
+            const downloadUrl = `/api/ai/download-logo?url=${encodeURIComponent(result.imageUrl)}`;
+            
             const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = `logo-${Date.now()}.${extension}`;
+            link.href = downloadUrl;
+            link.download = `logo-package-${Date.now()}.png`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            // Cleanup
-            window.URL.revokeObjectURL(blobUrl);
-            console.log('Download successful with extension:', extension);
             showToast('Download started!', 'success');
         } catch (error) {
-            console.error('Download failed:', error);
+            console.error('Download preparation failed:', error);
             showToast('Download failed. Opening in new tab...', 'error');
             window.open(result.imageUrl, '_blank');
         }

@@ -134,18 +134,25 @@ export const PreviewCanvas: React.FC = () => {
                                         src={clip.url} 
                                         className="w-full h-full object-cover"
                                         style={{ filter: getFilterString(clip.effects) }}
+                                        ref={(el) => {
+                                            if (el) {
+                                                const targetTime = (currentTime - clip.startTime) + clip.startOffset;
+                                                // Only seek if significantly different to avoid stutter
+                                                if (Math.abs(el.currentTime - targetTime) > 0.1) {
+                                                    el.currentTime = targetTime;
+                                                }
+                                                // Sync play/pause state
+                                                if (isPlaying && el.paused) el.play().catch(() => {});
+                                                if (!isPlaying && !el.paused) el.pause();
+                                            }
+                                        }}
                                         onLoadedMetadata={(e) => {
                                             const video = e.target as HTMLVideoElement;
                                             video.currentTime = (currentTime - clip.startTime) + clip.startOffset;
                                             video.volume = getActiveVolume(clip);
                                         }}
-                                        onTimeUpdate={(e) => {
-                                            const video = e.target as HTMLVideoElement;
-                                            video.volume = getActiveVolume(clip);
-                                        }}
-                                        // Simple sync logic
-                                        autoPlay={isPlaying}
-                                        muted={false}
+                                        muted={true} // Mute by default for sync stability, audio handled separately
+                                        playsInline
                                     />
                                 )}
                                 {clip.type === 'text' && (
