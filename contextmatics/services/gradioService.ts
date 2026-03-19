@@ -8,8 +8,8 @@ export class GradioService {
     
     // Default high-performance models on HF Spaces
     private models = {
-        text: "google/gemma-2-9b-it",
-        image: "black-forest-labs/FLUX.1-schnell" // Powerful image model
+        text: "HuggingFaceH4/zephyr-7b-beta", // More stable, lower latency for testing
+        image: "stabilityai/stable-diffusion-3-medium" // High quality, widely available
     };
 
     private constructor() {}
