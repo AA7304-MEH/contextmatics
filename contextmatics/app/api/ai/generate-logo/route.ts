@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { gradioService } from '@/services/gradioService';
 
 const CONFIG = {
     basic: {
@@ -18,6 +19,18 @@ export async function POST(req: NextRequest) {
 
         if (!prompt) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
+        }
+
+        // 0. Try Gradio (State-of-the-art: FLUX.1)
+        try {
+            console.log(`[AI Logo] Attempting with Gradio (FLUX.1)...`);
+            const imageUrl = await gradioService.generateImage(prompt);
+            if (imageUrl) {
+                console.log(`[AI Logo] Success with Gradio (FLUX.1)`);
+                return NextResponse.json({ image: imageUrl, provider: 'gradio-flux' });
+            }
+        } catch (gradioErr: any) {
+            console.warn(`[AI Logo] Gradio failed, falling back to OpenAI...`);
         }
 
         // 1. Try OpenAI (Premium Quality)

@@ -3,6 +3,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import { embeddedAICore } from '@/services/embeddedAICore';
 import { ollamaService } from '@/services/ollamaService';
+import { gradioService } from '@/services/gradioService';
+
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434/api/chat";
 
 export async function POST(req: NextRequest) {
     try {
@@ -57,6 +60,19 @@ export async function POST(req: NextRequest) {
             }
         } catch (ollamaErr: any) {
             console.warn(`[AI Repurpose] Ollama failed (timeout or offline), falling back...`);
+        }
+
+        // 0.5 Gradio (HuggingFace Hosted Gemma 2 - High Quality)
+        try {
+            console.log(`[AI Repurpose] Attempting with Gradio (Gemma 2)...`);
+            const chatPrompt = `You are a professional content repurposing assistant. Your output should be clean, structured, and ready to use. Output only the repurposed content.\n\nTask: ${aiPrompt}`;
+            const result = await gradioService.predictText(chatPrompt);
+            if (result && result.length > 20) {
+                console.log(`[AI Repurpose] Success with Gradio`);
+                return NextResponse.json({ text: result, provider: 'gradio' });
+            }
+        } catch (gradioErr: any) {
+            console.warn(`[AI Repurpose] Gradio failed, falling back...`);
         }
         
         // 1. Try OpenAI (Primary - User requested "Powerful Model")
