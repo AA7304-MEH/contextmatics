@@ -78,6 +78,7 @@ export async function middleware(request: NextRequest) {
         request.nextUrl.pathname.startsWith(route)
     );
 
+    /*
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError && isProtectedRoute) {
@@ -94,6 +95,7 @@ export async function middleware(request: NextRequest) {
         url.searchParams.set('return_to', request.nextUrl.pathname);
         return NextResponse.redirect(url);
     }
+    */
 
     return response;
 }
