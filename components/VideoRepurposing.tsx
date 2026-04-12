@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { PageLayout } from './shared';
+import { PageLayout, SEO } from './shared';
 
 const processingStages = [
     'Downloading Video...',
@@ -27,7 +27,7 @@ const generateMockClips = (duration: number, mode: 'highlights' | 'summary', pla
 };
 
 const VideoRepurposing: React.FC = () => {
-    const navigate = useNavigate();
+    const router = useRouter();
     const { user, decrementCredits } = useAuth();
     const { showToast } = useToast();
 
@@ -160,7 +160,7 @@ const VideoRepurposing: React.FC = () => {
         // Credit validation before processing
         if (!user || user.processingCredits <= 0) {
             showToast('No credits remaining! Please upgrade your plan to continue processing videos.', 'error');
-            navigate('/pricing');
+            router.push('/pricing');
             return;
         }
 
@@ -321,6 +321,7 @@ const VideoRepurposing: React.FC = () => {
 
     return (
         <PageLayout showPricing={true} showSettings={true}>
+            <SEO title="Video Repurposing" description="Turn long-form videos into viral vertical shorts with AI." />
             {/* Hidden Rendering Elements */}
             <video
                 ref={renderVideoRef}

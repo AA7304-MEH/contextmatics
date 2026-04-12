@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useHistory } from '../context/HistoryContext';
 import { UserManagement } from './UserManagement';
 import { PageLayout } from './shared';
+import { SEO } from './shared/SEO';
 
 const AdminDashboard: React.FC = () => {
     const { user } = useAuth();
     const { historyItems } = useHistory();
-    const navigate = useNavigate();
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'activity'>('overview');
 
     if (!user || user.role !== 'admin') {
@@ -18,7 +19,7 @@ const AdminDashboard: React.FC = () => {
                     <h1 className="text-4xl font-bold text-red-500 mb-4">Access Denied</h1>
                     <p className="text-text-muted mb-8">You do not have permission to view this page.</p>
                     <button
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => router.push('/dashboard')}
                         className="btn btn-primary"
                     >
                         Go to User Dashboard
@@ -40,6 +41,7 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <PageLayout showPricing={true} showSettings={true}>
+            <SEO title="Admin Console" description="System overview and user management." />
             <div className="container mx-auto px-6 py-12">
                 <div className="flex justify-between items-end mb-12">
                     <div className="mb-0">
@@ -104,19 +106,19 @@ const AdminDashboard: React.FC = () => {
                                     👥 Manage Users
                                 </button>
                                 <button
-                                    onClick={() => navigate('/subscription')}
+                                    onClick={() => router.push('/subscription')}
                                     className="btn btn-secondary"
                                 >
                                     💳 View Subscriptions
                                 </button>
                                 <button
-                                    onClick={() => navigate('/settings')}
+                                    onClick={() => router.push('/settings')}
                                     className="btn btn-secondary"
                                 >
                                     ⚙️ App Settings
                                 </button>
                                 <button
-                                    onClick={() => navigate('/analytics')}
+                                    onClick={() => router.push('/analytics')}
                                     className="btn btn-secondary"
                                 >
                                     📊 View Analytics

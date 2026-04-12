@@ -1,300 +1,200 @@
--- ContextMatic Supabase Schema
--- Run this in Supabase SQL Editor: https://app.supabase.com → SQL Editor
--- This creates all tables, functions, and security policies needed for production.
+-- ContextMatic Production Supabase Schema (Hardened)
+-- Date: 2026-04-06
+-- This file creates all tables, functions, and security policies for a production environment.
 
 -- ============================================================
--- 1. PROFILES TABLE (user data, credits, plan)
+-- 1. PROFILES & AUTHENTICATION
 -- ============================================================
-CREATE TABLE IF NOT EXISTS profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username TEXT UNIQUE,
   full_name TEXT,
   avatar_url TEXT,
   plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'business', 'enterprise', 'free_abuse')),
-  credits_remaining INTEGER DEFAULT 3,
+  credits_remaining INTEGER DEFAULT 5,
+  referral_code TEXT UNIQUE DEFAULT substring(md5(random()::text), 1, 8),
+  referred_by UUID REFERENCES public.profiles(id),
+  onboarding_completed BOOLEAN DEFAULT false,
+  role TEXT DEFAULT 'user',
   stripe_customer_id TEXT,
-  country_code TEXT DEFAULT 'US',
+  plan_expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Auto-update the updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER profiles_updated_at
-  BEFORE UPDATE ON profiles
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Auto-create profile on signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (
-    id, 
-    username, 
-    full_name, 
-    avatar_url,
-    plan,
-    credits_remaining,
-    country_code
-  )
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
-    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'avatar_url', ''),
-    COALESCE(NEW.raw_user_meta_data->>'plan', 'free'),
-    COALESCE((NEW.raw_user_meta_data->>'credits_remaining')::integer, 5),
-    COALESCE(NEW.raw_user_meta_data->>'country_code', 'US')
-  );
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Drop existing trigger if any, then recreate
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
-
 -- ============================================================
--- 2. SNIPPETS TABLE (generated content history)
+-- 2. CONTENT & ASSETS (AI GEN & UPLOADS)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS snippets (
+-- AI Generated snippets
+CREATE TABLE IF NOT EXISTS public.snippets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   title TEXT,
   content TEXT NOT NULL,
-  tags TEXT[] DEFAULT '{}',
-  source TEXT DEFAULT 'gemini', -- 'chatgpt', 'manual', 'gemini', etc.
+  platform TEXT,
+  type TEXT DEFAULT 'text',
   is_public BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_snippets_user_id ON snippets(user_id);
-CREATE INDEX IF NOT EXISTS idx_snippets_created_at ON snippets(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_snippets_user_created ON snippets(user_id, created_at DESC);
-
--- Update trigger for snippets
-CREATE OR REPLACE TRIGGER snippets_updated_at
-  BEFORE UPDATE ON snippets
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- ============================================================
--- 2.1 ASSETS TABLE (User uploads and generated media)
--- ============================================================
-CREATE TABLE IF NOT EXISTS assets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('video', 'audio', 'image', 'text')),
-    url TEXT NOT NULL,
-    thumbnail_url TEXT,
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_assets_user_id ON assets(user_id);
-
-CREATE OR REPLACE TRIGGER assets_updated_at
-    BEFORE UPDATE ON assets
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- ============================================================
--- 2.2 PROJECTS TABLE (Video editor projects)
--- ============================================================
-CREATE TABLE IF NOT EXISTS projects (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    title TEXT NOT NULL DEFAULT 'Untitled Project',
-    description TEXT,
-    thumbnail_url TEXT,
-    timeline_data JSONB DEFAULT '{"tracks": [], "duration": 60, "zoom": 1}',
-    status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'rendering', 'completed', 'failed')),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
-
-CREATE OR REPLACE TRIGGER projects_updated_at
-    BEFORE UPDATE ON projects
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
--- ============================================================
--- 3. ROW LEVEL SECURITY (RLS)
--- ============================================================
--- Critical: ensures users can only access their own data
-
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE snippets ENABLE ROW LEVEL SECURITY;
-
--- Profiles: users can only read/update their own profile
-DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
-CREATE POLICY "Users can view own profile"
-  ON profiles FOR SELECT
-  USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
-CREATE POLICY "Users can update own profile"
-  ON profiles FOR UPDATE
-  USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
-CREATE POLICY "Users can insert own profile"
-  ON profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can delete own profile" ON profiles;
-CREATE POLICY "Users can delete own profile"
-  ON profiles FOR DELETE
-  USING (auth.uid() = id);
-
--- Snippets: users can only CRUD their own content
-DROP POLICY IF EXISTS "Users can view own snippets" ON snippets;
-CREATE POLICY "Users can view own snippets"
-  ON snippets FOR SELECT
-  USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can insert own snippets" ON snippets;
-CREATE POLICY "Users can insert own snippets"
-  ON snippets FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can update own snippets" ON snippets;
-CREATE POLICY "Users can update own snippets"
-  ON snippets FOR UPDATE
-  USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can delete own snippets" ON snippets;
-CREATE POLICY "Users can delete own snippets"
-  ON snippets FOR DELETE
-  USING (auth.uid() = user_id);
-
--- Assets: users can only CRUD their own assets
-ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view own assets" ON assets;
-CREATE POLICY "Users can view own assets"
-  ON assets FOR SELECT
-  USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can insert own assets" ON assets;
-CREATE POLICY "Users can insert own assets"
-  ON assets FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can update own assets" ON assets;
-CREATE POLICY "Users can update own assets"
-  ON assets FOR UPDATE
-  USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can delete own assets" ON assets;
-CREATE POLICY "Users can delete own assets"
-  ON assets FOR DELETE
-  USING (auth.uid() = user_id);
-
--- Projects: users can only CRUD their own projects
-ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view own projects" ON projects;
-CREATE POLICY "Users can view own projects"
-  ON projects FOR SELECT
-  USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can insert own projects" ON projects;
-CREATE POLICY "Users can insert own projects"
-  ON projects FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can update own projects" ON projects;
-CREATE POLICY "Users can update own projects"
-  ON projects FOR UPDATE
-  USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can delete own projects" ON projects;
-CREATE POLICY "Users can delete own projects"
-  ON projects FOR DELETE
-  USING (auth.uid() = user_id);
-
-
--- ============================================================
--- 4. VIDEOS TABLE (generated video history)
--- ============================================================
-CREATE TABLE IF NOT EXISTS videos (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  prompt TEXT NOT NULL,
-  style TEXT NOT NULL,
-  platform TEXT NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
-  url TEXT,
-  thumbnail_url TEXT,
-  audio_url TEXT,
-  snippet_id UUID REFERENCES snippets(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_videos_user_id ON videos(user_id);
-CREATE INDEX IF NOT EXISTS idx_videos_created_at ON videos(created_at DESC);
+-- AI Generated Media (Images, Logos, Videos)
+CREATE TABLE IF NOT EXISTS public.media_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  type TEXT NOT NULL, -- 'image', 'logo', 'video'
+  prompt TEXT NOT NULL,
+  url TEXT NOT NULL,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Editor Projects & Assets
+CREATE TABLE IF NOT EXISTS public.projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT 'Untitled Project',
+  timeline_data JSONB DEFAULT '{"tracks": [], "duration": 60}',
+  status TEXT DEFAULT 'draft',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.assets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  url TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- ============================================================
--- 5. TEMPLATES TABLE
+-- 3. WORKSPACES & SOCIAL
 -- ============================================================
-CREATE TABLE IF NOT EXISTS templates (
+CREATE TABLE IF NOT EXISTS public.workspaces (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  description TEXT,
-  category TEXT NOT NULL,
-  preview_url TEXT,
-  project_data JSONB NOT NULL,
-  is_public BOOLEAN DEFAULT true,
+  owner_id UUID REFERENCES public.profiles(id),
+  plan TEXT DEFAULT 'agency',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================================
--- 6. COMMUNITY REMIXES
--- ============================================================
-ALTER TABLE videos ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT false;
-ALTER TABLE videos ADD COLUMN IF NOT EXISTS remix_count INTEGER DEFAULT 0;
-
--- ============================================================
--- 7. SECURITY FOR TEMPLATES
--- ============================================================
-ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Anyone can view public templates" ON templates;
-CREATE POLICY "Anyone can view public templates"
-  ON templates FOR SELECT
-  USING (is_public = true);
-
--- ============================================================
--- 8. FEEDBACK TABLE
--- ============================================================
-CREATE TABLE IF NOT EXISTS video_feedback (
+CREATE TABLE IF NOT EXISTS public.workspace_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  video_id UUID REFERENCES videos(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-  comment TEXT,
+  workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'editor' CHECK (role IN ('owner','admin','editor','viewer')),
+  status TEXT DEFAULT 'active',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(workspace_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.scheduled_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  platforms TEXT[] NOT NULL,
+  scheduled_at TIMESTAMPTZ NOT NULL,
+  status TEXT DEFAULT 'draft',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE video_feedback ENABLE ROW LEVEL SECURITY;
+-- Payments & Billing History
+CREATE TABLE IF NOT EXISTS public.transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  gateway TEXT NOT NULL, -- 'razorpay', 'paypal', 'stripe'
+  gateway_payment_id TEXT UNIQUE NOT NULL,
+  gateway_order_id TEXT,
+  amount FLOAT NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'INR',
+  plan_name TEXT NOT NULL,
+  credits_added INTEGER NOT NULL,
+  status TEXT DEFAULT 'completed',
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-DROP POLICY IF EXISTS "Users can insert own feedback" ON video_feedback;
-CREATE POLICY "Users can insert own feedback"
-  ON video_feedback FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+-- ============================================================
+-- 4. ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================================
+-- Enable RLS on all tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.snippets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.media_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.scheduled_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+
+-- Policy Logic (Secure Defaults)
+CREATE POLICY "Users access own profile" ON public.profiles FOR ALL USING (auth.uid() = id);
+CREATE POLICY "Users content access" ON public.snippets FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users media access" ON public.media_items FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users project access" ON public.projects FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users asset access" ON public.assets FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users schedule access" ON public.scheduled_posts FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users billing access" ON public.transactions FOR SELECT USING (auth.uid() = user_id);
+
+-- Workspace Specifics
+CREATE POLICY "Workspace visibility" ON public.workspaces FOR SELECT USING (
+  id IN (SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid()) OR owner_id = auth.uid()
+);
+CREATE POLICY "Workspace management" ON public.workspaces FOR ALL USING (owner_id = auth.uid());
+
+CREATE POLICY "Member visibility" ON public.workspace_members FOR SELECT USING (
+  workspace_id IN (SELECT id FROM public.workspaces WHERE owner_id = auth.uid() OR id IN (SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid()))
+);
+
+-- ============================================================
+-- 5. ADMINISTRATIVE FUNCTIONS (CREDITS)
+-- ============================================================
+-- RPC for atomic credit deduction
+CREATE OR REPLACE FUNCTION decrement_credits(user_id uuid, amount int)
+RETURNS int LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE new_balance int;
+BEGIN
+  UPDATE public.profiles SET credits_remaining = credits_remaining - amount
+  WHERE id = user_id AND credits_remaining >= amount
+  RETURNING credits_remaining INTO new_balance;
+  
+  IF NOT FOUND THEN RAISE EXCEPTION 'INSUFFICIENT_CREDITS'; END IF;
+  RETURN new_balance;
+END; $$;
+
+-- RPC for atomic payment processing
+-- Ensures transaction log and profile update happen together
+CREATE OR REPLACE FUNCTION process_payment_success(
+  p_user_id uuid,
+  p_plan_name text,
+  p_credits_to_add int,
+  p_gateway text,
+  p_payment_id text,
+  p_order_id text,
+  p_amount float,
+  p_currency text
+)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  -- 1. Insert transaction record
+  INSERT INTO public.transactions (
+    user_id, gateway, gateway_payment_id, gateway_order_id, 
+    amount, currency, plan_name, credits_added, status
+  ) VALUES (
+    p_user_id, p_gateway, p_payment_id, p_order_id, 
+    p_amount, p_currency, p_plan_name, p_credits_to_add, 'completed'
+  );
+
+  -- 2. Update user profile
+  UPDATE public.profiles 
+  SET 
+    plan = p_plan_name,
+    credits_remaining = credits_remaining + p_credits_to_add,
+    updated_at = NOW()
+  WHERE id = p_user_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'USER_NOT_FOUND';
+  END IF;
+END; $$;

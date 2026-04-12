@@ -79,8 +79,8 @@ export class RazorpayService {
       // Convert amount to paise (Razorpay expects amount in smallest currency unit)
       const amountInPaise = Math.round(amount * 100)
 
-      // Create order first (in real app, this would be done on backend)
-      const orderId = await this.createSubscriptionOrder(planName, amount)
+      // Create order first (Validated on backend)
+      const orderId = await this.createSubscriptionOrder(planName, currency)
 
       const razorpayOptions: RazorpayOptions = {
         key: keyId,
@@ -101,7 +101,7 @@ export class RazorpayService {
         },
         modal: {
           ondismiss: () => {
-            console.log('Payment cancelled by user')
+            // Log for analytics if needed
           },
         },
       }
@@ -154,13 +154,16 @@ export class RazorpayService {
   /**
    * Create subscription order
    */
-  async createSubscriptionOrder(_planId: string, _amount: number): Promise<string | undefined> {
-    // In a real application, this would call your backend API
-    // to create an order and return the order ID
+  async createSubscriptionOrder(planName: string, currency: string): Promise<string> {
+    const response = await fetch('/api/payments/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planName, currency })
+    });
 
-    // For client-side only demo, we don't create an order ID
-    // Razorpay will treat this as a direct payment
-    return undefined
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to create order');
+    return data.orderId;
   }
 
   /**

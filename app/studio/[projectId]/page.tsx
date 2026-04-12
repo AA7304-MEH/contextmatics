@@ -66,8 +66,7 @@ export default function StudioPage() {
             // Ctrl/Cmd + S: Force save (manual save)
             if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
                 e.preventDefault();
-                console.log('Forced manual save triggered');
-                // Auto-save logic handles this normally, but we could trigger it explicitly
+                // Auto-save logic handles this normally
             }
         };
 

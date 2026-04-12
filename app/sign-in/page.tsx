@@ -23,6 +23,15 @@ function LoginContent() {
         }
     }, [isAuthenticated, router, returnTo]);
 
+    const handleOAuth = async (provider: 'google' | 'github' | 'azure') => {
+        const { createBrowserClient } = await import('@supabase/ssr');
+        const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+        await supabase.auth.signInWithOAuth({ 
+            provider: provider, 
+            options: { redirectTo: `${window.location.origin}/auth/callback` } 
+        });
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -82,6 +91,21 @@ function LoginContent() {
                             {loading ? 'Signing in...' : 'Sign In'}
                         </button>
                     </form>
+                    <div className="mt-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-white/10" />
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="px-2 bg-black/40 text-[var(--color-text-tertiary)] backdrop-blur-xl">Or continue with</span>
+                            </div>
+                        </div>
+                        <div className="mt-6 grid grid-cols-3 gap-3">
+                            <button type="button" onClick={() => handleOAuth('google')} className="btn py-2 border border-white/10 hover:bg-white/5 text-white font-medium rounded-lg text-sm transition-colors">Google</button>
+                            <button type="button" onClick={() => handleOAuth('github')} className="btn py-2 border border-white/10 hover:bg-white/5 text-white font-medium rounded-lg text-sm transition-colors">GitHub</button>
+                            <button type="button" onClick={() => handleOAuth('azure')} className="btn py-2 border border-white/10 hover:bg-white/5 text-white font-medium rounded-lg text-sm transition-colors">Microsoft</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

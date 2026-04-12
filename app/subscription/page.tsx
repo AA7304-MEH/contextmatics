@@ -1,164 +1,219 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { PageLayout } from '@/components/shared';
+import { useToast } from '@/context/ToastContext';
+import { CreditCard, History, Zap, TrendingUp, AlertCircle, Download, CheckCircle2 } from 'lucide-react';
 
 const PLAN_CREDITS: Record<string, number> = {
-    free: 3,
-    pro: 10,
-    business: 50,
-    enterprise: 500
+    free: 5,
+    pro: 100,
+    business: 500,
+    enterprise: 2500
 };
 
 const PLAN_NAMES: Record<string, string> = {
-    free: 'Free Plan',
-    pro: 'Pro Plan',
-    business: 'Business Plan',
-    enterprise: 'Enterprise Plan'
+    free: 'Free Explorer',
+    pro: 'Pro Creator',
+    business: 'Business Power',
+    enterprise: 'Enterprise Scale',
+    free_abuse: 'Free Tier (Limited)'
 };
 
 export default function SubscriptionPage() {
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, refreshProfile } = useAuth();
+    const { showToast } = useToast();
+    const [billingHistory, setBillingHistory] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const planLimit = user ? PLAN_CREDITS[user.plan] || 3 : 3;
-    const creditsRemaining = user?.processingCredits || 0;
-    const creditsUsed = planLimit - creditsRemaining;
+    const planId = user?.plan || 'free';
+    const planLimit = PLAN_CREDITS[planId] || 5;
+    const creditsRemaining = user?.credits_remaining || 0;
+    const creditsUsed = Math.max(0, planLimit - creditsRemaining);
     const usagePercent = planLimit > 0 ? ((creditsUsed / planLimit) * 100) : 0;
-    const remainingPercent = 100 - usagePercent;
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                const res = await fetch('/api/payments/history');
+                if (res.ok) {
+                    const data = await res.json();
+                    setBillingHistory(data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch billing history');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchHistory();
+    }, [user]);
+
+    const handleCancel = () => {
+        showToast('To cancel your premium plan, please contact billing@contextmatic.example.com or use the Stripe dashboard.', 'info');
+    };
 
     return (
-        <PageLayout showPricing={true} showSettings={true}>
-            <div className="container mx-auto px-6 py-12 text-left">
-                <div className="mb-12 text-center animate-fade-in">
-                    <h1 className="text-4xl font-bold mb-4 tracking-tight text-white">Subscription & Billing</h1>
-                    <p className="text-lg text-[var(--color-text-secondary)]">Manage your workspace plan, usage limits, and billing history.</p>
+        <PageLayout>
+            <div className="container mx-auto px-6 py-12 md:py-20 text-left">
+                {/* Header Section */}
+                <div className="max-w-4xl mb-12 animate-fade-in">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-blue-600/10 rounded-2xl">
+                            <CreditCard className="w-6 h-6 text-blue-500" />
+                        </div>
+                        <h1 className="text-4xl font-black text-white tracking-tight">Billing & Plans</h1>
+                    </div>
+                    <p className="text-lg text-zinc-500 max-w-2xl">
+                        Manage your subscription, monitor credit usage, and download your past invoices.
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 animate-fade-in">
-                    {/* Current Plan Card */}
-                    <div className="card p-8 h-full flex flex-col border border-white/10 bg-white/5">
-                        <div className="flex justify-between items-start mb-8">
-                            <div>
-                                <h2 className="text-xl font-bold text-white mb-2">Current Plan</h2>
-                                <p className="text-[var(--color-text-secondary)] text-sm">Your active subscription tier.</p>
-                            </div>
-                            <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold uppercase tracking-wider">
-                                Active
-                            </span>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 animate-fade-in">
+                    {/* Active Plan Card */}
+                    <div className="lg:col-span-2 card p-10 border border-white/10 bg-black/40 backdrop-blur-2xl rounded-[2.5rem] relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-8">
+                            <Zap className="w-12 h-12 text-blue-500/10 group-hover:scale-125 transition-transform duration-700" />
                         </div>
+                        
+                        <div className="flex flex-col md:flex-row justify-between gap-12">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <span className="px-3 py-1 rounded-lg bg-blue-600/10 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
+                                        Active Now
+                                    </span>
+                                </div>
+                                
+                                <h2 className="text-5xl font-black text-white mb-2 tracking-tighter">
+                                    {PLAN_NAMES[planId]}
+                                </h2>
+                                <p className="text-zinc-500 font-bold mb-10">Premium AI Production Access</p>
 
-                        <div className="flex-1">
-                            <div className="mb-8 p-6 bg-white/5 border border-white/10 rounded-2xl">
-                                <div className="flex items-center gap-4 mb-4">
-                                    <span className="text-3xl">⚡</span>
-                                    <div>
-                                        <h3 className="text-2xl font-bold text-white">
-                                            {user ? PLAN_NAMES[user.plan] || 'Free Plan' : 'Free Plan'}
-                                        </h3>
-                                        <p className="text-[var(--color-text-muted)] text-sm">Billed monthly</p>
-                                    </div>
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <button 
+                                        onClick={() => router.push('/pricing')}
+                                        className="px-8 py-4 rounded-2xl bg-white text-black text-sm font-black hover:bg-zinc-200 transition-all shadow-xl shadow-white/5 active:scale-95"
+                                    >
+                                        Upgrade Plan
+                                    </button>
+                                    <button 
+                                        onClick={handleCancel}
+                                        className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-zinc-400 text-sm font-black hover:text-white hover:bg-white/10 transition-all active:scale-95"
+                                    >
+                                        Cancel Subscription
+                                    </button>
                                 </div>
-                                <div className="text-3xl font-mono font-bold text-white mb-1">
-                                    {planLimit}<span className="text-sm font-sans font-medium text-[var(--color-text-muted)] ml-2">credits/mo</span>
-                                </div>
-                                <p className="text-emerald-400 text-sm font-medium">{creditsRemaining} credits available now</p>
                             </div>
-                        </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4 mt-auto">
-                            <button
-                                onClick={() => router.push('/pricing')}
-                                className="btn btn-primary flex-1 justify-center bg-white text-black hover:bg-zinc-200 border-white"
-                            >
-                                Upgrade Plan
-                            </button>
-                            <button
-                                onClick={() => { }}
-                                className="btn btn-secondary flex-1 justify-center border-red-500/20 text-red-400 hover:bg-red-500/10"
-                            >
-                                Cancel Subscription
-                            </button>
+                            <div className="w-full md:w-64 flex flex-col justify-end">
+                                <div className="p-8 rounded-[2rem] bg-white/[0.03] border border-white/5">
+                                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">Credit Allocation</p>
+                                    <div className="text-5xl font-black text-white mb-2">{planLimit}</div>
+                                    <p className="text-xs text-zinc-500 font-bold">Credits per month</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Usage Statistics */}
-                    <div className="card p-8 h-full flex flex-col border border-white/10 bg-white/5">
-                        <h2 className="text-xl font-bold text-white mb-2">Usage Statistics</h2>
-                        <p className="text-[var(--color-text-secondary)] text-sm mb-8">Real-time usage tracking for current billing cycle.</p>
+                    {/* Usage Meter */}
+                    <div className="card p-10 border border-white/10 bg-black/40 backdrop-blur-2xl rounded-[2.5rem] flex flex-col">
+                        <h3 className="text-xl font-black text-white mb-8 flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-emerald-500" /> Current Usage
+                        </h3>
 
-                        {/* Progress Bar */}
-                        <div className="mb-8">
-                            <div className="flex justify-between mb-2 text-sm font-medium">
-                                <span className="text-[var(--color-text-muted)]">Monthly Usage</span>
-                                <span className="text-white font-mono">{creditsUsed} / {planLimit}</span>
-                            </div>
-                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                    className={`h-full rounded-full transition-all duration-500 ${usagePercent > 90 ? 'bg-red-500' : 'bg-emerald-500'}`}
-                                    style={{ width: `${Math.min(usagePercent, 100)}%` }}
-                                />
-                            </div>
-                            <p className="text-xs text-[var(--color-text-muted)] mt-2 text-right">{remainingPercent.toFixed(0)}% remaining</p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 mt-auto">
-                            <div className="p-4 rounded-xl border border-white/5 bg-white/5">
-                                <div className="text-[var(--color-text-muted)] text-xs font-medium uppercase tracking-wider mb-2">Credits Used</div>
-                                <div className="text-2xl font-mono font-bold text-white">{creditsUsed}</div>
-                            </div>
-                            <div className="p-4 rounded-xl border border-white/5 bg-white/5">
-                                <div className="text-[var(--color-text-muted)] text-xs font-medium uppercase tracking-wider mb-2">Remaining</div>
-                                <div className={`text-2xl font-mono font-bold ${creditsRemaining > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <div className="flex-1 flex flex-col justify-center">
+                            <div className="mb-10 text-center">
+                                <div className="text-6xl font-black text-white tracking-tighter mb-2">
                                     {creditsRemaining}
                                 </div>
+                                <p className="text-xs text-zinc-500 font-black uppercase tracking-widest">Credits Remaining</p>
                             </div>
+
+                            <div className="space-y-4">
+                                <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-1">
+                                    <div 
+                                        className={`h-full rounded-full transition-all duration-1000 ${usagePercent > 80 ? 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]' : 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.5)]'}`}
+                                        style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                                    />
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-600 px-1">
+                                    <span>{creditsUsed} Used</span>
+                                    <span>{planLimit} Total</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-10 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex items-start gap-3">
+                            <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                            <p className="text-[10px] text-amber-500 font-bold leading-relaxed">
+                                Credits reset on your next billing date. High usage detected, consider upgrading.
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Billing History */}
-                <div className="card p-6 border border-white/10 bg-white/5 animate-fade-in">
-                    <div className="flex justify-between items-center mb-6 px-2">
-                        <h2 className="text-xl font-bold text-white">Billing History</h2>
-                        <button className="text-xs text-[var(--color-text-muted)] hover:text-white transition-colors">Download All</button>
+                {/* Billing History Table */}
+                <div className="card border border-white/10 bg-black/40 backdrop-blur-2xl rounded-[2.5rem] overflow-hidden animate-fade-in shadow-2xl">
+                    <div className="p-10 border-b border-white/5 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-purple-500/10 rounded-2xl">
+                                <History className="w-6 h-6 text-purple-500" />
+                            </div>
+                            <h2 className="text-2xl font-black text-white">Payment History</h2>
+                        </div>
+                        <button className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-all flex items-center gap-2">
+                            <Download className="w-4 h-4" /> Download All
+                        </button>
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left">
                             <thead>
-                                <tr>
-                                    <th className="p-4 text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-medium border-b border-white/5">Invoice</th>
-                                    <th className="p-4 text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-medium border-b border-white/5">Date</th>
-                                    <th className="p-4 text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-medium border-b border-white/5">Amount</th>
-                                    <th className="p-4 text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-medium border-b border-white/5">Status</th>
-                                    <th className="p-4 text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-medium border-b border-white/5 text-right">Action</th>
+                                <tr className="border-b border-white/5 bg-white/[0.01]">
+                                    <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">ID / Order</th>
+                                    <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Date</th>
+                                    <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Amount</th>
+                                    <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Status</th>
+                                    <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-right">Receipt</th>
                                 </tr>
                             </thead>
-                            <tbody className="text-sm text-[var(--color-text-secondary)]">
-                                {[
-                                    { date: 'Dec 1, 2024', amount: '$29.00', status: 'Paid', invoice: 'INV-2024-001' },
-                                    { date: 'Nov 1, 2024', amount: '$29.00', status: 'Paid', invoice: 'INV-2024-002' },
-                                    { date: 'Oct 1, 2024', amount: '$29.00', status: 'Paid', invoice: 'INV-2024-003' }
-                                ].map((bill, index) => (
-                                    <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                        <td className="p-4 font-mono text-[var(--color-text-muted)]">{bill.invoice}</td>
-                                        <td className="p-4">{bill.date}</td>
-                                        <td className="p-4 font-bold text-white">{bill.amount}</td>
-                                        <td className="p-4">
-                                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                                                <span className="w-1 h-1 rounded-full bg-emerald-400"></span> {bill.status}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <button className="text-[var(--color-text-muted)] hover:text-white text-xs font-medium underline underline-offset-4 transition-all">
-                                                Download PDF
-                                            </button>
+                            <tbody className="text-sm font-bold text-white">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={5} className="p-20 text-center animate-pulse">
+                                            <p className="text-zinc-600 tracking-widest uppercase font-black">Loading receipts...</p>
                                         </td>
                                     </tr>
-                                ))}
+                                ) : billingHistory.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="p-20 text-center text-zinc-600">
+                                            <p className="tracking-widest uppercase font-black mb-2 opacity-20 text-5xl">📄</p>
+                                            <p className="tracking-widest uppercase font-black">No transaction records found.</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    billingHistory.map((bill, index) => (
+                                        <tr key={bill.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                                            <td className="p-8 font-mono text-zinc-500 text-xs">#{bill.gateway_payment_id || bill.id.slice(0, 8)}</td>
+                                            <td className="p-8">{new Date(bill.created_at).toLocaleDateString()}</td>
+                                            <td className="p-8 text-lg font-black">{bill.currency === 'INR' ? '₹' : '$'}{bill.amount}</td>
+                                            <td className="p-8">
+                                                <div className="flex items-center gap-2 text-emerald-400">
+                                                    <CheckCircle2 className="w-4 h-4" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Successful</span>
+                                                </div>
+                                            </td>
+                                            <td className="p-8 text-right">
+                                                <button className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white text-zinc-500 hover:text-black transition-all">
+                                                    DOWNLOAD
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>

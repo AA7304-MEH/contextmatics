@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import DashboardClient from './DashboardClient';
 
 export const metadata: Metadata = {
     title: 'User Dashboard',
@@ -7,6 +6,9 @@ export const metadata: Metadata = {
 };
 
 import { VerifiedProtection } from '@/components/VerifiedProtection';
+
+import dynamic from 'next/dynamic';
+const DashboardClient = dynamic(() => import('./DashboardClient'), { ssr: false });
 
 export default function Page() {
     return (

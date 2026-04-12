@@ -1,4 +1,5 @@
-import { generateFacelessScript, Scene } from './facelessGenerator';
+import { Scene } from './facelessGenerator';
+import { videoScriptCore } from '@/app/api/ai/video-script/route';
 import { replicateEngine } from './replicateEngine';
 import { env } from '../config/env';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,18 +24,10 @@ class AIService {
      * The master flow: Topic -> Script -> Visual Assets -> Project
      */
     async generateFullVideoProject(supabase: any, userId: string, topic: string, style: string): Promise<GeneratedVideoProject> {
-        console.log(`[AIService] Generating full project for: ${topic} (${style})`);
 
-        // 1. Generate Script using Gemini
-        const script = await generateFacelessScript({
-            topic,
-            style,
-            purpose: 'engagement',
-            platforms: ['Shorts'],
-            targetDuration: 30
-        });
-
-        const scenes = script.variants[0].scenes;
+        // 1. Generate Script using unified AI core
+        const script = await videoScriptCore(topic, style, 'engagement', 30);
+        const scenes = script.scenes;
 
         // 2. Process Scenes to generate/fetch assets
         const clips: any[] = [];
@@ -54,10 +47,8 @@ class AIService {
                         platform: 'shorts'
                     }, env.REPLICATE_API_TOKEN);
                     
-                    console.log(`[AIService] Triggered Replicate for scene: ${gen.jobId}`);
                     assetUrl = this.getStockVideoForScene(scene); // Fallback to stock for immediate UI response
                 } catch (e) {
-                    console.warn('[AIService] Replicate generation failed, using stock.');
                     assetUrl = this.getStockVideoForScene(scene);
                 }
             } else {
@@ -89,7 +80,6 @@ class AIService {
         }
 
         // 3. Create Project in Supabase
-        console.log('[AIService] Saving project to Supabase...');
         const { data: project, error } = await supabase
             .from('projects')
             .insert({
@@ -127,21 +117,18 @@ class AIService {
         const desc = scene.visualDescription.toLowerCase();
         const text = scene.text.toLowerCase();
 
-        // High-Quality Stock Fallbacks
+        // High-Quality Stock Fallbacks (Stable Cloudinary Samples)
         if (desc.includes('nature') || desc.includes('mountain') || text.includes('adventure')) {
-            return "https://res.cloudinary.com/demo/video/upload/v1690989016/samples/sea-turtle.mp4";
+            return "https://res.cloudinary.com/demo/video/upload/v1/samples/sea-turtle.mp4";
         }
-        if (desc.includes('tech') || desc.includes('city') || text.includes('future') || text.includes('ai')) {
-            return "https://res.cloudinary.com/demo/video/upload/v1710688000/samples/cld-sample-video.mp4"; // More modern tech feel
+        if (desc.includes('tech') || desc.includes('city') || text.includes('future') || text.includes('ai') || desc.includes('modern')) {
+            return "https://res.cloudinary.com/demo/video/upload/v1/samples/cld-sample-video.mp4";
         }
-        if (desc.includes('horror') || desc.includes('shadow') || text.includes('scary')) {
-            return "https://res.cloudinary.com/demo/video/upload/v1690989016/samples/elephants.mp4"; // Placeholder
-        }
-        if (desc.includes('cooking') || desc.includes('food')) {
-            return "https://res.cloudinary.com/demo/video/upload/v1690989016/samples/elephants.mp4"; // Placeholder
+        if (desc.includes('horror') || desc.includes('shadow') || text.includes('scary') || desc.includes('dark')) {
+            return "https://res.cloudinary.com/demo/video/upload/v1/samples/elephants.mp4"; 
         }
         
-        return "https://res.cloudinary.com/demo/video/upload/v1710688000/samples/cld-sample-video.mp4";
+        return "https://res.cloudinary.com/demo/video/upload/v1/samples/sea-turtle.mp4";
     }
 }
 

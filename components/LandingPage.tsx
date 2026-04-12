@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
+import { SEO } from './shared/SEO'
 
 const LandingPage: React.FC = () => {
-  const navigate = useNavigate()
+  const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -24,6 +25,7 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <SEO title="ContextMatic - AI Content Creation & Video Repurposing" description="Transform your long-form content into viral social media videos with AI." />
       {/* Mobile Menu Backdrop */}
       <div
         className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
@@ -61,7 +63,7 @@ const LandingPage: React.FC = () => {
             Pricing
           </a>
           <button
-            onClick={() => { navigate('/sign-in'); setMobileMenuOpen(false); }}
+            onClick={() => { router.push('/sign-in'); setMobileMenuOpen(false); }}
             className="w-full px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 font-medium text-lg transition-colors text-left"
           >
             Sign In
@@ -69,7 +71,7 @@ const LandingPage: React.FC = () => {
         </nav>
         <div className="p-6 border-t border-gray-100">
           <button
-            onClick={() => { navigate('/sign-in'); setMobileMenuOpen(false); }}
+            onClick={() => { router.push('/sign-in'); setMobileMenuOpen(false); }}
             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg"
           >
             Get Started Free
@@ -111,13 +113,13 @@ const LandingPage: React.FC = () => {
                 Pricing
               </a>
               <button
-                onClick={() => navigate('/sign-in')}
+                onClick={() => router.push('/sign-in')}
                 className="text-gray-600 hover:text-gray-900 font-medium transition-colors text-lg"
               >
                 Sign In
               </button>
               <button
-                onClick={() => navigate('/sign-in')}
+                onClick={() => router.push('/sign-in')}
                 className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300 text-lg"
               >
                 Get Started
@@ -151,13 +153,13 @@ const LandingPage: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row gap-5">
               <button
-                onClick={() => navigate('/sign-in')}
+                onClick={() => router.push('/sign-in')}
                 className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
               >
                 Create My First Video
               </button>
               <button
-                onClick={() => navigate('/video-templates')}
+                onClick={() => router.push('/video-templates')}
                 className="bg-white border-2 border-gray-100 text-gray-700 px-8 py-4 rounded-xl font-bold text-lg hover:border-gray-200 transition-all"
               >
                 Browse Templates
@@ -360,13 +362,13 @@ const LandingPage: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <button
-              onClick={() => navigate('/auth')}
+              onClick={() => router.push('/auth')}
               className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-12 py-6 rounded-2xl font-bold text-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
             >
               Start Free Trial
             </button>
             <button
-              onClick={() => navigate('/auth')}
+              onClick={() => router.push('/auth')}
               className="bg-white border-2 border-gray-300 text-gray-700 px-12 py-6 rounded-2xl font-bold text-xl hover:border-gray-400 hover:shadow-xl transition-all duration-300"
             >
               Schedule Demo

@@ -38,16 +38,18 @@ export class PayPalService {
 
       // Check for Demo Mode (if clientId is missing or dummy)
       if (!clientId || clientId.includes('dummy')) {
-        console.debug('[Demo] Simulating PayPal payment flow for', planName);
-
+        // Simulating PayPal payment flow for demo mode
         const container = document.getElementById('paypal-button-container');
         if (container) {
           container.innerHTML = `
-                 <div style="padding: 20px; text-align: center; border: 2px dashed #3b82f6; border-radius: 8px; background: #eff6ff;">
-                     <h4 style="color: #1e40af; margin-bottom: 10px;">🔌 Demo Mode (No Real Payment)</h4>
-                     <p style="margin-bottom: 15px; color: #1e3a8a;">Click below to simulate a successful PayPal transaction.</p>
-                     <button id="mock-paypal-btn" style="background: #0070ba; color: white; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; gap: 8px;">
-                        <i>P</i> PayPal <span style="font-weight: normal">Checkout</span>
+                 <div style="padding: 24px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 24px; background: rgba(59, 130, 246, 0.03); backdrop-filter: blur(10px); color: white; font-family: inherit;">
+                     <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                        <span style="display: block; width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 10px #3b82f6;"></span>
+                        <h4 style="margin: 0; font-size: 14px; font-weight: 900; text-transform: uppercase; tracking: 0.1em;">Development Sandbox</h4>
+                     </div>
+                     <p style="margin-bottom: 20px; color: rgba(255,255,255,0.5); font-size: 12px; font-weight: 500;">The platform environment is currently running in a zero-risk simulated transaction mode.</p>
+                     <button id="mock-paypal-btn" style="background: white; color: black; padding: 14px 24px; border-radius: 16px; border: none; font-size: 11px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); text-transform: uppercase; tracking: 0.2em; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                        Initiate Secure Simulation
                      </button>
                  </div>
              `;
@@ -102,12 +104,10 @@ export class PayPalService {
         },
         onApprove: (_data: any, actions: any) => {
           return actions.order.capture().then((details: any) => {
-            console.log('PayPal payment successful:', details)
             this.handlePaymentSuccess(details, planName, amount)
           })
         },
         onCancel: (_data: any) => {
-          console.log('PayPal payment cancelled by user:', _data)
           notify('Payment was cancelled. You can try again when ready.', 'info')
         },
         onError: (error: any) => {
@@ -117,7 +117,6 @@ export class PayPalService {
           const errorMessage = error?.message || JSON.stringify(error) || 'Unknown error'
 
           if (errorMessage.includes('No ack for postMessage onCancel')) {
-            console.log('Suppressing "No ack" error as it usually indicates window closure/cancellation')
             return
           }
 
@@ -181,8 +180,7 @@ export class PayPalService {
       const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID
 
       if (!clientId) {
-        console.error('Failed to load PayPal SDK')
-        reject(new Error('PayPal Client ID not configured. Please add VITE_PAYPAL_CLIENT_ID to your environment variables.'))
+        reject(new Error('PayPal Client ID not configured. Please add NEXT_PUBLIC_PAYPAL_CLIENT_ID to your environment variables.'))
         return
       }
 

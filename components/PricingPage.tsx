@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ModernNav } from './shared/ModernNav';
 import { Footer } from './shared/Footer';
+import { SEO } from './shared/SEO';
+import { razorpayService } from '../services/razorpayService';
 
 // Data preserved
 const countryPlans: any = {
@@ -29,6 +31,7 @@ const PricingPage: React.FC = () => {
     <div className="bg-background-primary min-h-screen pt-16 font-sans text-text-primary">
       <ModernNav />
 
+      <SEO title="Pricing Plans" description="Choose the perfect plan for your AI content creation needs." />
       <div className="container mx-auto px-6 py-24 text-center">
         {/* ... existing header content ... */}
         <span className="text-brand-primary font-medium text-sm border border-brand-primary/20 bg-brand-primary/10 px-3 py-1 rounded-full mb-6 inline-block">
@@ -102,18 +105,17 @@ const PricingPage: React.FC = () => {
   );
 };
 
-import { razorpayService } from '../services/razorpayService';
 
 // ... (existing imports)
 
 const PricingButton = ({ planName, price, currency }: { planName: string, price: number, currency: string }) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { showToast } = useToast();
 
   const handleSelect = async () => {
     if (!user) {
-      navigate('/sign-in');
+      router.push('/sign-in');
       return;
     }
 

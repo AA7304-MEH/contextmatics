@@ -12,11 +12,6 @@ export const replicateEngine = {
      * Generates a video using Stable Video Diffusion (SVD)
      */
     generateRealVideo: async (params: VideoGenerationParams, apiKey: string): Promise<VideoGenerationResult> => {
-        console.log("🚀 Starting Real AI Engine (Replicate)...");
-
-        // 1. Call Replicate API (via Proxy or Direct for Testing)
-        // Note: Direct calls from browser reveal API keys. In production, use a backend proxy.
-        // For this demo 'Engine', we will show how the call looks.
 
         try {
             const response = await fetch("https://api.replicate.com/v1/predictions", {
@@ -37,13 +32,11 @@ export const replicateEngine = {
             });
 
             if (!response.ok) {
-                // Check for generic CORS error which happens on client-side calls to Replicate
                 if (response.status === 401) throw new Error("Invalid Replicate API Key");
                 throw new Error("Failed to start AI Engine job");
             }
 
             const prediction = await response.json();
-            console.log("AI Job Started:", prediction.id);
 
             return {
                 jobId: prediction.id,
@@ -51,11 +44,8 @@ export const replicateEngine = {
                 videoUrl: undefined
             };
 
-        } catch (error) {
-            console.error("Replicate Engine Error:", error);
-            // Fallback for CORS (Common in purely client-side apps)
-            console.warn("⚠️ Client-side API call blocked by CORS. You need a Backend Proxy.");
-            throw new Error("To run the Real AI Engine, you need to set up a Backend Proxy (Supabase Edge Function) because browsers block direct AI calls.");
+        } catch (error: any) {
+            throw new Error(`AI Engine Error: ${error.message}`);
         }
     },
 

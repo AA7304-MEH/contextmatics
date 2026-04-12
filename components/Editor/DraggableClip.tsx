@@ -23,14 +23,12 @@ export const DraggableClip: React.FC<DraggableClipProps> = ({ clip, pixelsPerSec
 
     const handleTrimStart = (e: React.MouseEvent) => {
         e.stopPropagation();
-        // Implement trim start logic: adjust startTime and duration
-        console.log("Trim start");
+        // TODO: Implement trim start logic: adjust startTime and duration
     };
 
     const handleTrimEnd = (e: React.MouseEvent) => {
         e.stopPropagation();
-        // Implement trim end logic: adjust duration
-        console.log("Trim end");
+        // TODO: Implement trim end logic: adjust duration
     };
 
     return (

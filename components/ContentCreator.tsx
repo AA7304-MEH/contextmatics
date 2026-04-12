@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useHistory } from '../context/HistoryContext';
 import { useToast } from '../context/ToastContext';
 import { generateContent } from '../services/geminiService';
-import { REPURPOSE_OPTIONS } from '../constants';
-import { PageLayout } from './shared';
+import { REPURPOSE_OPTIONS } from '../config/constants';
+import { PageLayout, SEO } from './shared';
 
 interface ContentCreatorProps {
   onGenerate?: (content: string, format: string) => void;
@@ -16,7 +16,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
   const { user, decrementCredits } = useAuth();
   const { addToHistory } = useHistory();
   const { showToast } = useToast();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [inputContent, setInputContent] = useState('');
   const [selectedFormat, setSelectedFormat] = useState('Summary');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -45,7 +45,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
     // Credit validation before generation
     if (!user || user.processingCredits <= 0) {
       showToast('No credits remaining! Please upgrade your plan.', 'error');
-      navigate('/pricing');
+      router.push('/pricing');
       return;
     }
 
@@ -114,6 +114,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
 
   return (
     <PageLayout showPricing={true} showSettings={true}>
+      <SEO title="Create Content" description="Generate AI-powered text content for any platform." />
       <div className="container mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12 text-center">
@@ -261,7 +262,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
 
               <div className="flex gap-4 mt-6 pt-6 border-t border-white/5">
                 <button
-                  onClick={() => navigate('/history')}
+                  onClick={() => router.push('/history')}
                   className="btn btn-secondary flex-1"
                 >
                   View History

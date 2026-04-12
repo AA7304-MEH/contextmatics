@@ -63,10 +63,7 @@ export const useProjectStore = create<EditorState & ProjectActions>((set, get) =
     },
 
     cleanupOldProjects: () => {
-        // This would be more relevant if projects were stored in a list in the store
-        // For now, since the store manages the *active* project, we'll implement a 
-        // placeholder for local projects list management if we had one.
-        console.log('[ProjectStore] Cleaning up projects older than 30 days...');
+        // TODO: Implement project cleanup logic for local storage
     },
 
     addClip: (trackId, clipData) => {

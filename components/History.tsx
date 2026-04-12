@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useHistory } from '../context/HistoryContext';
 import { useToast } from '../context/ToastContext';
 import { PageLayout } from './shared';
+import { SEO } from './shared/SEO';
 
 const History: React.FC = () => {
   const { user } = useAuth();
   const { historyItems, deleteFromHistory, clearHistory } = useHistory();
   const { showToast } = useToast();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -66,6 +67,7 @@ const History: React.FC = () => {
 
   return (
     <PageLayout showPricing={true} showSettings={true}>
+      <SEO title="Activity History" description="View and manage your AI-generated content history." />
       <div className="container mx-auto px-6 py-12">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-fade-in">
@@ -148,7 +150,7 @@ const History: React.FC = () => {
               {searchTerm ? 'Try a different search term.' : 'Generate some content to see your history here.'}
             </p>
             {!searchTerm && (
-              <button onClick={() => navigate('/content-creator')} className="btn btn-primary bg-gradient-to-r from-blue-600 to-violet-600 border-none px-6">
+              <button onClick={() => router.push('/content-creator')} className="btn btn-primary bg-gradient-to-r from-blue-600 to-violet-600 border-none px-6">
                 Create Content ✨
               </button>
             )}

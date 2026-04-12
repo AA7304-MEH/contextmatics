@@ -268,7 +268,7 @@ export default function VideoRepurposingPage() {
                                 <input ref={fileInputRef} type="file" accept="video/*" onChange={handleFileInputChange} className="hidden" />
                                 {uploadedFile ? <p className="text-emerald-400 font-bold">✅ {uploadedFile.name}</p> : <p className="text-zinc-300">Click to upload or drag & drop</p>}
                             </div>
-                            <button onClick={handleProcess} disabled={!videoUrl && !uploadedFile} className="btn w-full text-xl py-5 mt-8 font-bold bg-gradient-to-r from-pink-600 to-violet-600">✨ Generate Shorts</button>
+                            <button onClick={handleProcess} disabled={!videoUrl && !uploadedFile} className="btn w-full text-xl py-5 mt-8 font-bold bg-gradient-to-r from-pink-600 to-violet-600">✨ Generate Shorts (1 Credit)</button>
                         </div>
                     </div>
                 )}

@@ -40,46 +40,23 @@ export default function LogoResultsPage() {
         if (!result) return;
 
         try {
-            showToast('Preparing your download...', 'info');
-            console.log('Attempting to download logo:', result.imageUrl);
-
-            let blob: Blob;
-            let extension = 'png';
-
+            showToast('Preparing your high-res logo package...', 'info');
+            
             if (result.imageUrl.startsWith('data:')) {
-                // Parse data URL to blob
-                const parts = result.imageUrl.split(',');
-                const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
-                const bstr = atob(parts[1]);
-                let n = bstr.length;
-                const u8arr = new Uint8Array(n);
-                while (n--) {
-                    u8arr[n] = bstr.charCodeAt(n);
-                }
-                blob = new Blob([u8arr], { type: mime });
-                extension = mime.split('/')[1] || 'png';
+                const link = document.createElement('a');
+                link.href = result.imageUrl;
+                link.download = `logo-contextmatic-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             } else {
-                // Fetch remote URL
-                const response = await fetch(result.imageUrl);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-                const contentType = response.headers.get('content-type');
-                extension = contentType?.split('/')[1]?.split(';')[0] || 'png';
-                blob = await response.blob();
+                // Open in new tab for external URLs as a more reliable "download" method
+                // especially for mobile browsers that block programatic clicks on proxy redirects
+                const downloadUrl = `/api/ai/download-logo?url=${encodeURIComponent(result.imageUrl)}`;
+                window.open(downloadUrl, '_blank');
             }
 
-            const blobUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = `logo-${Date.now()}.${extension}`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            // Cleanup
-            window.URL.revokeObjectURL(blobUrl);
-            console.log('Download successful with extension:', extension);
-            showToast('Download started!', 'success');
+            showToast('Download started! 🚀', 'success');
         } catch (error) {
             console.error('Download failed:', error);
             showToast('Download failed. Opening in new tab...', 'error');
@@ -111,9 +88,9 @@ export default function LogoResultsPage() {
                                 src={result.imageUrl}
                                 alt="Generated Logo"
                                 className="w-full h-full object-contain p-8"
-                                onLoad={() => console.log('Image loaded successfully')}
+                                onLoad={() => {}}
                                 onError={(e) => {
-                                    console.error('Image failed to load:', result.imageUrl);
+                                    // Image failed to load, attempting retry
                                     const target = e.target as HTMLImageElement;
                                     if (result.imageUrl.startsWith('http') && !target.src.includes('retry=true')) {
                                         target.src = result.imageUrl + (result.imageUrl.includes('?') ? '&' : '?') + 'retry=true';

@@ -58,7 +58,6 @@ export async function POST(req: Request) {
             tags,
             source: source || 'gemini',
             is_public: is_public || false,
-            updated_at: new Date().toISOString(),
         })
         .select()
         .single();

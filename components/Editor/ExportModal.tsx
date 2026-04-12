@@ -31,7 +31,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
         const ffmpeg = ffmpegRef.current;
         
         ffmpeg.on('log', ({ message }) => {
-            console.log('FFmpeg:', message);
+            // Internal FFmpeg logs - silences for production
         });
 
         ffmpeg.on('progress', ({ progress: p }) => {

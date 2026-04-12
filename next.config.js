@@ -28,7 +28,32 @@ const nextConfig = {
         ];
     },
     images: {
-        domains: ['images.unsplash.com', 'images.clerk.com'],
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: '**.supabase.co',
+            },
+            {
+                protocol: 'https',
+                hostname: '**.replicate.delivery',
+            },
+            {
+                protocol: 'https',
+                hostname: 'images.unsplash.com',
+            },
+            {
+                protocol: 'https',
+                hostname: '**.googleusercontent.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'avatars.githubusercontent.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'pollinations.ai',
+            }
+        ],
     },
     eslint: {
         ignoreDuringBuilds: true,
@@ -36,6 +61,9 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
+    experimental: {
+        workerThreads: false,
+    },
 }
 
-export default nextConfig
+export default nextConfig;

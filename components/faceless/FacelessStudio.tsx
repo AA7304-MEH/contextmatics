@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useHistory } from '../../context/HistoryContext';
-import { PageLayout } from '../shared';
+import { PageLayout, SEO } from '../shared';
 import VibeInput from './VibeInput';
 import {
     VideoScript, Scene, CaptionStyle, ShotType, MotionIntent, VFXType,
@@ -374,7 +374,7 @@ const PipelineHUD: React.FC<{ update: PipelineUpdate }> = ({ update }) => (
 // ══════════════════════════════════════════════════════════════════
 
 const FacelessStudio: React.FC = () => {
-    const navigate = useNavigate();
+    const router = useRouter();
     const { user, decrementCredits } = useAuth();
     const { showToast } = useToast();
     const { addToHistory } = useHistory();
@@ -389,7 +389,7 @@ const FacelessStudio: React.FC = () => {
     const handleGenerate = useCallback(async (data: FacelessRequest) => {
         if (!user || user.processingCredits <= 0) {
             showToast('No credits remaining! Upgrade your plan.', 'error');
-            navigate('/pricing');
+            router.push('/pricing');
             return;
         }
         setIsGenerating(true);
@@ -468,6 +468,7 @@ const FacelessStudio: React.FC = () => {
 
     return (
         <PageLayout showPricing={true} showSettings={true}>
+            <SEO title="Faceless Studio" description="Automated AI faceless video generation pipeline." />
             <div className="container mx-auto px-6 py-12">
                 {!generatedContent ? (
                     isGenerating ? (
@@ -576,7 +577,28 @@ const FacelessStudio: React.FC = () => {
                                         className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-medium transition-all text-sm">
                                         💾 .JSON
                                     </button>
-                                    <button onClick={() => showToast(`Publishing to ${currentVariant?.platform}...`, 'info')}
+                                    <button onClick={async () => {
+                                        showToast(`Publishing to ${currentVariant?.platform}...`, 'info');
+                                        try {
+                                            const text = currentVariant?.scenes.map(s => s.text).join('\n\n') || '';
+                                            const res = await fetch('/api/social/publish', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    content: text,
+                                                    platforms: [currentVariant?.platform.toLowerCase()]
+                                                })
+                                            });
+                                            if (res.ok) {
+                                                showToast('Published successfully! 🎉', 'success');
+                                            } else {
+                                                const err = await res.json();
+                                                showToast(err.error || 'Failed to publish', 'error');
+                                            }
+                                        } catch(e) {
+                                            showToast('Publishing error', 'error');
+                                        }
+                                    }}
                                         className="flex-1 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold shadow-lg shadow-indigo-500/20 transition-all text-sm">
                                         🚀 Publish to {currentVariant?.platform}
                                     </button>

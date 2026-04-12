@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useToast } from '../context/ToastContext';
-import { ModernNav } from './shared/ModernNav';
 import { LogoResult } from '../types';
 import { useHistory } from '../context/HistoryContext';
 import { SEO } from './shared/SEO';
+import { ModernNav } from './shared/ModernNav';
 
 const LogoResults: React.FC = () => {
     const { showToast } = useToast();
-    const navigate = useNavigate();
+    const router = useRouter();
     const { addToHistory } = useHistory();
     const [result, setResult] = useState<LogoResult | null>(null);
     const [isSaved, setIsSaved] = useState(false);
@@ -31,16 +32,15 @@ const LogoResults: React.FC = () => {
                 setIsSaved(true);
             }
         } else {
-            navigate('/logo-maker');
+            router.push('/logo-maker');
         }
-    }, [navigate, addToHistory, isSaved]);
+    }, [router, addToHistory, isSaved]);
 
     const handleDownload = async () => {
         if (!result) return;
 
         try {
             showToast('Preparing your download...', 'info');
-            console.log('Attempting to download logo:', result.imageUrl);
 
             let blob: Blob;
             let extension = 'png';
@@ -77,7 +77,6 @@ const LogoResults: React.FC = () => {
 
             // Cleanup
             window.URL.revokeObjectURL(blobUrl);
-            console.log('Download successful with extension:', extension);
             showToast('Download started!', 'success');
         } catch (error) {
             console.error('Download failed:', error);
@@ -113,9 +112,9 @@ const LogoResults: React.FC = () => {
                                 src={result.imageUrl}
                                 alt="Generated Logo"
                                 className="w-full h-full object-contain p-8"
-                                onLoad={() => console.log('Image loaded successfully')}
+                                onLoad={() => {}}
                                 onError={(e) => {
-                                    console.error('Image failed to load:', result.imageUrl);
+                                    // Image failed to load, attempting retry...
                                     const target = e.target as HTMLImageElement;
                                     // Try to reload once by appending a param if it's a URL
                                     if (result.imageUrl.startsWith('http') && !target.src.includes('retry=true')) {
@@ -141,7 +140,7 @@ const LogoResults: React.FC = () => {
                                 Download Logo Package
                             </button>
                             <Link
-                                to="/logo-maker"
+                                href="/logo-maker"
                                 className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold transition-all text-center flex items-center justify-center active:scale-[0.98]"
                             >
                                 Try Another Style
@@ -158,7 +157,7 @@ const LogoResults: React.FC = () => {
 
                     <div className="mt-12 text-center">
                         <button
-                            onClick={() => navigate('/dashboard')}
+                            onClick={() => router.push('/dashboard')}
                             className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-2 mx-auto transition-colors"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

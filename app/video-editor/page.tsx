@@ -300,9 +300,14 @@ export default function VideoEditorPage() {
                             )}
 
                             {activeTab === 'library' && (
-                                <div className="text-center py-12">
-                                    <span className="text-4xl opacity-20 block mb-4">🏠</span>
-                                    <p className="text-xs text-zinc-500">Stock library integration coming soon.</p>
+                                <div className="text-center py-20 px-10">
+                                    <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                        <Sparkles className="w-8 h-8 text-blue-500" />
+                                    </div>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Enterprise Engine</h3>
+                                    <p className="text-[10px] text-zinc-500 max-w-[200px] mx-auto leading-relaxed">
+                                        High-fidelity stock library integration is reserved for Enterprise workspaces. Contact sales to activate.
+                                    </p>
                                 </div>
                             )}
                         </div>

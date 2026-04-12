@@ -75,33 +75,16 @@ export async function PATCH(req: Request) {
         return new NextResponse('Invalid input', { status: 400 });
     }
 
-    // Get current credits
-    const { data: profile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('credits_remaining')
-        .eq('id', user.id)
-        .single();
-
-    if (fetchError || !profile) {
-        return new NextResponse('Profile not found', { status: 404 });
+    // Atomic Credit Deduction via RPC (Prevents Race Conditions)
+    const { data: newBalance, error: rpcError } = await supabase
+        .rpc('decrement_credits', { user_id: user.id, amount: credits_deduction });
+    
+    if (rpcError) {
+        if (rpcError.message?.includes('INSUFFICIENT_CREDITS')) {
+            return new NextResponse('Insufficient credits', { status: 402 });
+        }
+        return new NextResponse(rpcError.message, { status: 500 });
     }
 
-    if (profile.credits_remaining < credits_deduction) {
-        return new NextResponse('Insufficient credits', { status: 403 });
-    }
-
-    // Deduct credits
-    const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-            credits_remaining: profile.credits_remaining - credits_deduction,
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-    if (updateError) {
-        return new NextResponse(updateError.message, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true, remaining: profile.credits_remaining - credits_deduction });
+    return NextResponse.json({ success: true, remaining: newBalance });
 }

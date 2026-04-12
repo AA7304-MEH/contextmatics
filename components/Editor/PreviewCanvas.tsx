@@ -4,6 +4,49 @@ import React, { useRef, useEffect } from 'react';
 import { useTimelineStore } from '@/stores/useTimelineStore';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2 } from 'lucide-react';
 
+const VideoClip: React.FC<{ 
+    clip: any, 
+    currentTime: number, 
+    isPlaying: boolean,
+    filter: string 
+}> = ({ clip, currentTime, isPlaying, filter }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    // Sync time
+    useEffect(() => {
+        if (!videoRef.current) return;
+        const targetTime = (currentTime - clip.startTime) + (clip.startOffset || 0);
+        
+        // Only seek if difference is significant to avoid jitter
+        if (Math.abs(videoRef.current.currentTime - targetTime) > 0.2) {
+            videoRef.current.currentTime = targetTime;
+        }
+    }, [currentTime, clip.startTime, clip.startOffset]);
+
+    // Sync play state
+    useEffect(() => {
+        if (!videoRef.current) return;
+        if (isPlaying) {
+            videoRef.current.play().catch(err => console.warn('[VideoClip] Playback blocked:', err));
+        } else {
+            videoRef.current.pause();
+        }
+    }, [isPlaying]);
+
+    return (
+        <video 
+            ref={videoRef}
+            src={clip.url}
+            className="w-full h-full object-cover"
+            style={{ filter }}
+            muted={true}
+            playsInline
+            preload="auto"
+            crossOrigin="anonymous"
+        />
+    );
+};
+
 export const PreviewCanvas: React.FC = () => {
     const { 
         currentTime, 
@@ -126,32 +169,21 @@ export const PreviewCanvas: React.FC = () => {
                         activeClips.map(clip => (
                             <div 
                                 key={clip.id} 
-                                className="absolute inset-0 flex items-center justify-center p-4"
+                                className="absolute inset-0 flex items-center justify-center"
                                 style={getTransitionStyle(clip)}
                             >
                                 {clip.type === 'video' && clip.url && (
-                                    <video 
-                                        src={clip.url} 
-                                        className="w-full h-full object-cover"
-                                        style={{ filter: getFilterString(clip.effects) }}
-                                        onLoadedMetadata={(e) => {
-                                            const video = e.target as HTMLVideoElement;
-                                            video.currentTime = (currentTime - clip.startTime) + clip.startOffset;
-                                            video.volume = getActiveVolume(clip);
-                                        }}
-                                        onTimeUpdate={(e) => {
-                                            const video = e.target as HTMLVideoElement;
-                                            video.volume = getActiveVolume(clip);
-                                        }}
-                                        // Simple sync logic
-                                        autoPlay={isPlaying}
-                                        muted={false}
+                                    <VideoClip 
+                                        clip={clip} 
+                                        currentTime={currentTime} 
+                                        isPlaying={isPlaying} 
+                                        filter={getFilterString(clip.effects)}
                                     />
                                 )}
                                 {clip.type === 'text' && (
                                     <div 
                                         style={getTextStyle(clip.textConfig)}
-                                        className="text-center px-4 drop-shadow-lg w-full break-words"
+                                        className="text-center px-4 drop-shadow-lg w-full break-words z-10"
                                     >
                                         {clip.name}
                                     </div>
@@ -161,7 +193,8 @@ export const PreviewCanvas: React.FC = () => {
                                         src={clip.url} 
                                         className="w-full h-full object-cover" 
                                         style={{ filter: getFilterString(clip.effects) }}
-                                        alt={clip.name} 
+                                        alt={clip.name}
+                                        crossOrigin="anonymous"
                                     />
                                 )}
                                 {clip.type === 'audio' && clip.url && (
@@ -171,10 +204,6 @@ export const PreviewCanvas: React.FC = () => {
                                         onLoadedMetadata={(e) => {
                                             const audio = e.target as HTMLAudioElement;
                                             audio.currentTime = (currentTime - clip.startTime) + clip.startOffset;
-                                            audio.volume = getActiveVolume(clip);
-                                        }}
-                                        onTimeUpdate={(e) => {
-                                            const audio = e.target as HTMLAudioElement;
                                             audio.volume = getActiveVolume(clip);
                                         }}
                                     />

@@ -1,7 +1,7 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '../context/AuthContext'
-import { PageLayout } from './shared'
+import { PageLayout, SEO } from './shared'
 
 // Plan credit limits for usage calculation
 const PLAN_CREDITS: Record<string, number> = {
@@ -19,7 +19,7 @@ const PLAN_NAMES: Record<string, string> = {
 }
 
 const SubscriptionManager: React.FC = () => {
-  const navigate = useNavigate()
+  const router = useRouter()
   const { user } = useAuth()
   // const [showCancelModal, setShowCancelModal] = useState(false)
 
@@ -32,6 +32,7 @@ const SubscriptionManager: React.FC = () => {
 
   return (
     <PageLayout showPricing={true} showSettings={true}>
+      <SEO title="Subscription & Billing" description="Manage your ContextMatic workspace plan, usage limits, and billing history." />
       <div className="container mx-auto px-6 py-12">
         <div className="mb-12 text-center animate-fade-in opacity-0 stagger-1">
           <h1 className="text-4xl font-bold mb-4 tracking-tight text-white">Subscription & Billing</h1>
@@ -71,7 +72,7 @@ const SubscriptionManager: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 mt-auto">
               <button
-                onClick={() => navigate('/pricing')}
+                onClick={() => router.push('/pricing')}
                 className="btn btn-primary flex-1 justify-center bg-white text-black hover:bg-zinc-200 border-white"
               >
                 Upgrade Plan
