@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useHistory } from '@/context/HistoryContext';
+import { useHistory, ContentItem } from '@/context/HistoryContext';
 import { UserManagement } from '@/components/UserManagement';
 import { TransactionManagement } from '@/components/TransactionManagement';
 import { PageLayout } from '@/components/shared';
@@ -20,9 +20,7 @@ import {
     Globe, 
     AlertCircle, 
     LayoutDashboard,
-    PieChart,
     Settings,
-    Search,
     X,
     Clock
 } from 'lucide-react';
@@ -33,9 +31,10 @@ export default function AdminDashboardPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'activity' | 'transactions'>('overview');
     const [health, setHealth] = useState<any>(null);
+    const [usageData, setUsageData] = useState<any>(null);
     const [showGlobalLogs, setShowGlobalLogs] = useState(false);
-    const [globalLogs, setGlobalLogs] = useState<any[]>([]);
-    const [logsLoading, setLogsLoading] = useState(false);
+    const [_globalLogs, _setGlobalLogs] = useState<any[]>([]);
+    const [_logsLoading, setLogsLoading] = useState(false);
 
     useEffect(() => {
         const fetchHealth = async () => {
@@ -47,7 +46,17 @@ export default function AdminDashboardPage() {
                 console.error("Health fetch failed", e);
             }
         };
+        const fetchUsage = async () => {
+            try {
+                const res = await fetch('/api/admin/usage');
+                const data = await res.json();
+                setUsageData(data);
+            } catch (e) {
+                console.error("Usage fetch failed", e);
+            }
+        };
         fetchHealth();
+        fetchUsage();
     }, []);
 
     const fetchGlobalLogs = async () => {
@@ -55,7 +64,7 @@ export default function AdminDashboardPage() {
         try {
             // Using the activity logic for a global view (fetching recent from snippets/transactions)
             const res = await fetch('/api/admin/health'); // Reuse health endpoint which has some counts
-            const data = await res.json();
+            await res.json();
             // In a real prod app, we'd have a specific /api/admin/logs
             // For now, we'll synthesize a view from available history
             setShowGlobalLogs(true);
@@ -158,6 +167,45 @@ export default function AdminDashboardPage() {
                             ))}
                         </div>
 
+                        {/* Provider Health Cards */}
+                        {usageData && (
+                            <div className="card p-8 border-white/5 bg-background-surface/30">
+                                <h3 className="text-xl font-black text-white uppercase tracking-tight mb-8">AI Provider Health & Usage</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {Object.keys(usageData.status).map(provider => {
+                                        const status = usageData.status[provider];
+                                        const usage = usageData.usage[provider] || 0;
+                                        const limit = usageData.limits[provider] || 1;
+                                        const percent = Math.min((usage / limit) * 100, 100);
+                                        const isNearLimit = percent > 80;
+                                        return (
+                                            <div key={provider} className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <span className="text-sm font-black text-white uppercase tracking-widest">{provider.replace('_', ' ')}</span>
+                                                    <div className={`px-3 py-1 text-[9px] font-black uppercase rounded-full border ${status.available ? 'text-emerald-400 border-emerald-400/20 bg-emerald-400/10' : 'text-red-400 border-red-400/20 bg-red-400/10'}`}>
+                                                        {status.available ? 'Online' : 'Offline'}
+                                                    </div>
+                                                </div>
+                                                <div className="mb-6 flex justify-between items-center text-xs">
+                                                    <span className="text-text-muted font-bold uppercase tracking-widest">Latency</span>
+                                                    <span className="text-white font-mono">{status.latencyMs} ms</span>
+                                                </div>
+                                                <div className="space-y-2 mt-auto">
+                                                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                                                        <span className="text-text-muted">Daily Limit</span>
+                                                        <span className={isNearLimit ? 'text-red-400' : 'text-emerald-400'}>{usage} / {limit}</span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                                        <div className={`h-full rounded-full transition-all ${isNearLimit ? 'bg-red-500' : 'bg-brand-primary'}`} style={{ width: `${percent}%` }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Grid 2: Metrics & Actions */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                              <div className="lg:col-span-2 card p-8 border-white/5 bg-background-surface/30 text-left">
@@ -176,7 +224,7 @@ export default function AdminDashboardPage() {
                                         { name: 'AI Inference Pipeline', status: 'Live', icon: <Zap className="w-5 h-5 text-amber-400" />, p: 100 },
                                         { name: 'CDN Edge Nodes', status: 'Syncing', icon: <Globe className="w-5 h-5 text-purple-400" />, p: 99 }
                                      ].map((srv, i) => (
-                                        <div key={srv.name} className="flex items-center gap-6 p-5 bg-white/[0.02] rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                                        <div key={i} className="flex items-center gap-6 p-5 bg-white/[0.02] rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
                                              <div className="p-4 bg-black/40 rounded-xl border border-white/5 text-white/50">{srv.icon}</div>
                                              <div className="flex-1">
                                                  <div className="flex justify-between mb-3">
@@ -263,7 +311,7 @@ export default function AdminDashboardPage() {
                                     <AlertCircle className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
                                     <p className="text-text-secondary font-medium">No system events detected in this window.</p>
                                 </div>
-                             ) : historyItems.slice(0, 15).map((item, i) => (
+                             ) : historyItems.slice(0, 15).map((item: ContentItem, i: number) => (
                                 <div key={i} className="flex items-center gap-6 p-6 bg-white/[0.02] rounded-[2rem] border border-white/5 hover:bg-white/[0.05] transition-all group">
                                      <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center text-2xl group-hover:scale-110 group-hover:border-brand-primary/50 transition-all shadow-xl">
                                         {item.icon || '🚀'}

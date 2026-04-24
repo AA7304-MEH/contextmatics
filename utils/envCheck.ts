@@ -1,7 +1,7 @@
 /**
  * Environment variable validation utility
  */
-import { env } from '@/config/env';
+
 
 export const validateEnvironmentVariables = () => {
   const REQUIRED_ENV_VARS = [

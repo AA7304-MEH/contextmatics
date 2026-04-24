@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { ModernNav } from './shared/ModernNav';
-import { ArrowRight, Play, Sparkles, Zap, Shield, Globe, Users, TrendingUp, CheckCircle2, ChevronRight, Layout, Video, PenTool, Share2 } from 'lucide-react';
+import { ArrowRight, Play, Sparkles, TrendingUp, CheckCircle2, ChevronRight, Layout, Video, PenTool, Share2 } from 'lucide-react';
 
 const Hero = () => {
     const router = useRouter();
@@ -43,7 +43,7 @@ const Hero = () => {
 
                 <div className="mt-8 flex items-center gap-8 opacity-50">
                     <div className="flex -space-x-3">
-                        {[1, 2, 3, 4].map(i => (
+                        {[1, 2, 3, 4].map((_, i) => (
                             <div key={i} className="w-8 h-8 rounded-full border-2 border-background-primary bg-zinc-800" />
                         ))}
                     </div>
@@ -180,7 +180,7 @@ const HowItWorks = () => {
             <div className="container mx-auto px-6 text-center">
                 <h2 className="text-4xl md:text-5xl font-black text-white mb-20 uppercase">How it works.</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-                    {steps.map((s, i) => (
+                    {steps.map((s) => (
                         <div key={s.num} className="relative text-left flex flex-col items-start gap-6 group">
                             <span className="text-8xl font-black text-white opacity-[0.03] absolute -top-12 -left-4 group-hover:opacity-[0.08] transition-opacity">{s.num}</span>
                             <div className="relative z-10 w-full">

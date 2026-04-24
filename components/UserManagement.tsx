@@ -21,7 +21,7 @@ export const UserManagement: React.FC = () => {
             if (!response.ok) throw new Error('Failed to fetch users');
             const data = await response.json();
             setProfiles(data);
-        } catch (error: any) {
+        } catch (error:any) {
             showToast(error.message, 'error');
         } finally {
             setLoading(false);

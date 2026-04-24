@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuthAndCredits } from "@/lib/api-utils";
+import { withAuthAndCredits, AuthContext } from "@/lib/api-utils";
+import { logger } from "@/lib/logger";
 
-async function socialAccountsHandler(req: NextRequest) {
+async function socialAccountsHandler(_req: NextRequest, { user }: AuthContext) {
     try {
         const ayrshareApiKey = process.env.AYRSHARE_API_KEY;
         if (!ayrshareApiKey) {
-            return NextResponse.json({ error: "Ayrshare API key not configured" }, { status: 500 });
+            return NextResponse.json({ success: false, code: 'CONFIG_ERROR', message: "Ayrshare API key not configured" }, { status: 500 });
         }
 
         // We use fetch since the SDK doesn't natively expose user/profile conveniently
@@ -20,13 +21,14 @@ async function socialAccountsHandler(req: NextRequest) {
         const data = await res.json();
         
         if (!res.ok) {
-            return NextResponse.json({ error: data.message || "Failed to fetch profiles" }, { status: res.status });
+            return NextResponse.json({ success: false, code: 'FETCH_REJECTED', message: data.message || "Failed to fetch profiles" }, { status: res.status });
         }
 
-        return NextResponse.json(data);
-    } catch (error: any) {
-        console.error("Ayrshare get accounts error:", error);
-        return NextResponse.json({ error: "Failed to fetch social accounts" }, { status: 500 });
+        return NextResponse.json({ success: true, data }, { status: 200 });
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error("Ayrshare get accounts error:", { userId: user.id, error: errorMessage });
+        return NextResponse.json({ success: false, code: 'FETCH_FAILED', message: "Failed to fetch social accounts" }, { status: 500 });
     }
 }
 

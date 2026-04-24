@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+export const dynamic = 'force-dynamic';
 import { useAuth } from '@/context/AuthContext';
 import { CursorLandingPage } from "@/components/CursorLandingPage";
 

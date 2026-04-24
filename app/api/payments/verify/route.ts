@@ -129,7 +129,7 @@ export async function POST(req: Request) {
             message: `Account weaponized to ${planId} successfully.`
         });
 
-    } catch (error: any) {
+    } catch (error:any) {
         console.error('[Payment Verification Exception]', error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }

@@ -67,7 +67,7 @@ function VideoGeneratorContent() {
                 setResult(data);
                 await refreshProfile();
             }
-        } catch (error: any) {
+        } catch (error:any) {
             console.error("Generation failed", error);
             showToast(error.message || 'Failed to generate video. Please try again.', 'error');
         } finally {

@@ -40,7 +40,7 @@ export const GrantCreditsModal: React.FC<GrantCreditsModalProps> = ({ user, isOp
             const result = await response.json();
             onSuccess(result.newBalance);
             onClose();
-        } catch (err: any) {
+        } catch (err:any) {
             setError(err.message);
         } finally {
             setLoading(false);

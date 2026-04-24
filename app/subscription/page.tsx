@@ -6,6 +6,16 @@ import { useAuth } from '@/context/AuthContext';
 import { PageLayout } from '@/components/shared';
 import { useToast } from '@/context/ToastContext';
 import { CreditCard, History, Zap, TrendingUp, AlertCircle, Download, CheckCircle2 } from 'lucide-react';
+import { Profile } from '@/types/database';
+
+interface BillingRecord {
+    id: string;
+    gateway_payment_id?: string;
+    amount: number;
+    currency: string;
+    created_at: string;
+    status: string;
+}
 
 const PLAN_CREDITS: Record<string, number> = {
     free: 5,
@@ -24,9 +34,10 @@ const PLAN_NAMES: Record<string, string> = {
 
 export default function SubscriptionPage() {
     const router = useRouter();
-    const { user, refreshProfile } = useAuth();
+    const { user: authUser } = useAuth();
+    const user = authUser as Profile | null;
     const { showToast } = useToast();
-    const [billingHistory, setBillingHistory] = useState<any[]>([]);
+    const [billingHistory, setBillingHistory] = useState<BillingRecord[]>([]);
     const [loading, setLoading] = useState(true);
 
     const planId = user?.plan || 'free';
@@ -50,7 +61,7 @@ export default function SubscriptionPage() {
             }
         };
         fetchHistory();
-    }, [user]);
+    }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleCancel = () => {
         showToast('To cancel your premium plan, please contact billing@contextmatic.example.com or use the Stripe dashboard.', 'info');
@@ -195,7 +206,7 @@ export default function SubscriptionPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    billingHistory.map((bill, index) => (
+                                    billingHistory.map((bill) => (
                                         <tr key={bill.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                                             <td className="p-8 font-mono text-zinc-500 text-xs">#{bill.gateway_payment_id || bill.id.slice(0, 8)}</td>
                                             <td className="p-8">{new Date(bill.created_at).toLocaleDateString()}</td>
@@ -213,7 +224,7 @@ export default function SubscriptionPage() {
                                             </td>
                                         </tr>
                                     ))
-                                )}
+                                )                                }
                             </tbody>
                         </table>
                     </div>

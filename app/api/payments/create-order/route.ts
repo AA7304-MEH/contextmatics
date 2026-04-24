@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
             currency: order.currency
         });
 
-    } catch (error: any) {
+    } catch (error:any) {
         console.error("[Create Order Error]", error);
         return NextResponse.json({ 
             error: "Failed to create payment order", 

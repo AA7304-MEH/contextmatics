@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useHistory } from '../../context/HistoryContext';
 import { PageLayout, SEO } from '../shared';
+import { logger } from '../../lib/logger';
 import VibeInput from './VibeInput';
 import {
     VideoScript, Scene, CaptionStyle, ShotType, MotionIntent, VFXType,
@@ -411,12 +412,12 @@ const FacelessStudio: React.FC = () => {
                 status: 'success',
                 icon: '🎞️',
             });
-        } catch {
+        } catch (error) {
             showToast('Generation failed. Please try again.', 'error');
         } finally {
             setIsGenerating(false);
         }
-    }, [user, decrementCredits, showToast, navigate, addToHistory]);
+    }, [user, decrementCredits, showToast, router, addToHistory]);
 
     const handleRegenerate = () => {
         if (lastRequest) handleGenerate(lastRequest);
@@ -593,7 +594,7 @@ const FacelessStudio: React.FC = () => {
                                                 showToast('Published successfully! 🎉', 'success');
                                             } else {
                                                 const err = await res.json();
-                                                showToast(err.error || 'Failed to publish', 'error');
+                                                logger.error('Failed to create render job', { error: err.error });
                                             }
                                         } catch(e) {
                                             showToast('Publishing error', 'error');

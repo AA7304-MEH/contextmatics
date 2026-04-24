@@ -3,9 +3,9 @@
 import React from 'react';
 import { PageLayout } from '@/components/shared';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, ArrowRight, MessageSquare, Shield, Zap, CreditCard, LifeBuoy, Bookmark, Share2 } from 'lucide-react';
+import { ArrowLeft, Zap, CreditCard, LifeBuoy } from 'lucide-react';
 
-const HELP_DATA: any = {
+const HELP_DATA:any = {
     'credits-explained': {
         title: 'Understanding the Credit System',
         category: 'Billing',

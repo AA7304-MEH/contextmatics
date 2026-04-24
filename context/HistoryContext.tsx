@@ -9,14 +9,15 @@ export interface ContentItem {
     title: string;
     format: string;
     content: string;
-    createdAt: Date;
+    created_at: Date;
+    user_id: string;
     status: 'success' | 'failed';
     icon: string;
 }
 
 interface HistoryContextType {
     historyItems: ContentItem[];
-    addToHistory: (item: Omit<ContentItem, 'id' | 'createdAt'>) => Promise<void>;
+    addToHistory: (item: Omit<ContentItem, 'id' | 'created_at' | 'user_id'>) => Promise<void>;
     deleteFromHistory: (id: string) => Promise<void>;
     clearHistory: () => Promise<void>;
 }
@@ -44,7 +45,8 @@ export const HistoryProvider: React.FC<{ children: ReactNode }> = ({ children })
                     title: snippet.title,
                     content: snippet.content,
                     format: snippet.tags && snippet.tags.length > 0 ? snippet.tags[0] : 'Unknown',
-                    createdAt: new Date(snippet.created_at),
+                    created_at: new Date(snippet.created_at),
+                    user_id: snippet.user_id,
                     status: 'success',
                     icon: getIconForFormat(snippet.tags && snippet.tags.length > 0 ? snippet.tags[0] : 'Unknown')
                 }));
@@ -59,7 +61,7 @@ export const HistoryProvider: React.FC<{ children: ReactNode }> = ({ children })
         fetchHistory();
     }, [user]);
 
-    const addToHistory = async (item: Omit<ContentItem, 'id' | 'createdAt'>) => {
+    const addToHistory = async (item: Omit<ContentItem, 'id' | 'created_at' | 'user_id'>) => {
         if (!user) return;
 
         try {

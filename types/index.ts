@@ -6,6 +6,7 @@ export interface User {
     countryCode: string; // 'US', 'IN', etc.
     plan: PlanId;
     processingCredits: number;
+    credits_remaining: number; // Added to match page usage
     subscription?: SubscriptionInfo;
     role: 'user' | 'admin';
     // New fields mapped from 'profiles' table
@@ -24,6 +25,8 @@ export interface Profile {
     stripe_customer_id?: string;
     created_at: string;
     country_code?: string;
+    role: 'user' | 'admin';
+    onboarding_completed: boolean;
 }
 
 export interface Snippet {

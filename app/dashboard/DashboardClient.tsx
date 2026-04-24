@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createBrowserClient } from '@supabase/ssr';
-import { Sparkles, Calendar as CalendarIcon, Clock, ChevronRight, Twitter, Linkedin, Instagram, Play, Video } from 'lucide-react';
+import { Sparkles, Calendar as CalendarIcon, Clock, Twitter, Linkedin, Instagram, Play, Video } from 'lucide-react';
 import { PageLayout, ChangelogModal } from '@/components/shared';
 
 export default function DashboardPage() {
@@ -35,6 +35,7 @@ export default function DashboardPage() {
         if (!user) return;
 
         async function fetchDashboardData() {
+            if (!user) return;
             setDataLoading(true);
             const now = new Date();
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();

@@ -5,7 +5,7 @@ import { useTimelineStore } from '@/stores/useTimelineStore';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2 } from 'lucide-react';
 
 const VideoClip: React.FC<{ 
-    clip: any, 
+    clip:any, 
     currentTime: number, 
     isPlaying: boolean,
     filter: string 
@@ -91,13 +91,13 @@ export const PreviewCanvas: React.FC = () => {
         clip => currentTime >= clip.startTime && currentTime <= (clip.startTime + clip.duration)
     );
 
-    const getFilterString = (effects: any) => {
+    const getFilterString = (effects:any) => {
         if (!effects) return 'none';
         const { brightness = 100, contrast = 100, blur = 0, grayscale = 0, sepia = 0 } = effects;
         return `brightness(${brightness}%) contrast(${contrast}%) blur(${blur}px) grayscale(${grayscale}%) sepia(${sepia}%)`;
     };
 
-    const getTextStyle = (config: any) => {
+    const getTextStyle = (config:any) => {
         return {
             fontSize: `${config?.fontSize || 32}px`,
             color: config?.color || '#ffffff',
@@ -109,7 +109,7 @@ export const PreviewCanvas: React.FC = () => {
 
 
 
-    const getTransitionStyle = (clip: any) => {
+    const getTransitionStyle = (clip:any) => {
         const { startTime, duration, transitions } = clip;
         if (!transitions) return {};
 
@@ -137,7 +137,7 @@ export const PreviewCanvas: React.FC = () => {
         return style;
     };
 
-    const getActiveVolume = (clip: any) => {
+    const getActiveVolume = (clip:any) => {
         const { startTime, duration, audioConfig } = clip;
         if (!audioConfig) return 1;
 

@@ -185,7 +185,7 @@ const History: React.FC = () => {
                     <div className="flex items-center gap-2 mt-1 text-xs text-[var(--color-text-secondary)]">
                       <span className="capitalize">{item.format}</span>
                       <span className="w-1 h-1 rounded-full bg-zinc-700" />
-                      <span>{getTimeAgo(item.createdAt)}</span>
+                      <span>{getTimeAgo(item.created_at)}</span>
                     </div>
                   </div>
                 </div>

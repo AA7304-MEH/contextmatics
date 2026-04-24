@@ -70,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             countryCode: 'US',
             plan: isAdmin ? 'enterprise' : 'free',
             processingCredits: isAdmin ? 999999 : 5,
+            credits_remaining: isAdmin ? 999999 : 5,
             role: isAdmin ? 'admin' : 'user',
         };
 
@@ -85,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     countryCode: profile.country_code || baseUser.countryCode,
                     plan: finalPlan,
                     processingCredits: finalCredits,
+                    credits_remaining: finalCredits,
                     role: (profile.role === 'admin' || isAdmin) ? 'admin' : 'user',
                     username: profile.username,
                     fullName: profile.full_name,
@@ -111,6 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     countryCode: 'US',
                     plan: isAdmin ? 'enterprise' : 'free',
                     processingCredits: isAdmin ? 999999 : 5,
+                    credits_remaining: isAdmin ? 999999 : 5,
                     role: isAdmin ? 'admin' : 'user',
                 };
                 setUser(baseUser);
@@ -136,6 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     countryCode: 'US',
                     plan: isAdmin ? 'enterprise' : 'free',
                     processingCredits: isAdmin ? 999999 : 5,
+                    credits_remaining: isAdmin ? 999999 : 5,
                     role: isAdmin ? 'admin' : 'user',
                 };
                 setUser(baseUser);

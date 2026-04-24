@@ -1,23 +1,35 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { PageLayout } from '@/components/shared';
+import { PageLayout, SEO } from '@/components/shared';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { createBrowserClient } from '@supabase/ssr';
-import { Users, Plus, Layout, Settings, Mail, Shield, Trash2, UserPlus, Check, X, ChevronRight, Briefcase } from 'lucide-react';
+import { Plus, Layout, Settings, Shield, Trash2, UserPlus, X, ChevronRight, Briefcase, Sparkles } from 'lucide-react';
+import { Profile, Workspace, WorkspaceMember } from '@/types/database';
+
+interface WorkspaceWithRole {
+    role: string;
+    status: string;
+    workspace: Workspace;
+}
+
+interface MemberWithProfile extends WorkspaceMember {
+    profile: Partial<Profile> | null;
+}
 
 export default function WorkspacesPage() {
-    const { user } = useAuth();
+    const { user: authUser } = useAuth();
+    const user = authUser as unknown as Profile | null;
     const { showToast } = useToast();
-    const [workspaces, setWorkspaces] = useState<any[]>([]);
+    const [workspaces, setWorkspaces] = useState<WorkspaceWithRole[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newWsName, setNewWsName] = useState('');
     
     // Member management state
-    const [selectedWs, setSelectedWs] = useState<any | null>(null);
-    const [members, setMembers] = useState<any[]>([]);
+    const [selectedWs, setSelectedWs] = useState<Workspace | null>(null);
+    const [members, setMembers] = useState<MemberWithProfile[]>([]);
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState<'admin' | 'editor' | 'viewer'>('editor');
     const [isInviting, setIsInviting] = useState(false);
@@ -28,10 +40,10 @@ export default function WorkspacesPage() {
     );
 
     useEffect(() => {
-        if (user) {
+        if (user?.id) {
             fetchWorkspaces();
         }
-    }, [user]);
+    }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchWorkspaces = async () => {
         setLoading(true);
@@ -46,15 +58,19 @@ export default function WorkspacesPage() {
                         name,
                         brand_voice,
                         brand_description,
-                        created_at
+                        created_at,
+                        owner_id,
+                        plan,
+                        ayrshare_profile_key
                     )
                 `)
-                .eq('user_id', user!.id);
+                .eq('user_id', user?.id);
 
             if (error) throw error;
-            setWorkspaces(data || []);
-        } catch (error: any) {
-            showToast(error.message || 'Error loading workspaces', 'error');
+            setWorkspaces((data as unknown as WorkspaceWithRole[]) || []);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Error loading workspaces';
+            showToast(msg, 'error');
         } finally {
             setLoading(false);
         }
@@ -72,14 +88,15 @@ export default function WorkspacesPage() {
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to create workspace');
+            if (!res.ok) throw new Error(data.message || 'Failed to create workspace');
             
             showToast('Workspace created successfully! 🎉', 'success');
             setShowCreateModal(false);
             setNewWsName('');
             fetchWorkspaces();
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Error';
+            showToast(msg, 'error');
         }
     };
 
@@ -92,6 +109,9 @@ export default function WorkspacesPage() {
                     role,
                     status,
                     invited_email,
+                    workspace_id,
+                    user_id,
+                    created_at,
                     profile:user_id (
                         id,
                         full_name,
@@ -102,8 +122,8 @@ export default function WorkspacesPage() {
                 .eq('workspace_id', wsId);
 
             if (error) throw error;
-            setMembers(data || []);
-        } catch (error: any) {
+            setMembers((data as unknown as MemberWithProfile[]) || []);
+        } catch (error: unknown) {
             showToast('Failed to load members', 'error');
         }
     };
@@ -125,25 +145,27 @@ export default function WorkspacesPage() {
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Invite failed');
+            if (!res.ok) throw new Error(data.message || 'Invite failed');
 
             showToast(`Invitation sent to ${inviteEmail} 📧`, 'success');
             setInviteEmail('');
             fetchMembers(selectedWs.id);
-        } catch (err: any) {
-            showToast(err.message, 'error');
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Error';
+            showToast(msg, 'error');
         } finally {
             setIsInviting(false);
         }
     };
 
-    const selectWorkspaceForManagement = (ws: any) => {
+    const selectWorkspaceForManagement = (ws: Workspace) => {
         setSelectedWs(ws);
         fetchMembers(ws.id);
     };
 
     return (
         <PageLayout>
+            <SEO title="Agency Workspaces | ContextMatic" description="Manage your teams, clients, and collaboration hubs." />
             <div className="container mx-auto px-6 py-12">
                 <div className="max-w-6xl mx-auto flex flex-col gap-12">
                     
@@ -236,7 +258,7 @@ export default function WorkspacesPage() {
                                                         <label className="text-[10px] uppercase font-bold tracking-widest text-text-muted mb-2 block">Role</label>
                                                         <select 
                                                             value={inviteRole}
-                                                            onChange={(e: any) => setInviteRole(e.target.value)}
+                                                            onChange={(e) => setInviteRole(e.target.value as any)}
                                                             className="input w-full p-3 bg-black/40 border-white/10 rounded-xl text-sm"
                                                         >
                                                             <option value="admin">Admin</option>
@@ -246,6 +268,7 @@ export default function WorkspacesPage() {
                                                     </div>
                                                     <div className="flex items-end">
                                                         <button 
+                                                            type="submit"
                                                             disabled={isInviting || !inviteEmail}
                                                             className="btn btn-primary px-6 h-[46px] disabled:opacity-50"
                                                         >
@@ -296,8 +319,8 @@ export default function WorkspacesPage() {
                                                         <tr key={member.id} className="hover:bg-white/[0.02] transition-colors">
                                                             <td className="px-6 py-4">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-8 h-8 rounded-full bg-brand-primary/20 text-brand-primary flex items-center justify-center text-xs font-bold">
-                                                                        {member.profile?.fullName?.[0] || member.profile?.email?.[0] || 'A'}
+                                                                    <div className="w-8 h-8 rounded-full bg-brand-primary/20 text-brand-primary flex items-center justify-center text-xs font-bold uppercase">
+                                                                        {member.profile?.full_name?.[0] || member.profile?.email?.[0] || member.invited_email?.[0] || 'A'}
                                                                     </div>
                                                                     <div>
                                                                         <div className="text-sm font-bold text-white">{member.profile?.full_name || 'Pending User'}</div>

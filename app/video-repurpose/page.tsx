@@ -4,17 +4,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { PageLayout } from '@/components/shared';
+import { PageLayout, SEO } from '@/components/shared';
+import { Profile } from '@/types/database';
 
-const processingStages = [
-    'Downloading Video...',
-    'Transcribing Audio...',
-    'Analyzing Viral Moments...',
-    'Reframing for Vertical...'
-];
-
-const generateMockClips = (duration: number, mode: 'highlights' | 'summary', platform: string) => {
-    if (mode === 'summary') {
+const generateMockClips = (duration: number, _mode: 'highlights' | 'summary', platform: string) => {
+    if (_mode === 'summary') {
         return [
             { id: 1, title: `✨ Artificial Intelligence Summary (${platform})`, score: 99, time: `00:00 - 00:${duration}`, duration: duration }
         ];
@@ -29,22 +23,22 @@ const generateMockClips = (duration: number, mode: 'highlights' | 'summary', pla
 
 export default function VideoRepurposingPage() {
     const router = useRouter();
-    const { user, decrementCredits } = useAuth();
+    const { user: authUser, decrementCredits } = useAuth();
+    const user = authUser as unknown as Profile | null;
     const { showToast } = useToast();
 
     const [platform, setPlatform] = useState<'shorts' | 'tiktok' | 'reels'>('shorts');
-    const [processingMode, setProcessingMode] = useState<'highlights' | 'summary'>('highlights');
-    const [targetDuration, setTargetDuration] = useState<number>(30);
-    const [customDuration, setCustomDuration] = useState<string>('30');
-    const [captionStyle, setCaptionStyle] = useState<'hormozi' | 'neon' | 'minimal'>('hormozi');
-    const [showCaptions, setShowCaptions] = useState(true);
+    const [processingMode] = useState<'highlights' | 'summary'>('highlights');
+    const [targetDuration] = useState<number>(30);
+    const [customDuration] = useState<string>('30');
+    const [captionStyle] = useState<'hormozi' | 'neon' | 'minimal'>('hormozi');
+    const [showCaptions] = useState(true);
 
     const [step, setStep] = useState<'input' | 'processing' | 'editor'>('input');
     const [videoUrl, setVideoUrl] = useState('');
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [videoPreviewUrl, setVideoPreviewUrl] = useState<string>('');
-    const [isDragging, setIsDragging] = useState(false);
-    const [processingStage, setProcessingStage] = useState(0);
+    const [isDragging] = useState(false);
     const [selectedClip, setSelectedClip] = useState<number | null>(null);
     const [currentClips, setCurrentClips] = useState<any[]>([]);
 
@@ -95,7 +89,7 @@ export default function VideoRepurposingPage() {
 
     const handleProcess = () => {
         if (!videoUrl && !uploadedFile) return;
-        if (!user || user.processingCredits <= 0) {
+        if (!user || user.credits_remaining <= 0) {
             showToast('No credits remaining! Please upgrade your plan to continue processing videos.', 'error');
             router.push('/pricing');
             return;
@@ -109,8 +103,7 @@ export default function VideoRepurposingPage() {
         let currentStage = 0;
         const interval = setInterval(() => {
             currentStage++;
-            setProcessingStage(currentStage);
-            if (currentStage >= 5) { // 5 total stages in stage rendering
+            if (currentStage >= 5) {
                 clearInterval(interval);
                 setTimeout(() => {
                     const durationToUse = parseInt(customDuration) || targetDuration;
@@ -155,7 +148,7 @@ export default function VideoRepurposingPage() {
 
         const [startStr, endStr] = clip.time.split(' - ');
         const startTime = parseTimeToSeconds(startStr);
-        const duration = parseTimeToSeconds(endStr) - startTime;
+        const durationValue = parseTimeToSeconds(endStr) - startTime;
 
         canvas.width = 1080;
         canvas.height = 1920;
@@ -164,11 +157,16 @@ export default function VideoRepurposingPage() {
         await new Promise(r => { video.onseeked = r; video.currentTime = startTime; });
 
         const stream = canvas.captureStream(30);
-        // @ts-ignore
-        const videoStream = video.captureStream ? video.captureStream() : (video as any).mozCaptureStream ? (video as any).mozCaptureStream() : null;
+        
+        // Use proper feature detection for captureStream
+        const anyVideo = video as any;
+        const videoStream = anyVideo.captureStream ? anyVideo.captureStream() : (anyVideo.mozCaptureStream ? anyVideo.mozCaptureStream() : null);
+        
         if (videoStream) {
-            const audioTrack = videoStream.getAudioTracks()[0];
-            if (audioTrack) stream.addTrack(audioTrack);
+            const audioTracks = videoStream.getAudioTracks();
+            if (audioTracks && audioTracks.length > 0) {
+                stream.addTrack(audioTracks[0]);
+            }
         }
 
         const chunks: Blob[] = [];
@@ -192,15 +190,15 @@ export default function VideoRepurposingPage() {
 
         const drawFrame = () => {
             if (!isRendering) return;
-            if (video.currentTime >= startTime + duration) {
+            if (video.currentTime >= startTime + durationValue) {
                 mediaRecorder.stop();
                 video.pause();
                 return;
             }
             const scale = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
-            const x = (canvas.width / 2) - (video.videoWidth / 2) * scale;
-            const y = (canvas.height / 2) - (video.videoHeight / 2) * scale;
-            ctx.drawImage(video, x, y, video.videoWidth * scale, video.videoHeight * scale);
+            const offsetX = (canvas.width / 2) - (video.videoWidth / 2) * scale;
+            const offsetY = (canvas.height / 2) - (video.videoHeight / 2) * scale;
+            ctx.drawImage(video, offsetX, offsetY, video.videoWidth * scale, video.videoHeight * scale);
             if (showCaptions) {
                 ctx.font = captionStyle === 'minimal' ? '500 40px Inter, sans-serif' : '900 50px Inter, sans-serif';
                 ctx.textAlign = 'center';
@@ -209,7 +207,7 @@ export default function VideoRepurposingPage() {
                 ctx.fillStyle = captionStyle === 'hormozi' ? '#fbbf24' : 'white';
                 ctx.fillText(clip.title, canvas.width / 2, canvas.height * 0.8);
             }
-            const progress = ((video.currentTime - startTime) / duration) * 100;
+            const progress = ((video.currentTime - startTime) / durationValue) * 100;
             setRenderProgress(Math.min(progress, 100));
             requestAnimationFrame(drawFrame);
         };
@@ -223,16 +221,17 @@ export default function VideoRepurposingPage() {
     };
 
     const currentClip = currentClips.find(c => c.id === selectedClip) || currentClips[0];
-    const parseTimeToSeconds = (timeStr: string) => {
+    const parseTimeToSecondsLocal = (timeStr: string) => {
         const parts = timeStr.split(':').map(Number);
         return parts.length === 2 ? parts[0] * 60 + parts[1] : 0;
     };
     const [pageStartTime, pageEndTime] = currentClip ? currentClip.time.split(' - ') : ['00:00', '00:00'];
-    const startSecs = parseTimeToSeconds(pageStartTime);
-    const endSecs = parseTimeToSeconds(pageEndTime);
+    const startSecs = parseTimeToSecondsLocal(pageStartTime);
+    const endSecs = parseTimeToSecondsLocal(pageEndTime);
 
     return (
         <PageLayout>
+            <SEO title="Video Repurposing | ContextMatic" description="Turn long videos into viral shorts using AI magic." />
             <video ref={renderVideoRef} src={videoPreviewUrl} style={{ display: 'none' }} crossOrigin="anonymous" muted={false} />
             <canvas ref={renderCanvasRef} style={{ display: 'none' }} />
             {isRendering && (
@@ -256,6 +255,11 @@ export default function VideoRepurposingPage() {
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">Viral Shorts</span>
                         </h1>
                         <div className="card p-10 text-left border border-white/10 bg-white/5 backdrop-blur-sm">
+                            <div className="grid grid-cols-3 gap-4 mb-8">
+                                <button onClick={() => setPlatform('shorts')} className={`p-4 rounded-xl border ${platform === 'shorts' ? 'border-pink-500 bg-pink-500/10' : 'border-white/10'}`}>Shorts</button>
+                                <button onClick={() => setPlatform('tiktok')} className={`p-4 rounded-xl border ${platform === 'tiktok' ? 'border-pink-500 bg-pink-500/10' : 'border-white/10'}`}>TikTok</button>
+                                <button onClick={() => setPlatform('reels')} className={`p-4 rounded-xl border ${platform === 'reels' ? 'border-pink-500 bg-pink-500/10' : 'border-white/10'}`}>Reels</button>
+                            </div>
                             <div className="mb-8">
                                 <input type="text" placeholder="Paste YouTube URL here..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="input text-lg py-6 bg-black/40 border-white/10" />
                             </div>

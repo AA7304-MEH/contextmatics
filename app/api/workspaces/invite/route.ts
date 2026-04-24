@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuthAndCredits } from '@/lib/api-utils';
 
-async function inviteMemberHandler(req: NextRequest, { user, supabase }: any) {
+async function inviteMemberHandler(req: NextRequest, { user, supabase }:any) {
   try {
     const { email, workspace_id, role } = await req.json();
 
@@ -47,7 +47,7 @@ async function inviteMemberHandler(req: NextRequest, { user, supabase }: any) {
     // For now, we'll return success and the frontend can show a temporary notice.
 
     return NextResponse.json({ success: true, invite_id: invite.id });
-  } catch (error: any) {
+  } catch (error:any) {
     console.error('Workspace invitation error:', error);
     return NextResponse.json({ error: error.message || 'Failed to invite member' }, { status: 500 });
   }

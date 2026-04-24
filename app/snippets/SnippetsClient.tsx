@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { PageLayout } from '@/components/shared';
-import { Search, Plus, Filter, MoreVertical, Copy, Trash2, Video, Globe, Lock, ExternalLink, Scissors, Edit2 } from 'lucide-react';
+import { Search, Plus, Copy, Trash2, Video, Globe, Lock, Scissors, Edit2 } from 'lucide-react';
 import { SnippetModal } from '@/components/snippets/SnippetModal';
 
 interface Snippet {
@@ -27,7 +27,7 @@ export default function SnippetsClient() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTag, setSelectedTag] = useState('All');
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,7 +54,7 @@ export default function SnippetsClient() {
         }
     };
 
-    const handleSaveSnippet = async (snippetData: any) => {
+    const handleSaveSnippet = async (snippetData:any) => {
         try {
             const isEditing = !!snippetData.id;
             const url = isEditing ? `/api/snippets/${snippetData.id}` : '/api/snippets';

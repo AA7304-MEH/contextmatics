@@ -44,7 +44,7 @@ export default function MediaLibraryPage() {
 
             if (error) throw error;
             setMediaItems(data || []);
-        } catch (error: any) {
+        } catch (error:any) {
             console.error('Error fetching media:', error);
             showToast('Failed to load media library', 'error');
         } finally {
@@ -64,7 +64,7 @@ export default function MediaLibraryPage() {
             if (error) throw error;
             setMediaItems(mediaItems.filter(item => item.id !== id));
             showToast('Item deleted', 'success');
-        } catch (error: any) {
+        } catch (error:any) {
             showToast('Failed to delete item', 'error');
         }
     };

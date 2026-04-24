@@ -20,7 +20,7 @@ export default function ContentCreatorPage() {
 
 function ContentCreatorContent() {
     const { user, refreshProfile, currentWorkspace } = useAuth();
-    const { addToHistory } = useHistory();
+    const { addToHistory: _addToHistory } = useHistory();
     const { showToast } = useToast();
     const router = useRouter();
 
@@ -34,6 +34,7 @@ function ContentCreatorContent() {
     const [length, setLength] = useState('Medium');
     const [advancedInfo, setAdvancedInfo] = useState('');
     const [brandVoice, setBrandVoice] = useState('');
+    const [language, setLanguage] = useState('English');
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,7 +42,7 @@ function ContentCreatorContent() {
     );
 
     // AI SDK hook
-    const { completion, input, handleInputChange, handleSubmit, isLoading, setCompletion } = useCompletion({
+    const { completion, input: _input, handleInputChange, handleSubmit, isLoading, setCompletion } = useCompletion({
         api: '/api/ai/generate',
         body: {
             topic,
@@ -51,9 +52,10 @@ function ContentCreatorContent() {
             length,
             advancedInfo,
             brandVoice,
+            language,
             workspace_id: currentWorkspace?.id
         },
-        onFinish: async (prompt, result) => {
+        onFinish: async (_prompt, _result) => {
             await refreshProfile();
             showToast('Content successfully generated ✨', 'success');
         },
@@ -71,7 +73,7 @@ function ContentCreatorContent() {
     // Media Generation State
     const [mediaType, setMediaType] = useState<'image' | 'logo' | 'video' | 'repurpose'>('image');
     const [mediaPrompt, setMediaPrompt] = useState('');
-    const [mediaStyle, setMediaStyle] = useState('minimalist');
+    const [mediaStyle, _setMediaStyle] = useState('minimalist');
     const [isGeneratingMedia, setIsGeneratingMedia] = useState(false);
     const [mediaResult, setMediaResult] = useState<{ url: string, type: string } | null>(null);
 
@@ -134,7 +136,7 @@ function ContentCreatorContent() {
             if (error) throw error;
             showToast('Saved to calendar! 📅', 'success');
             router.push('/calendar');
-        } catch(e: any) {
+        } catch(e:any) {
             showToast(e.message || 'Failed to schedule', 'error');
         }
     };
@@ -173,7 +175,7 @@ function ContentCreatorContent() {
             setMediaResult({ url: data.url, type: mediaType });
             await refreshProfile();
             showToast(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} generated successfully! ✨`, 'success');
-        } catch (error: any) {
+        } catch (error:any) {
             showToast(error.message || 'Failed to generate media', 'error');
         } finally {
             setIsGeneratingMedia(false);
@@ -261,6 +263,15 @@ function ContentCreatorContent() {
                                                 <option value="Short">Short</option>
                                                 <option value="Medium">Medium</option>
                                                 <option value="Long">Long</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2 block text-left">Language</label>
+                                            <select value={language} onChange={e => setLanguage(e.target.value)} className="input w-full p-3 bg-black/20 border-white/10 rounded-xl text-sm">
+                                                <option value="English">English</option>
+                                                <option value="Hinglish">Hinglish 🇮🇳</option>
+                                                <option value="Spanish">Spanish</option>
+                                                <option value="French">French</option>
                                             </select>
                                         </div>
                                     </div>

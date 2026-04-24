@@ -1,5 +1,7 @@
+import { NextRequest, NextResponse } from 'next/server';
 import { env } from "@/config/env";
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +12,7 @@ export async function GET(req: NextRequest) {
     // 1. Authorization Check
     const authHeader = req.headers.get('authorization');
     if (env.isProduction && authHeader !== `Bearer ${env.CRON_SECRET}`) {
-        return NextResponse.json({ error: "Unauthorized access denied." }, { status: 401 });
+        return NextResponse.json({ success: false, code: 'UNAUTHORIZED', message: "Unauthorized access denied." }, { status: 401 });
     }
 
     // 2. Env Check (Build Safety)
@@ -19,8 +21,8 @@ export async function GET(req: NextRequest) {
     const ayrshareApiKey = env.AYRSHARE_API_KEY;
 
     if (!supabaseUrl || !serviceRoleKey || !ayrshareApiKey) {
-        console.error("[Cron] Missing critical configuration.");
-        return NextResponse.json({ error: "Service configuration error." }, { status: 500 });
+        logger.error("[Cron] Missing critical configuration.");
+        return NextResponse.json({ success: false, code: 'CONFIG_ERROR', message: "Service configuration error." }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
@@ -36,7 +38,7 @@ export async function GET(req: NextRequest) {
         if (fetchError) throw fetchError;
 
         if (!posts || posts.length === 0) {
-            return NextResponse.json({ message: "No pending posts found." });
+            return NextResponse.json({ success: true, message: "No pending posts found." }, { status: 200 });
         }
 
         const results = [];
@@ -67,23 +69,28 @@ export async function GET(req: NextRequest) {
                 } else {
                     throw new Error(result.message || "Ayrshare error");
                 }
-            } catch (err: any) {
-                console.error(`[Cron] Post FAILED (ID: ${post.id}):`, err.message);
+            } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : 'Unknown error';
+                logger.error(`[Cron] Post FAILED (ID: ${post.id}):`, { error: msg });
                 await supabaseAdmin
                     .from('scheduled_posts')
                     .update({ status: 'failed', updated_at: new Date().toISOString() })
                     .eq('id', post.id);
-                results.push({ id: post.id, status: 'failed', error: err.message });
+                results.push({ id: post.id, status: 'failed', error: msg });
             }
         }
 
         return NextResponse.json({
-            processed: posts.length,
-            results
-        });
+            success: true,
+            data: {
+                processed: posts.length,
+                results
+            }
+        }, { status: 200 });
 
-    } catch (error: any) {
-        console.error("[Cron Job Error]", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error("[Cron Job Error]", { error: errorMessage });
+        return NextResponse.json({ success: false, code: 'CRON_FAILED', message: errorMessage }, { status: 500 });
     }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { useHistory } from '../context/HistoryContext';
+import { useHistory } from '@/context/HistoryContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { PageLayout } from './shared';
 import { SEO } from './shared/SEO';
@@ -50,7 +50,7 @@ const Dashboard: React.FC = () => {
 
   const recentItems = historyItems.slice(0, 5);
 
-  const getTimeAgo = (date: Date) => {
+  const getTimeAgo = (date: Date | string) => {
     const now = new Date();
     const diffMs = now.getTime() - new Date(date).getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -194,7 +194,7 @@ const Dashboard: React.FC = () => {
                     <div>
                       <h4 className="text-sm font-medium text-white">{item.title}</h4>
                       <p className="text-xs text-[var(--color-text-secondary)]">
-                        {item.format} · {getTimeAgo(item.createdAt)}
+                        {item.format} · {getTimeAgo(item.created_at)}
                       </p>
                     </div>
                   </div>

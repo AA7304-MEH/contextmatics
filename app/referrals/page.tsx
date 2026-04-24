@@ -6,11 +6,26 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { createBrowserClient } from '@supabase/ssr';
 import { Gift, Users, CreditCard, Share2, Copy, Check, Twitter, Facebook, Mail } from 'lucide-react';
+import { Profile } from '@/types/database';
+
+interface ReferralHistoryItem {
+    id: string;
+    referred_id: string;
+    referrer_id: string;
+    status: 'pending' | 'completed';
+    credits_awarded: number;
+    created_at: string;
+    referred_profile?: {
+        full_name: string | null;
+        email: string | null;
+    };
+}
 
 export default function ReferralPage() {
-    const { user, refreshProfile } = useAuth();
+    const { user: authUser } = useAuth();
+    const user = authUser as Profile | null;
     const { showToast } = useToast();
-    const [referrals, setReferrals] = useState<any[]>([]);
+    const [referrals, setReferrals] = useState<ReferralHistoryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
 
@@ -26,20 +41,22 @@ export default function ReferralPage() {
         if (user) {
             fetchReferrals();
         }
-    }, [user]);
+    }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchReferrals = async () => {
+        if (!user) return;
         try {
             const { data, error } = await supabase
                 .from('referrals')
                 .select('*, referred_profile:referred_id(full_name, email)')
-                .eq('referrer_id', user!.id);
+                .eq('referrer_id', user.id);
 
             if (error) throw error;
-            setReferrals(data || []);
-        } catch (error: any) {
-            console.error(error);
+            setReferrals((data || []) as ReferralHistoryItem[]);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Unknown error';
             showToast('Failed to load referral data', 'error');
+            console.error('[Referrals] Fetch failed:', msg);
         } finally {
             setLoading(false);
         }
@@ -56,6 +73,16 @@ export default function ReferralPage() {
         const text = `I'm using ContextMatic to automate my content! Get 50 free credits with my link: ${referralLink}`;
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
     };
+
+    if (loading) {
+        return (
+            <PageLayout>
+                <div className="flex items-center justify-center min-h-[60vh]">
+                    <div className="w-8 h-8 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin" />
+                </div>
+            </PageLayout>
+        );
+    }
 
     return (
         <PageLayout>

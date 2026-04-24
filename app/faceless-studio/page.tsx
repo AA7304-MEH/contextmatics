@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { PageLayout } from '@/components/shared';
 import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
-import { Sparkles, Video, Mic, Layout, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Mic, Layout, ChevronRight, CheckCircle2 } from 'lucide-react';
 
 export default function FacelessStudioPage() {
     const router = useRouter();
@@ -20,7 +20,7 @@ export default function FacelessStudioPage() {
     const [style, setStyle] = useState('Storytelling');
     const [voice, setVoice] = useState('Marcus');
     const [assetsMode, setAssetsMode] = useState('Stock Footage');
-    const [duration, setDuration] = useState(30);
+    const [duration, _setDuration] = useState(30);
 
     const steps = [
         { id: 1, name: 'Script & Theme', icon: '📝' },
@@ -81,7 +81,7 @@ export default function FacelessStudioPage() {
                 router.push(`/studio/${data.projectId}`);
             }, 1500);
 
-        } catch (err: any) {
+        } catch (err:any) {
             showToast(err.message || 'Error starting production', 'error');
             setLoading(false);
         }

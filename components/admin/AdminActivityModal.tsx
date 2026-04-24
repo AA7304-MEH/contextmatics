@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, Activity, ExternalLink, Calendar, Zap, CreditCard } from 'lucide-react';
+import { X, Clock, Activity } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface ActivityEvent {
     id: string;
@@ -32,7 +33,7 @@ export const AdminActivityModal: React.FC<AdminActivityModalProps> = ({ user, is
                 .then(data => {
                     setEvents(Array.isArray(data) ? data : []);
                 })
-                .catch(err => console.error("Failed to fetch user activity", err))
+                .catch(err => logger.error("Failed to fetch user activity", { userId: user.id, error: err.message }))
                 .finally(() => setLoading(false));
         }
     }, [isOpen, user.id]);

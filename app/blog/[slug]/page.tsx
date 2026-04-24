@@ -3,9 +3,9 @@
 import React from 'react';
 import { PageLayout } from '@/components/shared';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Clock, Calendar, User, Share2, Facebook, Twitter, Linkedin, Copy, Bookmark } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, Share2, Twitter, Linkedin, Copy } from 'lucide-react';
 
-const POST_CONTENT: any = {
+const POST_CONTENT:any = {
     '7-ways-repurpose-video': {
         title: '7 Ways to Repurpose Your Long-Form Video Content',
         date: 'Oct 24, 2026',

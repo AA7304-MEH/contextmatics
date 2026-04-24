@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
@@ -27,7 +27,7 @@ const localizer = dateFnsLocalizer({
     locales,
 });
 
-const DnDCalendar = withDragAndDrop(Calendar);
+const DnDCalendar = withDragAndDrop<CalendarEvent>(Calendar as any);
 
 interface CalendarEvent {
     id: string;
@@ -87,7 +87,7 @@ export default function CalendarClient() {
                 if (res.ok) {
                     const history = await res.json();
                     if (Array.isArray(history)) {
-                        externalEvents = history.map((item: any) => ({
+                        externalEvents = history.map((item:any) => ({
                             id: item.id || Math.random().toString(),
                             title: (item.post || 'Social Post').substring(0, 30) + '...',
                             start: new Date(item.created || item.scheduleDate),
@@ -104,7 +104,7 @@ export default function CalendarClient() {
             }
 
             setEvents([...internalEvents, ...externalEvents]);
-        } catch (error: any) {
+        } catch (error:any) {
             console.error(error);
             showToast('Failed to load calendar data', 'error');
         } finally {
@@ -112,7 +112,7 @@ export default function CalendarClient() {
         }
     };
 
-    const onEventDrop = useCallback(async ({ event, start, end }: any) => {
+    const onEventDrop = useCallback(async ({ event, start, end }:any) => {
         if (event.type === 'external' || event.status === 'published') {
             showToast('Cannot reschedule published posts', 'error');
             return;
@@ -134,13 +134,13 @@ export default function CalendarClient() {
 
             if (error) throw error;
             showToast('Post rescheduled successfully', 'success');
-        } catch (err: any) {
+        } catch (err:any) {
             setEvents(originalEvents);
             showToast('Failed to reschedule post', 'error');
         }
     }, [events, supabase, showToast]);
 
-    const onEventResize = useCallback(async ({ event, start, end }: any) => {
+    const onEventResize = useCallback(async ({ event, start, end }:any) => {
         if (event.type === 'external') return;
         
         // Similar to drop but just updating start/end in state (usually duration doesn't matter for posts)
@@ -149,7 +149,7 @@ export default function CalendarClient() {
         ));
     }, []);
 
-    const eventStyleGetter = (event: CalendarEvent) => {
+    const eventStyleGetter: React.ComponentProps<typeof Calendar<CalendarEvent>>['eventPropGetter'] = (event) => {
         let backgroundColor = '#3b82f6'; // blue-500
         if (event.status === 'published') backgroundColor = '#10b981'; // emerald-500
         if (event.status === 'failed') backgroundColor = '#ef4444'; // red-500
@@ -206,13 +206,13 @@ export default function CalendarClient() {
                                 startAccessor="start"
                                 endAccessor="end"
                                 style={{ height: '100%' }}
-                                eventPropGetter={eventStyleGetter}
+                                eventPropGetter={eventStyleGetter as any}
                                 onSelectEvent={(event) => setSelectedEvent(event as CalendarEvent)}
                                 onEventDrop={onEventDrop}
                                 onEventResize={onEventResize}
                                 resizable
-                                draggableAccessor={(event: any) => event.status !== 'published'}
-                                views={[Views.MONTH, Views.WEEK, Views.DAY]}
+                                draggableAccessor={(event:any) => event.status !== 'published'}
+                                views={['month', 'week', 'day']}
                                 className="custom-calendar-ui"
                             />
                         </div>

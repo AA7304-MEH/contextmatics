@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { getThemeIds, getTheme, CaptionStyle, AspectRatio, MusicMood, VoiceTone } from '../../services/facelessGenerator';
 
 interface VibeInputProps {
-    onGenerate: (data: any) => void;
+    onGenerate: (data:any) => void;
     isGenerating: boolean;
 }
 

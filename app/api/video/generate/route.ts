@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuthAndCredits } from '@/lib/api-utils';
 import { aiService } from '@/services/aiService';
 
-async function generateVideoHandler(req: NextRequest, { user, supabase, deductCredits }: any) {
+async function generateVideoHandler(req: NextRequest, { user, supabase, deductCredits }:any) {
     const body = await req.json();
     const { prompt, style, platform, snippetId } = body;
 
@@ -33,7 +33,7 @@ async function generateVideoHandler(req: NextRequest, { user, supabase, deductCr
             message: 'Project generated successfully' 
         });
 
-    } catch (err: any) {
+    } catch (err:any) {
         console.error('[Video Generation Error]', err);
         throw err; // Let withAuthAndCredits catch it and report to Sentry
     }

@@ -1,5 +1,5 @@
 import { Scene } from './facelessGenerator';
-import { videoScriptCore } from '@/app/api/ai/video-script/route';
+import { videoScriptCore } from '@/lib/ai/video-script-core';
 import { replicateEngine } from './replicateEngine';
 import { env } from '../config/env';
 import { v4 as uuidv4 } from 'uuid';
@@ -40,7 +40,7 @@ class AIService {
             
             if (env.REPLICATE_API_TOKEN && env.REPLICATE_API_TOKEN.length > 10) {
                 try {
-                    const gen = await replicateEngine.generateRealVideo({
+                    await replicateEngine.generateRealVideo({
                         prompt: scene.visualDescription,
                         style,
                         userId,

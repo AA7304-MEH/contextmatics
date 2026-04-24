@@ -2,11 +2,9 @@
 
 import React from 'react';
 import { useProjectStore } from '@/stores/projectStore';
-import { Clip, Effect } from '@/types/editor';
 import {
     Volume2,
     Sun,
-    Contrast,
     Type,
     Trash2,
     Sliders
@@ -85,6 +83,7 @@ const PropertiesPanel: React.FC = () => {
                                 type="range"
                                 min="0"
                                 max="200"
+                                defaultValue={100}
                                 className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#00c8ff]"
                             />
                         </div>
@@ -156,7 +155,7 @@ const PropertiesPanel: React.FC = () => {
                             <span className="text-[10px] font-bold uppercase tracking-widest">Text Content</span>
                         </div>
                         <textarea
-                            value={selectedClip.textContent}
+                            value={selectedClip.textContent || ""}
                             onChange={(e) => updateClip(selectedClip.id, { textContent: e.target.value })}
                             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-[#00c8ff] focus:outline-none transition-colors h-32 resize-none"
                         />

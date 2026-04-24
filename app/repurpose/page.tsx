@@ -1,240 +1,249 @@
 'use client';
 
 import React, { useState } from 'react';
+import { PageLayout, SEO } from '@/components/shared';
+import { 
+  Youtube, 
+  Mic, 
+  Zap, 
+  RefreshCw, 
+  Copy, 
+  Linkedin, 
+  Twitter, 
+  Mail, 
+  ExternalLink,
+  Play,
+  CheckCircle2,
+  Sparkles
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/context/ToastContext';
-import { PageLayout } from '@/components/shared';
-import { VerifiedProtection } from '@/components/VerifiedProtection';
-import { Twitter, Linkedin, Mail, Link as LinkIcon, RefreshCw, Send } from 'lucide-react';
-import { createBrowserClient } from '@supabase/ssr';
 
-export default function RepurposePage() {
-    return (
-        <VerifiedProtection>
-            <RepurposeContent />
-        </VerifiedProtection>
-    );
+interface RepurposeResult {
+  linkedin: string[];
+  twitter: string[][];
+  newsletter: string[];
 }
 
-function RepurposeContent() {
-    const { user, refreshProfile } = useAuth();
-    const { showToast } = useToast();
-    const router = useRouter();
+interface Metadata {
+  title?: string;
+  author?: string;
+  thumbnail?: string;
+  duration?: string;
+}
 
-    const [inputSource, setInputSource] = useState('');
-    const [isExtracting, setIsExtracting] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [results, setResults] = useState<{ twitter?: string, linkedin?: string, newsletter?: string } | null>(null);
+export default function RepurposePage() {
+  const router = useRouter();
+  const [url, setUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [result, setResult] = useState<RepurposeResult | null>(null);
+  const [metadata, setMetadata] = useState<Metadata | null>(null);
+  const [activeTab, setActiveTab] = useState<'linkedin' | 'twitter' | 'newsletter'>('linkedin');
 
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+  const handleRepurpose = async () => {
+    if (!url) {
+      toast.error('Please enter a valid URL');
+      return;
+    }
 
-    const handleRepurpose = async () => {
-        if (!inputSource.trim()) {
-            showToast('Please enter text or a URL', 'warning');
-            return;
-        }
-        
-        if (!user || user.credits_remaining < 3) {
-            showToast('Insufficient credits (requires 3).', 'error');
-            router.push('/pricing');
-            return;
-        }
+    setIsLoading(true);
+    setResult(null);
+    setMetadata(null);
 
-        let contentObj = inputSource;
+    try {
+      const res = await fetch('/api/repurpose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResult(data.data.output_content);
+        setMetadata(data.data.metadata);
+        toast.success('Repurposed successfully! ✨');
+      } else {
+        toast.error(data.message || 'Repurposing failed');
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        // Auto-extract URL
-        if (inputSource.trim().startsWith('http://') || inputSource.trim().startsWith('https://')) {
-            setIsExtracting(true);
-            try {
-                const extRes = await fetch('/api/repurpose/extract', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: inputSource.trim() })
-                });
-                const extData = await extRes.json();
-                if (!extRes.ok) throw new Error(extData.error || 'Failed to extract URL');
-                contentObj = extData.text;
-                showToast('Content successfully extracted from URL!', 'success');
-            } catch (err: any) {
-                showToast(err.message || 'Error extracting URL', 'error');
-                setIsExtracting(false);
-                return;
-            }
-            setIsExtracting(false);
-        }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard');
+  };
 
-        setIsGenerating(true);
-        setResults(null);
-        try {
-            const res = await fetch('/api/repurpose/generate-all', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: contentObj })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Generation failed');
-            
-            setResults({
-                twitter: data.twitter,
-                linkedin: data.linkedin,
-                newsletter: data.newsletter
-            });
-            await refreshProfile();
-            showToast('Repurposed across 3 platforms successfully! ✨', 'success');
-        } catch (err: any) {
-            showToast(err.message || 'An error occurred during generation', 'error');
-        } finally {
-            setIsGenerating(false);
-        }
-    };
+  const openInStudio = (content: string) => {
+    sessionStorage.setItem('template_prompt', content);
+    router.push('/content-creator');
+  };
 
-    const handleSaveToCalendar = async (content: string, platform: string) => {
-        const scheduleDate = new Date();
-        scheduleDate.setDate(scheduleDate.getDate() + 1);
+  return (
+    <PageLayout>
+      <SEO title="Repurpose Studio | ContextMatic" description="Turn videos and podcasts into multi-platform content." />
+      
+      <div className="max-w-5xl mx-auto space-y-12 pb-20 pt-10 px-4">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase tracking-wider">
+            <Youtube className="w-3 h-3" />
+            TubeRepurpose v2
+          </div>
+          <h1 className="text-5xl font-extrabold tracking-tight text-white">Repurpose <span className="text-kinetic">Studio</span></h1>
+          <p className="text-text-secondary text-lg max-w-2xl mx-auto">
+            Give us one URL. We'll give you a month's worth of viral social content.
+          </p>
+        </div>
 
-        try {
-            const { error } = await supabase.from('scheduled_posts').insert({
-                user_id: user?.id,
-                content: content,
-                platforms: [platform.toLowerCase()],
-                status: 'scheduled',
-                scheduled_at: scheduleDate.toISOString()
-            });
-            if (error) throw error;
-            showToast(`Saved to ${platform} calendar! 📅`, 'success');
-        } catch(e: any) {
-            showToast(e.message || `Failed to schedule ${platform}`, 'error');
-        }
-    };
-
-    const updateResult = (platform: keyof typeof results, value: string) => {
-        setResults(prev => prev ? { ...prev, [platform]: value } : null);
-    };
-
-    return (
-        <PageLayout>
-            <div className="container mx-auto px-6 py-12">
-                <div className="mb-12 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div>
-                        <h1 className="text-4xl font-bold tracking-tight text-white mb-2">Content Repurposer</h1>
-                        <p className="text-lg text-text-secondary">Turn 1 piece of content into 3 viral posts instantly.</p>
-                    </div>
-                </div>
-
-                <div className="card p-8 bg-background-surface/50 border border-white/5 mb-12 max-w-4xl mx-auto">
-                    <label className="text-sm font-medium text-text-secondary uppercase tracking-wider mb-3 block">
-                        Source Material (URL or Paste Text)
-                    </label>
-                    <div className="relative">
-                        <textarea
-                            value={inputSource}
-                            onChange={(e) => setInputSource(e.target.value)}
-                            placeholder="Paste your blog article, notes, or any valid HTTP URL..."
-                            className="input w-full min-h-[120px] py-4 leading-relaxed resize-y bg-black/20 border border-white/10 rounded-xl p-4 focus:ring-2 focus:ring-brand-primary/50 outline-none text-text-primary text-base placeholder-text-muted"
-                        />
-                        {inputSource.trim().startsWith('http') && (
-                            <div className="absolute top-4 right-4 flex items-center gap-2 text-xs font-semibold px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full">
-                                <LinkIcon className="w-3 h-3" />
-                                URL Detected (Will auto-scrape)
-                            </div>
-                        )}
-                    </div>
-                    <div className="flex justify-end mt-4">
-                        <button
-                            onClick={handleRepurpose}
-                            disabled={isExtracting || isGenerating || !inputSource.trim()}
-                            className={`btn py-4 px-10 text-base font-semibold tracking-wide flex items-center justify-center gap-2 min-w-[240px] ${(isExtracting || isGenerating) || !inputSource.trim() ? 'opacity-50 cursor-not-allowed bg-white/5 text-text-secondary border-white/10' : 'btn-primary shadow-lg hover:shadow-brand-primary/20'}`}
-                        >
-                            {isExtracting ? (
-                                <><RefreshCw className="w-5 h-5 animate-spin" /> Extracting URL...</>
-                            ) : isGenerating ? (
-                                <><RefreshCw className="w-5 h-5 animate-spin" /> Repurposing Content...</>
-                            ) : (
-                                <><RefreshCw className="w-5 h-5" /> Repurpose Now ✨</>
-                            )}
-                        </button>
-                    </div>
-                </div>
-
-                {results && (
-                    <div className="animate-fade-in-up">
-                        <h2 className="text-2xl font-bold tracking-tight mb-8">Generated Platforms</h2>
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            
-                            {/* Twitter */}
-                            <div className="card p-6 bg-background-surface/50 border border-white/5 flex flex-col relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#1DA1F2]/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-                                <div className="flex items-center gap-3 mb-4 relative z-10">
-                                    <div className="w-10 h-10 rounded-full bg-[#1DA1F2]/20 flex items-center justify-center">
-                                        <Twitter className="w-5 h-5 text-[#1DA1F2]" />
-                                    </div>
-                                    <h3 className="font-semibold text-lg">Twitter Thread</h3>
-                                </div>
-                                <textarea
-                                    value={results.twitter}
-                                    onChange={(e) => updateResult('twitter', e.target.value)}
-                                    className="input flex-1 w-full min-h-[300px] p-4 bg-black/30 border border-white/5 rounded-xl resize-y text-sm font-mono leading-relaxed mb-4"
-                                />
-                                <div className="flex gap-2">
-                                    <button onClick={() => { navigator.clipboard.writeText(results.twitter || ''); showToast('Copied!', 'success'); }} className="btn btn-secondary flex-1 py-2 text-xs">Copy</button>
-                                    <button onClick={() => handleSaveToCalendar(results.twitter!, 'Twitter')} className="btn btn-primary flex-1 py-2 text-xs gap-1 bg-[#1DA1F2] hover:bg-[#1DA1F2]/90 border-transparent text-white">
-                                        <Send className="w-3 h-3" /> Schedule
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* LinkedIn */}
-                            <div className="card p-6 bg-background-surface/50 border border-white/5 flex flex-col relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#0A66C2]/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-                                <div className="flex items-center gap-3 mb-4 relative z-10">
-                                    <div className="w-10 h-10 rounded-full bg-[#0A66C2]/20 flex items-center justify-center">
-                                        <Linkedin className="w-5 h-5 text-[#0A66C2]" />
-                                    </div>
-                                    <h3 className="font-semibold text-lg">LinkedIn Post</h3>
-                                </div>
-                                <textarea
-                                    value={results.linkedin}
-                                    onChange={(e) => updateResult('linkedin', e.target.value)}
-                                    className="input flex-1 w-full min-h-[300px] p-4 bg-black/30 border border-white/5 rounded-xl resize-y text-sm font-sans leading-relaxed mb-4"
-                                />
-                                <div className="flex gap-2">
-                                    <button onClick={() => { navigator.clipboard.writeText(results.linkedin || ''); showToast('Copied!', 'success'); }} className="btn btn-secondary flex-1 py-2 text-xs">Copy</button>
-                                    <button onClick={() => handleSaveToCalendar(results.linkedin!, 'LinkedIn')} className="btn btn-primary flex-1 py-2 text-xs gap-1 bg-[#0A66C2] hover:bg-[#0A66C2]/90 border-transparent text-white">
-                                        <Send className="w-3 h-3" /> Schedule
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Newsletter */}
-                            <div className="card p-6 bg-background-surface/50 border border-white/5 flex flex-col relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-                                <div className="flex items-center gap-3 mb-4 relative z-10">
-                                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                                        <Mail className="w-5 h-5 text-emerald-400" />
-                                    </div>
-                                    <h3 className="font-semibold text-lg">Newsletter</h3>
-                                </div>
-                                <textarea
-                                    value={results.newsletter}
-                                    onChange={(e) => updateResult('newsletter', e.target.value)}
-                                    className="input flex-1 w-full min-h-[300px] p-4 bg-black/30 border border-white/5 rounded-xl resize-y text-sm font-serif leading-relaxed mb-4"
-                                />
-                                <div className="flex gap-2">
-                                    <button onClick={() => { navigator.clipboard.writeText(results.newsletter || ''); showToast('Copied!', 'success'); }} className="btn btn-secondary flex-1 py-2 text-xs">Copy</button>
-                                    <button onClick={() => handleSaveToCalendar(results.newsletter!, 'Email')} className="btn btn-primary flex-1 py-2 text-xs gap-1 bg-emerald-600 hover:bg-emerald-500 border-transparent text-white">
-                                        <Send className="w-3 h-3" /> Schedule
-                                    </button>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                )}
+        {/* Input Card */}
+        <div className="max-w-3xl mx-auto">
+          <div className="card p-2 bg-zinc-900 border-white/5 shadow-2xl rounded-3xl flex flex-col md:flex-row gap-2">
+            <div className="flex-1 flex items-center px-6 py-4 md:py-0">
+              {url.includes('youtube') ? <Youtube className="w-6 h-6 text-red-500 mr-4" /> : <Mic className="w-6 h-6 text-emerald-500 mr-4" />}
+              <input 
+                type="text" 
+                value={url}
+                onChange={e => setUrl(e.target.value)}
+                placeholder="Paste YouTube Video or Podcast RSS URL..."
+                className="bg-transparent border-none focus:ring-0 text-white w-full text-lg placeholder:text-zinc-600 outline-none"
+              />
             </div>
-        </PageLayout>
-    );
+            <button 
+              onClick={handleRepurpose}
+              disabled={isLoading || !url}
+              className="btn btn-primary px-8 py-5 md:py-4 text-lg font-black gap-2 rounded-2xl md:rounded-2xl"
+            >
+              {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
+              {isLoading ? 'Processing...' : 'Magic Repurpose'}
+            </button>
+          </div>
+          <p className="text-center text-[10px] text-zinc-600 mt-4 uppercase tracking-[0.2em] font-bold">Consumes 20 Credits per full repurpose cycle</p>
+        </div>
+
+        {isLoading && (
+          <div className="space-y-8 animate-fade-in py-10">
+            <div className="flex flex-col items-center gap-6">
+              <div className="w-20 h-20 bg-brand-primary/10 rounded-full flex items-center justify-center border border-brand-primary/20 animate-pulse outline outline-4 outline-brand-primary/5 outline-offset-8">
+                <Sparkles className="w-10 h-10 text-brand-primary" />
+              </div>
+              <div className="space-y-2 text-center">
+                <p className="text-2xl font-bold text-white tracking-tight">Extracting Knowledge...</p>
+                <div className="flex items-center gap-2 text-zinc-500 text-sm justify-center">
+                  <span className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-ping"></span>
+                  Analyzing hooks and key takeaways
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {result && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-in-up">
+            {/* Metadata Sidebar */}
+            <div className="lg:col-span-4 space-y-6">
+              {metadata && (
+                <div className="card p-0 overflow-hidden bg-zinc-900 border-white/10 rounded-[32px]">
+                  {metadata.thumbnail && (
+                    <div className="aspect-video relative overflow-hidden group">
+                      <img src={metadata.thumbnail} alt="Source" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                         <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
+                            <Play className="w-5 h-5 text-white fill-current" />
+                         </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-6 space-y-4">
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-white line-clamp-2">{metadata.title}</h3>
+                      <p className="text-sm text-zinc-500 font-medium">{metadata.author}</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400 font-bold uppercase tracking-widest bg-white/5 p-3 rounded-xl border border-white/5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      Content Digested
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Results Display */}
+            <div className="lg:col-span-8 space-y-6">
+              {/* Tabs */}
+              <div className="flex p-1 bg-zinc-900/80 backdrop-blur-md border border-white/5 rounded-2xl inline-flex">
+                {[
+                  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin },
+                  { id: 'twitter', label: 'X (Threads)', icon: Twitter },
+                  { id: 'newsletter', label: 'Newsletters', icon: Mail }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${
+                      activeTab === tab.id ? 'bg-brand-primary text-white shadow-xl' : 'text-zinc-500 hover:text-white'
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Content Cards */}
+              <div className="space-y-6">
+                {activeTab === 'linkedin' && result.linkedin.map((post, i) => (
+                  <div key={i} className="card p-8 bg-zinc-900/40 border-white/5 rounded-[32px] hover:border-brand-primary/20 transition-all space-y-6">
+                    <div className="flex justify-between items-center">
+                       <span className="text-[10px] font-black text-brand-primary uppercase tracking-[0.2em]">LinkedIn Post #{i+1}</span>
+                       <div className="flex gap-2">
+                         <button onClick={() => copyToClipboard(post)} className="p-2 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-lg"><Copy className="w-4 h-4" /></button>
+                         <button onClick={() => openInStudio(post)} className="p-2 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-lg"><ExternalLink className="w-4 h-4" /></button>
+                       </div>
+                    </div>
+                    <p className="text-zinc-300 leading-relaxed whitespace-pre-wrap">{post}</p>
+                  </div>
+                ))}
+
+                {activeTab === 'twitter' && result.twitter.map((thread, i) => (
+                  <div key={i} className="card p-8 bg-zinc-900/40 border-white/5 rounded-[32px] hover:border-brand-primary/20 transition-all space-y-6">
+                    <div className="flex justify-between items-center">
+                       <span className="text-[10px] font-black text-brand-primary uppercase tracking-[0.2em]">X Thread #{i+1}</span>
+                       <div className="flex gap-2">
+                         <button onClick={() => copyToClipboard(thread.join('\n\n'))} className="p-2 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-lg"><Copy className="w-4 h-4" /></button>
+                         <button onClick={() => openInStudio(thread.join('\n\n'))} className="p-2 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-lg"><ExternalLink className="w-4 h-4" /></button>
+                       </div>
+                    </div>
+                    <div className="space-y-4">
+                      {thread.map((tweet, tIdx) => (
+                        <div key={tIdx} className="p-4 rounded-xl bg-black/20 border border-white/5 relative">
+                          <span className="absolute -left-2 -top-2 w-6 h-6 rounded-full bg-brand-primary flex items-center justify-center text-[10px] font-bold text-white shadow-lg">{tIdx + 1}</span>
+                          <p className="text-zinc-300 text-sm">{tweet}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {activeTab === 'newsletter' && result.newsletter.map((content, i) => (
+                  <div key={i} className="card p-8 bg-zinc-900/40 border-white/5 rounded-[32px] hover:border-brand-primary/20 transition-all space-y-6">
+                    <div className="flex justify-between items-center">
+                       <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">Newsletter Draft #{i+1}</span>
+                       <div className="flex gap-2">
+                         <button onClick={() => copyToClipboard(content)} className="p-2 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-lg"><Copy className="w-4 h-4" /></button>
+                         <button onClick={() => openInStudio(content)} className="p-2 text-zinc-500 hover:text-white transition-colors bg-white/5 rounded-lg"><ExternalLink className="w-4 h-4" /></button>
+                       </div>
+                    </div>
+                    <p className="text-zinc-300 leading-relaxed whitespace-pre-wrap">{content}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </PageLayout>
+  );
 }

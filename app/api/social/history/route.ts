@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuthAndCredits } from "@/lib/api-utils";
+import { withAuthAndCredits, AuthContext } from "@/lib/api-utils";
+import { logger } from "@/lib/logger";
 
-async function socialHistoryHandler(req: NextRequest) {
+async function socialHistoryHandler(_req: NextRequest, { user }: AuthContext) {
     try {
         const ayrshareApiKey = process.env.AYRSHARE_API_KEY;
         if (!ayrshareApiKey) {
-            return NextResponse.json({ error: "Ayrshare API key not configured" }, { status: 500 });
+            return NextResponse.json({ success: false, code: 'CONFIG_ERROR', message: "Ayrshare API key not configured" }, { status: 500 });
         }
 
         // 1. Fetch history directly via REST API
@@ -22,10 +23,11 @@ async function socialHistoryHandler(req: NextRequest) {
             throw new Error(history.message || "Failed to fetch history from Ayrshare");
         }
 
-        return NextResponse.json(history);
-    } catch (error: any) {
-        console.error("Ayrshare get history error:", error);
-        return NextResponse.json({ error: "Failed to fetch social history" }, { status: 500 });
+        return NextResponse.json({ success: true, data: history }, { status: 200 });
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error("Ayrshare get history error:", { userId: user.id, error: errorMessage });
+        return NextResponse.json({ success: false, code: 'FETCH_FAILED', message: "Failed to fetch social history" }, { status: 500 });
     }
 }
 

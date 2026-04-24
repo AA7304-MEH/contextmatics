@@ -1,32 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { withAuthAndCredits, AuthContext } from '@/lib/api-utils';
+import { logger } from '@/lib/logger';
 import { cookies } from 'next/headers';
 
-export async function POST(req: NextRequest) {
+async function referralCompleteHandler(_req: NextRequest, { user, supabase }: AuthContext) {
   const cookieStore = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options })
-        },
-      },
-    }
-  );
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
   const referralCode = cookieStore.get('referral_code')?.value;
-  if (!referralCode) return NextResponse.json({ message: 'No referral code found' });
+  
+  if (!referralCode) {
+    return NextResponse.json({ success: true, message: 'No referral code found' }, { status: 200 });
+  }
 
   try {
     // 1. Find the referrer
@@ -37,12 +20,12 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (referrerError || !referrer) {
-      return NextResponse.json({ message: 'Invalid referral code' });
+      return NextResponse.json({ success: false, code: 'INVALID_CODE', message: 'Invalid referral code' }, { status: 400 });
     }
 
     // prevent self-referral
     if (referrer.id === user.id) {
-        return NextResponse.json({ message: 'Self-referral not allowed' });
+        return NextResponse.json({ success: false, code: 'SELF_REFERRAL', message: 'Self-referral not allowed' }, { status: 400 });
     }
 
     // 2. Check if this user was already referred
@@ -53,14 +36,11 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (existingReferral) {
-        return NextResponse.json({ message: 'Already referred' });
+        return NextResponse.json({ success: false, code: 'ALREADY_REFERRED', message: 'Already referred' }, { status: 400 });
     }
 
     // 3. Create referral record & Award credits
     const REWARD_AMOUNT = 50;
-
-    // Transactional logic (approximated via multiple calls since we don't have stored procedures here)
-    // In a real production app, this should be a single RPC call for atomicity.
     
     // a. Record referral
     await supabase.from('referrals').insert({
@@ -86,9 +66,15 @@ export async function POST(req: NextRequest) {
     // 4. Remove cookie
     cookieStore.delete('referral_code');
 
-    return NextResponse.json({ success: true, message: 'Referral processed successfully' });
-  } catch (error: any) {
-    console.error('Referral processing error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ success: true, message: 'Referral processed successfully' }, { status: 200 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Referral processing error:', { userId: user.id, error: errorMessage });
+    return NextResponse.json({ success: false, code: 'PROCESS_FAILED', message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = withAuthAndCredits(referralCompleteHandler, {
+  actionName: 'Complete Referral',
+  requireAuth: true
+});

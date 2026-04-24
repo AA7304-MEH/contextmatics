@@ -8,7 +8,6 @@ import {
     Layers, 
     Zap,
     Move,
-    Maximize,
     RotateCw,
     Trash2,
     Music

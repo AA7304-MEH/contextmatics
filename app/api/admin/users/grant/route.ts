@@ -75,7 +75,7 @@ export async function POST(req: Request) {
             newBalance: newCredits 
         });
 
-    } catch (error: any) {
+    } catch (error:any) {
         console.error('[Admin Grant Error]', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

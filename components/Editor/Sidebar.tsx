@@ -149,14 +149,16 @@ const Sidebar: React.FC = () => {
                                 onClick={() => addClip('track-t1', {
                                     type: 'text',
                                     name: txt.name,
-                                    content: txt.name,
-                                    style: { fontSize: txt.size, fontWeight: txt.weight, color: '#ffffff' },
+                                    assetId: 'text-asset',
+                                    url: '',
                                     start: useProjectStore.getState().playheadTime,
                                     duration: 5,
                                     sourceStart: 0,
                                     sourceDuration: 5,
                                     speed: 1,
-                                })}
+                                    textContent: txt.name,
+                                    textStyle: { fontSize: 24, fontWeight: 'bold', color: '#ffffff', fontFamily: 'Inter', textAlign: 'center' }
+                                } as any)}
                                 className="w-full p-4 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 hover:border-[#00c8ff]/30 transition-all flex items-center justify-between group"
                             >
                                 <span className={`${txt.size} ${txt.weight} text-white truncate`}>{txt.name}</span>
@@ -174,15 +176,17 @@ const Sidebar: React.FC = () => {
                                 <button
                                     key={emoji}
                                     onClick={() => addClip('track-v1', {
-                                        type: 'overlay',
+                                        type: 'sticker',
                                         name: 'Sticker',
-                                        content: emoji,
+                                        assetId: 'sticker-asset',
+                                        url: '',
                                         start: useProjectStore.getState().playheadTime,
                                         duration: 3,
                                         sourceStart: 0,
                                         sourceDuration: 3,
                                         speed: 1,
-                                    })}
+                                        textContent: emoji
+                                    } as any)}
                                     className="aspect-square bg-white/5 border border-white/5 rounded-xl flex items-center justify-center text-2xl hover:bg-white/10 hover:border-[#00c8ff]/30 transition-all active:scale-95"
                                 >
                                     {emoji}
@@ -211,7 +215,7 @@ const Sidebar: React.FC = () => {
                                         if (selectedId) {
                                             useProjectStore.getState().addEffect(selectedId, {
                                                 type: effect.type,
-                                                value: effect.value,
+                                                params: { value: effect.value },
                                                 enabled: true
                                             });
                                         } else {

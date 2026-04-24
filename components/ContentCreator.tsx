@@ -6,6 +6,8 @@ import { useToast } from '../context/ToastContext';
 import { generateContent } from '../services/geminiService';
 import { REPURPOSE_OPTIONS } from '../config/constants';
 import { PageLayout, SEO } from './shared';
+import { LanguageSelector } from './LanguageSelector';
+import { DollarSign, ExternalLink, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ContentCreatorProps {
   onGenerate?: (content: string, format: string) => void;
@@ -23,6 +25,10 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
   const [generatedResult, setGeneratedResult] = useState('');
   const [showComparison, setShowComparison] = useState(false);
   const [templateName, setTemplateName] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('english');
+  const [monetisationIdeas, setMonetisationIdeas] = useState<any[]>([]);
+  const [isGeneratingMonetisation, setIsGeneratingMonetisation] = useState(false);
+  const [showMonetisation, setShowMonetisation] = useState(false);
 
   // Load template from sessionStorage (from Templates Library)
   useEffect(() => {
@@ -53,8 +59,11 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
     setGeneratedResult('');
 
     try {
-      const result = await generateContent(inputContent, selectedFormat);
+      const result = await generateContent(inputContent, selectedFormat, selectedLanguage);
       setGeneratedResult(result);
+
+      // Fire off background monetisation call (non-blocking)
+      handleMonetisationInquiry(result, selectedFormat);
 
       // Deduct credit after successful generation
       decrementCredits();
@@ -95,6 +104,32 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
     }
   };
 
+
+  const handleMonetisationInquiry = async (generatedContent: string, format: string) => {
+    setIsGeneratingMonetisation(true);
+    setMonetisationIdeas([]);
+    
+    try {
+      // Small delay to let the UI breathe
+      await new Promise(r => setTimeout(r, 1000));
+      
+      const res = await fetch('/api/monetisation/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: generatedContent, format })
+      });
+      
+      const data = await res.json();
+      if (data.ideas) {
+        setMonetisationIdeas(data.ideas);
+        setShowMonetisation(true); // Auto-show if ideas found
+      }
+    } catch (err) {
+      console.error('Failed to get monetisation ideas:', err);
+    } finally {
+      setIsGeneratingMonetisation(false);
+    }
+  };
 
   const getIconForFormat = (format: string) => {
     switch (format) {
@@ -161,6 +196,14 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
                   </button>
                 </div>
               )}
+            </div>
+
+            {/* Language Selection */}
+            <div className="mb-10">
+              <LanguageSelector 
+                value={selectedLanguage} 
+                onChange={setSelectedLanguage} 
+              />
             </div>
 
             {/* Format Selection */}
@@ -274,6 +317,52 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({ onGenerate }) => {
                   Regenerate
                 </button>
               </div>
+
+              {/* Monetisation Ideas Panel */}
+              {(monetisationIdeas.length > 0 || isGeneratingMonetisation) && (
+                <div className="mt-8 border-t border-white/5 pt-6 space-y-4">
+                  <button 
+                    onClick={() => setShowMonetisation(!showMonetisation)}
+                    className="flex items-center justify-between w-full text-left group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-emerald-400" />
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">Monetisation Studio Suggestions</h4>
+                        <p className="text-[10px] text-text-secondary uppercase tracking-widest font-medium">Turn this content into revenue</p>
+                      </div>
+                    </div>
+                    {showMonetisation ? <ChevronUp className="w-4 h-4 text-text-secondary" /> : <ChevronDown className="w-4 h-4 text-text-secondary" />}
+                  </button>
+
+                  {showMonetisation && (
+                    <div className="space-y-3 animate-fade-in">
+                      {isGeneratingMonetisation ? (
+                        <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-dashed border-white/10">
+                          <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                          <p className="text-xs text-text-secondary italic">Gemini is brainstorming monetisation strategies...</p>
+                        </div>
+                      ) : (
+                        monetisationIdeas.map((idea, idx) => (
+                          <div key={idx} className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 hover:border-emerald-500/30 transition-all group">
+                            <div className="flex justify-between items-start mb-2">
+                              <h5 className="text-sm font-bold text-emerald-400">{idea.product_name}</h5>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 uppercase">{idea.strategy}</span>
+                            </div>
+                            <p className="text-xs text-text-secondary leading-relaxed mb-3">{idea.description}</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-text-muted font-mono">Est: {idea.estimated_revenue}</span>
+                              <button className="flex items-center gap-1.5 text-[10px] font-bold text-white hover:text-emerald-400 transition-colors">
+                                <Lightbulb className="w-3 h-3" /> Get Draft <ExternalLink className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

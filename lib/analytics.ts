@@ -18,7 +18,7 @@ export const analytics = {
         try {
             // Log to console in development
             if (process.env.NODE_ENV === "development") {
-                console.log(`[Analytics] ${event}`, properties);
+                console.info(`[Analytics] ${event}`, properties);
             }
 
             // --- PostHog / Segment Integration Point ---
@@ -36,7 +36,7 @@ export const analytics = {
 
     identify: (userId: string, traits: Record<string, any> = {}) => {
         if (process.env.NODE_ENV === "development") {
-            console.log(`[Analytics] Identify User: ${userId}`, traits);
+            console.info(`[Analytics] Identify User: ${userId}`, traits);
         }
         // if (typeof window !== "undefined" && (window as any).posthog) {
         //     (window as any).posthog.identify(userId, traits);

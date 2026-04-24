@@ -53,7 +53,7 @@ export default function AnalyticsPage() {
         });
 
         historyItems.forEach(item => {
-            const dateStr = new Date(item.created_at || item.createdAt).toISOString().split('T')[0];
+            const dateStr = new Date(item.created_at).toISOString().split('T')[0];
             const dayData = trendData.find(d => d.dateStr === dateStr);
             if (dayData) dayData.content++;
         });
@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
 
     const totalContent = historyItems.length;
     const totalVideos = videos.length;
-    const avgPerDay = ((totalContent + totalVideos) / (timeRange === '7d' ? 7 : 30)).toFixed(1);
+
 
     const summaryCards = [
         { label: 'Total Output', value: totalContent + totalVideos, change: '+100%', icon: <TrendingUp className="w-5 h-5 text-blue-400" />, positive: true },
@@ -217,7 +217,7 @@ export default function AnalyticsPage() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
-                                {[...historyItems, ...videos].sort((a, b) => new Date(b.created_at || b.createdAt).getTime() - new Date(a.created_at || a.createdAt).getTime()).slice(0, 10).map((item, i) => (
+                                {[...historyItems, ...videos].sort((a:any, b:any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10).map((item:any) => (
                                     <div key={item.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] transition-all group">
                                         <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
                                             {item.url ? '🎬' : (item.icon || '📝')}

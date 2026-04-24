@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuthAndCredits } from '@/lib/api-utils';
 
-async function createWorkspaceHandler(req: NextRequest, { user, supabase }: any) {
+async function createWorkspaceHandler(req: NextRequest, { user, supabase }:any) {
   try {
     const { name, brandVoice, brandDescription } = await req.json();
 
@@ -36,7 +36,7 @@ async function createWorkspaceHandler(req: NextRequest, { user, supabase }: any)
     if (memberError) throw memberError;
 
     return NextResponse.json(workspace);
-  } catch (error: any) {
+  } catch (error:any) {
     console.error('Workspace creation error:', error);
     return NextResponse.json({ error: error.message || 'Failed to create workspace' }, { status: 500 });
   }

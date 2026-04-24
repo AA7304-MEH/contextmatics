@@ -28,7 +28,7 @@ async function extractHandler(req: NextRequest) {
         text = text.replace(/\s+/g, ' ').trim().substring(0, 15000); // limit to 15k chars to save tokens
 
         return NextResponse.json({ text });
-    } catch (error: any) {
+    } catch (error:any) {
         console.error('Extraction error:', error);
         return NextResponse.json({ error: error.message || 'Extraction failed' }, { status: 500 });
     }

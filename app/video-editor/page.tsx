@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageLayout } from '@/components/shared';
 import { useVideo } from '@/context/VideoContext';
-import { useHistory } from '@/context/HistoryContext';
+import { useHistory, ContentItem } from '@/context/HistoryContext';
+import { Sparkles } from 'lucide-react';
 import { Video, Snippet } from '@/types';
 
 interface TimelineClip {
@@ -18,13 +19,21 @@ interface TimelineClip {
     url?: string;
 }
 
+interface UploadedAsset {
+    id: string;
+    title: string;
+    type: 'video' | 'audio' | 'image';
+    url: string;
+    thumb: string;
+}
+
 export default function VideoEditorPage() {
     const router = useRouter();
-    const { videos, loading: videosLoading } = useVideo();
-    const { historyItems, loading: historyLoading } = useHistory();
+    const { videos } = useVideo();
+    const { historyItems } = useHistory();
 
     const [activeTab, setActiveTab] = useState('assets');
-    const [uploadedAssets, setUploadedAssets] = useState<any[]>([]);
+    const [uploadedAssets, setUploadedAssets] = useState<UploadedAsset[]>([]);
     const [uploadingFile, setUploadingFile] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [currentTime, setCurrentTime] = useState(0);
@@ -34,7 +43,6 @@ export default function VideoEditorPage() {
     const [timelineClips, setTimelineClips] = useState<TimelineClip[]>([]);
     const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
 
-    const playheadRef = useRef<HTMLDivElement>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Sync playback
@@ -55,16 +63,19 @@ export default function VideoEditorPage() {
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, [isPlaying, duration]);
 
-    const addToTimeline = (asset: any, type: 'video' | 'audio' | 'text' | 'image') => {
+    const addToTimeline = (asset: Video | Snippet | UploadedAsset | ContentItem, type: 'video' | 'audio' | 'text' | 'image') => {
+        const title = 'title' in asset ? asset.title : ('prompt' in asset ? asset.prompt : 'New Clip');
+        const url = 'url' in asset ? asset.url : undefined;
+        
         const newClip: TimelineClip = {
             id: Math.random().toString(36).substr(2, 9),
             assetId: asset.id,
             type,
-            name: asset.title || asset.prompt || 'New Clip',
+            name: title || 'New Clip',
             startTime: currentTime,
             duration: type === 'text' || type === 'image' ? 5 : 10,
             track: type === 'video' || type === 'image' ? 1 : type === 'audio' ? 0 : 2,
-            url: asset.url
+            url: url || undefined
         };
         setTimelineClips([...timelineClips, newClip]);
     };
@@ -101,12 +112,12 @@ export default function VideoEditorPage() {
         setUploadingFile(file.name);
         // Simulate upload
         setTimeout(() => {
-            const newAsset = {
+            const newAsset: UploadedAsset = {
                 id: 'upl-' + Date.now(),
                 title: file.name,
-                type: file.type.startsWith('image') ? 'image' : file.type.startsWith('video') ? 'video' : 'audio',
+                type: file.type.startsWith('image') ? 'image' : (file.type.startsWith('video') ? 'video' : 'audio'),
                 url: URL.createObjectURL(file),
-                thumb: file.type.startsWith('image') ? '🖼️' : file.type.startsWith('video') ? '🎬' : '🎵'
+                thumb: file.type.startsWith('image') ? '🖼️' : (file.type.startsWith('video') ? '🎬' : '🎵')
             };
             setUploadedAssets(prev => [newAsset, ...prev]);
             setUploadingFile(null);
@@ -213,7 +224,7 @@ export default function VideoEditorPage() {
                                     {videos.map(video => (
                                         <div
                                             key={video.id}
-                                            onClick={() => addToTimeline(video, 'video')}
+                                            onClick={() => addToTimeline(video as Video, 'video')}
                                             className="group p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 transition-all cursor-pointer"
                                         >
                                             <div className="flex gap-3 items-center">

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isAdminEmail } from '@/config/admin';
 
 export async function GET(
-    req: NextRequest,
+    _req: NextRequest,
     { params }: { params: { id: string } }
 ) {
     const userId = params.id;
@@ -67,7 +67,7 @@ export async function GET(
         ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
         return NextResponse.json(events);
-    } catch (error: any) {
+    } catch (error:any) {
         console.error('[Admin Activity Fetch Error]', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

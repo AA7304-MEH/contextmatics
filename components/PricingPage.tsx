@@ -8,16 +8,16 @@ import { SEO } from './shared/SEO';
 import { razorpayService } from '../services/razorpayService';
 
 // Data preserved
-const countryPlans: any = {
+const countryPlans:any = {
   IN: [
-    { name: 'Free', monthlyPrice: 0, yearlyPrice: 0, features: ['5 credits/mo', 'Basic Support'] },
-    { name: 'Pro', monthlyPrice: 599, yearlyPrice: 6400, popular: true, features: ['200 credits/mo', 'HD Export', 'Priority Support'] },
-    { name: 'Enterprise', monthlyPrice: 1499, yearlyPrice: 16000, features: ['Unlimited', 'Team Seats', 'API Access'] },
+    { name: 'Free', monthlyPrice: 0, yearlyPrice: 0, features: ['5 credits/mo', 'Basic Content Generator', '2 Hook Samples'] },
+    { name: 'Pro', monthlyPrice: 599, yearlyPrice: 6400, popular: true, features: ['200 credits/mo', 'Brand Voice Fingerprint', 'Hook Library (Standard)', 'Content OS (Weekly)', 'Repurpose Studio (HD)', 'Priority Support'] },
+    { name: 'Enterprise', monthlyPrice: 1499, yearlyPrice: 16000, features: ['Unlimited Credits', 'Competitor Intelligence', 'Monetisation Studio', 'A/B Test Lab', 'Full Repurpose Studio', 'API Access'] },
   ],
   DEFAULT: [
-    { name: 'Free', monthlyPrice: 0, yearlyPrice: 0, features: ['5 credits/mo', 'Basic Support'] },
-    { name: 'Pro', monthlyPrice: 22, yearlyPrice: 237, popular: true, features: ['200 credits/mo', 'HD Export', 'Priority Support'] },
-    { name: 'Enterprise', monthlyPrice: 45, yearlyPrice: 486, features: ['Unlimited', 'Team Seats', 'API Access'] },
+    { name: 'Free', monthlyPrice: 0, yearlyPrice: 0, features: ['5 credits/mo', 'Basic Content Generator', '2 Hook Samples'] },
+    { name: 'Pro', monthlyPrice: 22, yearlyPrice: 237, popular: true, features: ['200 credits/mo', 'Brand Voice Fingerprint', 'Hook Library (Standard)', 'Content OS (Weekly)', 'Repurpose Studio (HD)', 'Priority Support'] },
+    { name: 'Enterprise', monthlyPrice: 45, yearlyPrice: 486, features: ['Unlimited Credits', 'Competitor Intelligence', 'Monetisation Studio', 'A/B Test Lab', 'Full Repurpose Studio', 'API Access'] },
   ]
 };
 
@@ -60,7 +60,7 @@ const PricingPage: React.FC = () => {
 
         {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left max-w-6xl mx-auto">
-          {plans.map((plan: any, i: number) => (
+          {plans.map((plan:any, i: number) => (
             <div
               key={i}
               className={`card group relative rounded-3xl p-8 flex flex-col transition-all duration-300 bg-background-surface/50 border ${plan.popular

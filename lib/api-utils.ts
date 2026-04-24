@@ -1,26 +1,52 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { Ratelimit } from "@upstash/ratelimit";
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+import { logger } from './logger';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Profile } from '@/types/database';
+
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+}
 
 export interface AuthContext {
-    user: any;
-    supabase: any;
+    user: AuthenticatedUser;
+    supabase: SupabaseClient;
     credits: number;
     deductCredits: () => Promise<void>;
 }
 
-export type ApiHandler = (req: NextRequest, context: AuthContext) => Promise<NextResponse>;
+export const PLAN_HIERARCHY = {
+  'free': 0,
+  'pro': 1,
+  'business': 2,
+  'enterprise': 3
+} as const;
+
+export interface PlanGateOptions {
+  requiredPlan: keyof typeof PLAN_HIERARCHY;
+  userId: string;
+}
+
+export interface ApiHandlerOptions {
+  requireAuth?: boolean;
+  requirePlan?: PlanGateOptions['requiredPlan'];
+  requireCredits?: number;
+  rateLimit?: number;
+  rateLimitWindow?: string; // e.g. "3600 s" for per-hour, defaults to "60 s"
+  actionName: string;
+}
+
+export type ApiHandler = (req: NextRequest, context: AuthContext & { params?:any }) => Promise<NextResponse<any>>;
 
 /**
  * Higher-order function to wrap API routes with Auth, Credits, and Error Handling
  */
-export function withAuthAndCredits(handler: ApiHandler, options: { 
-    requireCredits?: number, 
-    actionName: string 
-}) {
-    return async (req: NextRequest) : Promise<NextResponse> => {
+export function withAuthAndCredits(handler: ApiHandler, options: ApiHandlerOptions) {
+    return async (req: NextRequest, routeContext:any) : Promise<NextResponse> => {
         const cookieStore = cookies();
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL || "",
@@ -38,21 +64,27 @@ export function withAuthAndCredits(handler: ApiHandler, options: {
             // 1. Session Check
             const { data: { user }, error: authError } = await supabase.auth.getUser();
             if (authError || !user) {
-                return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
+                return NextResponse.json({ success: false, code: 'UNAUTHORIZED', message: 'Unauthorized. Please sign in.' }, { status: 401 });
             }
+
+            const authenticatedUser: AuthenticatedUser = {
+                id: user.id,
+                email: user.email || ''
+            };
 
             // 2. Fetch Profile/Credits
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('credits_remaining, plan')
+                .select('*')
                 .eq('id', user.id)
                 .single();
 
             if (profileError || !profile) {
-                return NextResponse.json({ error: 'User profile not found.' }, { status: 404 });
+                return NextResponse.json({ success: false, code: 'NOT_FOUND', message: 'User profile not found.' }, { status: 404 });
             }
 
-            const credits = profile.credits_remaining;
+            const profileData = profile as Profile;
+            const credits = profileData.credits_remaining;
 
             // 3. Rate Limiting (Upstash Redis)
             if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
@@ -62,56 +94,94 @@ export function withAuthAndCredits(handler: ApiHandler, options: {
                 });
                 const ratelimit = new Ratelimit({
                     redis: redis,
-                    limiter: Ratelimit.slidingWindow(10, "60 s"),
+                    limiter: Ratelimit.slidingWindow(
+                        options.rateLimit || 10,
+                        (options.rateLimitWindow || '60 s') as Parameters<typeof Ratelimit.slidingWindow>[1]
+                    ),
                     analytics: true,
                     prefix: "@upstash/ratelimit",
                 });
 
-                const { success, limit, reset, remaining } = await ratelimit.limit(`ratelimit_${user.id}_${options.actionName}`);
+                const { success, reset } = await ratelimit.limit(`ratelimit_${user.id}_${options.actionName}`);
                 if (!success) {
                     return NextResponse.json({ 
-                        error: 'Rate limit exceeded. Please wait.', 
-                        limit, remaining, reset 
+                        success: false, 
+                        code: 'RATE_LIMITED', 
+                        message: 'Rate limit exceeded. Please wait.',
+                        retryAfter: 60,
+                        reset 
                     }, { 
-                        status: 429,
-                        headers: {
-                            'X-RateLimit-Limit': limit.toString(),
-                            'X-RateLimit-Remaining': remaining.toString(),
-                            'X-RateLimit-Reset': reset.toString(),
-                        }
+                        status: 429 
                     });
                 }
             }
 
             let newCredits = credits;
 
-            // Optional: Provide a deduct callback if requireCredits is set.
-            // We just verify they have *enough* now.
+            // 4. Plan Gating
+            if (options.requirePlan) {
+                const userPlan = (profileData.plan?.toLowerCase() || 'free') as keyof typeof PLAN_HIERARCHY;
+                const requiredPlan = options.requirePlan.toLowerCase() as keyof typeof PLAN_HIERARCHY;
+                
+                if ((PLAN_HIERARCHY[userPlan] || 0) < (PLAN_HIERARCHY[requiredPlan] || 0)) {
+                    return NextResponse.json({ 
+                        success: false,
+                        code: 'PLAN_REQUIRED',
+                        message: `Feature reserved for ${options.requirePlan.toUpperCase()} users.`,
+                        requiredPlan: options.requirePlan,
+                        upgradeUrl: '/pricing'
+                    }, { status: 403 });
+                }
+            }
+
+            // 5. Credits Check
             if (options.requireCredits && newCredits < options.requireCredits) {
                 return NextResponse.json({ 
-                    error: 'Insufficient credits.', 
+                    success: false,
                     code: 'INSUFFICIENT_CREDITS',
-                    remaining: newCredits 
+                    message: 'Insufficient credits.', 
+                    remaining: newCredits,
+                    upgradeUrl: '/pricing'
                 }, { status: 402 });
             }
 
             const deductCredits = async () => {
                 if (!options.requireCredits) return;
                 const { useCredits } = await import('@/lib/useCredits');
-                newCredits = await useCredits(user.id, options.requireCredits);
+                const result = await useCredits(user.id, options.requireCredits);
+                newCredits = result.remaining;
             };
 
-            // 5. Execute Handler (Handler is now responsible for calling deductCredits AFTER AI and BEFORE DB save)
-            const response = await handler(req, { user, supabase, credits: newCredits, deductCredits });
+            // 6. Execute Handler
+            return await handler(req, { 
+                user: authenticatedUser, 
+                supabase, 
+                credits: newCredits, 
+                deductCredits,
+                params: routeContext?.params
+            });
 
-            return response;
-
-        } catch (error: any) {
-            console.error(`[API Error: ${options.actionName}]`, error);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            logger.error(`[API Error: ${options.actionName}]`, {
+                userId: user?.id || 'unauthenticated',
+                path: req.nextUrl.pathname,
+                error: errorMessage
+            });
+            
             return NextResponse.json({ 
-                error: 'An unexpected error occurred.', 
-                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+                success: false,
+                code: 'SERVER_ERROR',
+                message: 'An unexpected error occurred.'
             }, { status: 500 });
         }
     };
+}
+
+export function checkPlanGate(userPlan: string, requiredPlan: string): boolean {
+    const uPlan = (userPlan.toLowerCase() || 'free') as keyof typeof PLAN_HIERARCHY;
+    const rPlan = (requiredPlan.toLowerCase() || 'free') as keyof typeof PLAN_HIERARCHY;
+    return (PLAN_HIERARCHY[uPlan] || 0) >= (PLAN_HIERARCHY[rPlan] || 0);
 }

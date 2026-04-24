@@ -12,7 +12,7 @@ interface VideoTemplate {
     description: string;
     category: string;
     preview_url: string;
-    project_data: any;
+    project_data:any;
 }
 
 const VideoTemplatesLibrary: React.FC = () => {

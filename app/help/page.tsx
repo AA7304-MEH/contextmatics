@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { PageLayout } from '@/components/shared';
 import { useRouter } from 'next/navigation';
-import { Search, Zap, Shield, User, CreditCard, Play, MessageSquare, ArrowRight, HelpCircle, LifeBuoy, Sparkles } from 'lucide-react';
+import { Search, Zap, CreditCard, Play, ArrowRight, HelpCircle, LifeBuoy, Sparkles } from 'lucide-react';
 
 const HELP_CATEGORIES = [
     {

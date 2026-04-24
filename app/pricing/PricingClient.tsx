@@ -8,7 +8,7 @@ import { PageLayout } from '@/components/shared';
 import { razorpayService } from '@/services/razorpayService';
 import { Check, Zap, Shield, Star, HelpCircle, ArrowRight, MessageSquare, Globe, Laptop, Crown } from 'lucide-react';
 
-const countryPlans: any = {
+const countryPlans:any = {
     IN: [
         { id: 'free', name: 'Starter', monthlyPrice: 0, yearlyPrice: 0, credits: 5, description: 'Perfect for individual creators just getting started.', features: ['5 credits/mo', 'Basic AI Generation', '720p Video Export', '1 Active Workspace'] },
         { id: 'pro', name: 'Professional', monthlyPrice: 599, yearlyPrice: 6400, credits: 500, popular: true, description: 'For serious creators who need scale and speed.', features: ['500 credits/mo', 'HD Ultra Export', 'AI Image & Logo Gen', 'Priority Support', 'Advanced Scheduling'] },
@@ -36,7 +36,7 @@ export default function PricingPage() {
     const userCountry = user?.countryCode === 'IN' ? 'IN' : 'DEFAULT';
     const plans = countryPlans[userCountry];
 
-    const handleSelectPlan = async (plan: any) => {
+    const handleSelectPlan = async (plan:any) => {
         if (!user) {
             router.push(`/sign-up?plan=${plan.id}`);
             return;
@@ -51,7 +51,7 @@ export default function PricingPage() {
             const price = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
             const currency = userCountry === 'IN' ? 'INR' : 'USD';
 
-            showToast('Initializing secure checkout...', 'loading');
+            showToast('Initiating secure checkout...', 'info');
             
             await razorpayService.initiatePayment({
                 amount: price,
@@ -95,7 +95,7 @@ export default function PricingPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24 max-w-6xl mx-auto">
-                    {plans.map((plan: any) => {
+                    {plans.map((plan:any) => {
                         const isActive = (user?.plan === plan.id.toLowerCase());
                         const price = billingCycle === 'monthly' ? plan.monthlyPrice : Math.floor(plan.yearlyPrice / 12);
                         

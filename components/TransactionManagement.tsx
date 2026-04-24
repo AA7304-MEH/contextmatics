@@ -13,7 +13,7 @@ export const TransactionManagement: React.FC = () => {
             if (!response.ok) throw new Error('Failed to fetch transactions');
             const data = await response.json();
             setTransactions(data);
-        } catch (error: any) {
+        } catch (error:any) {
             showToast(error.message, 'error');
         } finally {
             setLoading(false);

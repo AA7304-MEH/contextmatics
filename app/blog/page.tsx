@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { PageLayout } from '@/components/shared';
 import { useRouter } from 'next/navigation';
-import { Search, Calendar, User, ArrowRight, BookOpen, Clock } from 'lucide-react';
+import { Search, Calendar, ArrowRight, BookOpen, Clock } from 'lucide-react';
 
 const BLOG_POSTS = [
     {
