@@ -1,227 +1,382 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useHistory } from '@/context/HistoryContext';
-import { useVideo } from '@/context/VideoContext';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { PageLayout } from '@/components/shared';
+import { createBrowserClient } from '@supabase/ssr';
+import { Sparkles, Calendar as CalendarIcon, Clock, Twitter, Linkedin, Instagram, Play, Video } from 'lucide-react';
+import { PageLayout, ChangelogModal } from '@/components/shared';
 
 export default function DashboardPage() {
     const { user, loading } = useAuth();
-    const { historyItems } = useHistory();
-    const { videos } = useVideo();
     const router = useRouter();
 
-    console.log('[Dashboard] Render:', { loading, hasUser: !!user, email: user?.email });
+    const [stats, setStats] = useState({
+        generatedThisMonth: 0,
+        publishedThisMonth: 0,
+        credits: 0,
+        timeSavedHours: 0
+    });
+    
+    const [recentSnippets, setRecentSnippets] = useState<any[]>([]);
+    const [upcomingPosts, setUpcomingPosts] = useState<any[]>([]);
+    const [recentVideos, setRecentVideos] = useState<any[]>([]);
+    const [isAyrshareConnected, setIsAyrshareConnected] = useState(false);
+    const [socialHistory, setSocialHistory] = useState<any[]>([]);
+    const [socialLoading, setSocialLoading] = useState(false);
+    const [dataLoading, setDataLoading] = useState(true);
 
-    if (loading) {
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+    );
+
+    useEffect(() => {
+        if (!user) return;
+
+        async function fetchDashboardData() {
+            if (!user) return;
+            setDataLoading(true);
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+            // Fetch Profile Stats
+            const { data: profile } = await supabase.from('profiles').select('credits_remaining').eq('id', user.id).single();
+            
+            // Fetch Snippets this month
+            const { count: snippetsCount } = await supabase
+                .from('snippets')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .gte('created_at', startOfMonth);
+
+            const genCount = snippetsCount || 0;
+
+            // Fetch Published Posts this month
+            const { count: publishedCount } = await supabase
+                .from('scheduled_posts')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('status', 'published')
+                .gte('created_at', startOfMonth);
+
+            setStats({
+                generatedThisMonth: genCount,
+                publishedThisMonth: publishedCount || 0,
+                credits: profile?.credits_remaining || 0,
+                timeSavedHours: Math.round((genCount * 20) / 60)
+            });
+
+            // Fetch Recent Snippets
+            const { data: snippets } = await supabase
+                .from('snippets')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(5);
+            if (snippets) setRecentSnippets(snippets);
+
+            // Fetch Upcoming Scheduled Posts
+            const { data: posts } = await supabase
+                .from('scheduled_posts')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('status', 'scheduled')
+                .gt('scheduled_at', new Date().toISOString())
+                .order('scheduled_at', { ascending: true })
+                .limit(5);
+            if (posts) setUpcomingPosts(posts);
+
+            // Fetch Recent Videos
+            const { data: vids } = await supabase
+                .from('videos')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(2);
+            if (vids) setRecentVideos(vids);
+
+            // Fetch Ayrshare Connection Status
+            const { data: ws } = await supabase.from('workspaces').select('ayrshare_profile_key').eq('owner_id', user.id).limit(1);
+            const connected = !!(ws && ws[0] && ws[0].ayrshare_profile_key);
+            setIsAyrshareConnected(connected);
+
+            if (connected) {
+                fetchSocialHistory();
+            }
+
+            setDataLoading(false);
+        }
+
+        async function fetchSocialHistory() {
+            setSocialLoading(true);
+            try {
+                const res = await fetch('/api/social/history');
+                const data = await res.json();
+                if (data && Array.isArray(data)) {
+                    setSocialHistory(data.slice(0, 5));
+                }
+            } catch (err) {
+                console.error("Failed to fetch social history:", err);
+            } finally {
+                setSocialLoading(false);
+            }
+        }
+
+        fetchDashboardData();
+    }, [user, supabase]);
+
+    if (loading || dataLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-primary">
-                <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+                <div className="w-12 h-12 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin" />
             </div>
         );
     }
 
     if (!user) {
-        // Redirection should be handled by middleware, but this is a safety fallback
         if (typeof window !== 'undefined') router.replace('/sign-in');
         return null;
     }
 
-    // Derive real stats from context
-    const totalContentPieces = historyItems.length;
-    const totalVideos = videos.length;
-    const creditsRemaining = user.processingCredits;
-    const planLabel = user.plan.charAt(0).toUpperCase() + user.plan.slice(1);
+    const quickActions = [
+        { label: 'Write a Post', icon: '📝', path: '/content-creator' },
+        { label: 'Repurpose Content', icon: '🔄', path: '/video-repurpose' }, // Adjust if separate repurpose text page
+        { label: 'Schedule Posts', icon: '📅', path: '/calendar' },
+        { label: 'Open Calendar', icon: '🗓️', path: '/calendar' },
+        { label: 'Video Generator', icon: '🎬', path: '/video-generator' },
+        { label: 'Logo Maker', icon: '✨', path: '/logo-maker' },
+    ];
 
-    // Calculate real weekly data from combined history
-    const getWeeklyData = () => {
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const last7Days = Array.from({ length: 7 }, (_, i) => {
-            const date = new Date();
-            date.setDate(date.getDate() - (6 - i));
-            return {
-                name: days[date.getDay()],
-                dateStr: date.toISOString().split('T')[0],
-                snippets: 0,
-                videos: 0
-            };
-        });
-
-        historyItems.forEach(item => {
-            const dateStr = new Date(item.createdAt).toISOString().split('T')[0];
-            const dayData = last7Days.find(d => d.dateStr === dateStr);
-            if (dayData) dayData.snippets++;
-        });
-
-        videos.forEach(video => {
-            const dateStr = new Date(video.created_at).toISOString().split('T')[0];
-            const dayData = last7Days.find(d => d.dateStr === dateStr);
-            if (dayData) dayData.videos++;
-        });
-
-        return last7Days;
+    const getCreditsColor = (credits: number) => {
+        if (credits === 0) return 'text-red-500 border-red-500/20 bg-red-500/10';
+        if (credits < 50) return 'text-amber-500 border-amber-500/20 bg-amber-500/10';
+        return 'text-brand-primary border-brand-primary/20 bg-brand-primary/10';
     };
 
-    const weeklyData = getWeeklyData();
-
-    const stats = [
-        { label: 'Credits Left', value: creditsRemaining >= 999999 ? '∞' : creditsRemaining, color: 'blue', icon: '⚡' },
-        { label: 'Content Created', value: totalContentPieces, color: 'violet', icon: '📝' },
-        { label: 'Videos Generated', value: totalVideos, color: 'emerald', icon: '🎬' },
-        { label: 'Current Plan', value: planLabel, color: 'amber', icon: '👑' },
-    ];
-
-    const quickActions = [
-        { label: 'Create Content', desc: 'AI-powered text generation', icon: '✨', path: '/content-creator', gradient: 'from-blue-600 to-cyan-500' },
-        { label: 'Generate Video', desc: 'Text to video in seconds', icon: '🎬', path: '/video-generator', gradient: 'from-violet-600 to-purple-500' },
-        { label: 'Faceless Studio', desc: 'AI faceless video creator', icon: '🎞️', path: '/faceless-studio', gradient: 'from-indigo-600 to-violet-500' },
-        { label: 'Repurpose Video', desc: 'Transform existing videos', icon: '🔄', path: '/video-repurpose', gradient: 'from-emerald-600 to-teal-500' },
-        { label: 'Video Editor', desc: 'Edit and polish videos', icon: '✂️', path: '/video-editor', gradient: 'from-orange-600 to-red-500' },
-        { label: 'Templates', desc: 'Pre-built prompt library', icon: '📚', path: '/templates', gradient: 'from-pink-600 to-rose-500' },
-        { label: 'Analytics', desc: 'Usage insights & trends', icon: '📊', path: '/analytics', gradient: 'from-indigo-600 to-blue-500' },
-    ];
-
-    const recentItems = historyItems.slice(0, 5);
-
-    const getTimeAgo = (date: Date) => {
-        const now = new Date();
-        const diffMs = now.getTime() - new Date(date).getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        const diffHours = Math.floor(diffMins / 60);
-        if (diffHours < 24) return `${diffHours}h ago`;
-        const diffDays = Math.floor(diffHours / 24);
-        return `${diffDays}d ago`;
+    const getPlatformIcon = (platform: string) => {
+        switch(platform?.toLowerCase()) {
+            case 'twitter': return <Twitter className="w-5 h-5 text-[#1DA1F2]" />;
+            case 'linkedin': return <Linkedin className="w-5 h-5 text-[#0A66C2]" />;
+            case 'instagram': return <Instagram className="w-5 h-5 text-[#E1306C]" />;
+            default: return <Sparkles className="w-5 h-5 text-gray-400" />;
+        }
     };
 
     return (
         <PageLayout>
-            <div className="container mx-auto px-6 py-12">
+            <ChangelogModal />
+            <div className="container mx-auto px-6 py-8">
                 {/* Header */}
-                <div className="mb-12 animate-fade-in text-left">
-                    <h1 className="text-4xl font-bold tracking-tight text-white mb-2">
-                        Welcome back{user.email ? `, ${user.email.split('@')[0]}` : ''} 👋
-                    </h1>
-                    <p className="text-lg text-[var(--color-text-secondary)]">
-                        Here's your creative workspace overview.
-                    </p>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 animate-fade-in">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight mb-2">Creator HQ</h1>
+                        <p className="text-text-secondary">Your AI command center.</p>
+                    </div>
                 </div>
 
-                {/* Stats Row */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12 animate-fade-in">
-                    {stats.map((stat, i) => (
-                        <div
-                            key={stat.label}
-                            className="card p-6 border border-white/5 bg-[var(--color-background-surface)]/50 hover:border-white/10 transition-all duration-300 group"
-                            style={{ animationDelay: `${i * 80}ms` }}
-                        >
-                            <div className="flex items-center justify-between mb-3 text-left">
-                                <span className="text-2xl">{stat.icon}</span>
-                                <span className={`text-xs font-bold uppercase tracking-widest text-${stat.color}-400 opacity-60 text-right`}>
-                                    {stat.label}
-                                </span>
-                            </div>
-                            <p className="text-3xl font-bold text-white tracking-tight text-left">{stat.value}</p>
+                {/* Top Stat Row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5">
+                        <div className="text-text-secondary text-sm font-medium mb-2">Content generated this month</div>
+                        <div className="text-4xl font-bold">{stats.generatedThisMonth}</div>
+                    </div>
+                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5">
+                        <div className="text-text-secondary text-sm font-medium mb-2">Posts published this month</div>
+                        <div className="text-4xl font-bold">{stats.publishedThisMonth}</div>
+                    </div>
+                    <div className={`p-6 rounded-2xl border ${getCreditsColor(stats.credits)}`}>
+                        <div className="text-sm font-medium mb-2 opacity-80">Credits remaining</div>
+                        <div className="text-4xl font-bold flex items-center justify-between">
+                            {stats.credits}
+                            {stats.credits === 0 && (
+                                <button onClick={() => router.push('/pricing')} className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-full transition">Upgrade</button>
+                            )}
                         </div>
+                    </div>
+                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5">
+                        <div className="text-text-secondary text-sm font-medium mb-2">Time saved estimate</div>
+                        <div className="text-4xl font-bold text-emerald-400">{stats.timeSavedHours} <span className="text-lg text-emerald-400/60 font-medium">hrs</span></div>
+                    </div>
+                </div>
+
+                {/* Quick Actions Bar */}
+                <div className="flex flex-wrap gap-3 mb-10">
+                    {quickActions.map(action => (
+                        <button
+                            key={action.label}
+                            onClick={() => router.push(action.path)}
+                            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition flex-1 min-w-[150px] justify-center text-sm font-medium"
+                        >
+                            <span>{action.icon}</span>
+                            {action.label}
+                        </button>
                     ))}
                 </div>
 
-                {/* Quick Actions Grid */}
-                <div className="mb-12 animate-fade-in">
-                    <h2 className="text-xl font-semibold text-white tracking-tight mb-6 text-left">Quick Actions</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {quickActions.map((action, i) => (
-                            <button
-                                key={action.label}
-                                onClick={() => router.push(action.path)}
-                                className="group relative overflow-hidden rounded-2xl border border-white/5 bg-[var(--color-background-surface)]/50 p-6 text-left transition-all duration-300 hover:border-white/15 hover:-translate-y-1 hover:shadow-xl"
-                                style={{ animationDelay: `${i * 60}ms` }}
-                            >
-                                <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-[0.06] transition-opacity duration-500`} />
-                                <div className="relative z-10">
-                                    <span className="text-3xl mb-4 block">{action.icon}</span>
-                                    <h3 className="text-base font-semibold text-white mb-1">{action.label}</h3>
-                                    <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{action.desc}</p>
-                                </div>
-                                <svg className="absolute bottom-4 right-4 w-5 h-5 text-white/20 group-hover:text-white/50 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Analytics Chart */}
-                <div className="mb-12 animate-fade-in">
-                    <h2 className="text-xl font-semibold text-white tracking-tight mb-6 text-left">Usage Overview</h2>
-                    <div className="card p-6 border border-white/5 bg-[var(--color-background-surface)]/30 h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={weeklyData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                <XAxis dataKey="name" stroke="#525252" tick={{ fill: '#737373', fontSize: 12 }} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#525252" tick={{ fill: '#737373', fontSize: 12 }} tickLine={false} axisLine={false} />
-                                <Tooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                                <Bar dataKey="snippets" name="Snippets" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="videos" name="Videos" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Recent Activity */}
-                <div className="animate-fade-in text-left">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-semibold text-white tracking-tight">Recent Activity</h2>
-                        {recentItems.length > 0 && (
-                            <button onClick={() => router.push('/history')} className="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors">
-                                View All →
-                            </button>
-                        )}
-                    </div>
-
-                    {recentItems.length === 0 ? (
-                        <div className="card p-12 border border-white/5 bg-[var(--color-background-surface)]/30 text-center">
-                            <span className="text-4xl mb-4 block">🚀</span>
-                            <h3 className="text-lg font-semibold text-white mb-2">No activity yet</h3>
-                            <p className="text-sm text-[var(--color-text-secondary)] mb-6">Start creating content or generating videos to see your activity here.</p>
-                            <button onClick={() => router.push('/content-creator')} className="btn btn-primary bg-gradient-to-r from-blue-600 to-violet-600 border-none px-6">
-                                Create Your First Piece ✨
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {recentItems.map((item) => (
-                                <div key={item.id} className="card group p-5 border border-white/5 bg-[var(--color-background-surface)]/50 flex items-center justify-between gap-4 hover:border-white/10 transition-all duration-200 rounded-xl">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-lg shrink-0">
-                                            {item.icon}
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-medium text-white">{item.title}</h4>
-                                            <p className="text-xs text-[var(--color-text-secondary)]">
-                                                {item.format} · {getTimeAgo(item.createdAt)}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    {/* Left Column (Wider) */}
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Recent Generations */}
+                        <div className="p-6 rounded-2xl border border-white/5 bg-white/5">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                    <Sparkles className="w-5 h-5 text-brand-primary" />
+                                    Recent Generations
+                                </h2>
+                                <button onClick={() => router.push('/snippets')} className="text-xs text-brand-primary hover:underline">View All</button>
+                            </div>
+                            <div className="space-y-4">
+                                {recentSnippets.length === 0 ? (
+                                    <div className="text-center py-6 text-text-secondary text-sm">No generations yet. Create your first piece!</div>
+                                ) : recentSnippets.map(snippet => (
+                                    <div key={snippet.id} className="flex items-start gap-4 p-4 rounded-xl border border-white/5 bg-black/40 hover:border-white/10 transition">
+                                        <div className="pt-1">{getPlatformIcon(snippet.platform)}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-white truncate">{snippet.title || snippet.content?.substring(0, 50)}</p>
+                                            <p className="text-xs text-text-secondary mt-1 truncate">{snippet.content}</p>
+                                            <p className="text-[10px] text-text-secondary mt-2 opacity-60">
+                                                {new Date(snippet.created_at).toLocaleDateString()}
                                             </p>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${item.status === 'success' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>
-                                            {item.status}
-                                        </span>
-                                        <button onClick={() => router.push('/history')} className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-white/10 transition-colors opacity-0 group-hover:opacity-100">
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                            </svg>
+                                        <button onClick={() => router.push('/content-creator')} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 hover:bg-white/5 transition flex-shrink-0">
+                                            Use again
                                         </button>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    )}
+
+                        {/* Recent Videos */}
+                        <div className="p-6 rounded-2xl border border-white/5 bg-white/5">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                    <Video className="w-5 h-5 text-purple-400" />
+                                    Recent Videos
+                                </h2>
+                                <button onClick={() => router.push('/studio')} className="text-xs text-brand-primary hover:underline">Studio Overview</button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {recentVideos.length === 0 ? (
+                                    <div className="col-span-2 text-center py-6 text-text-secondary text-sm">No videos generated yet.</div>
+                                ) : recentVideos.map(video => (
+                                    <div key={video.id} className="group relative aspect-video rounded-xl overflow-hidden border border-white/10 bg-black/50">
+                                        {video.thumbnail_url ? (
+                                            <img src={video.thumbnail_url} alt="Video thumbnail" className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-text-secondary text-xs">No Thumbnail</div>
+                                        )}
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition p-4 text-center">
+                                            <button onClick={() => router.push('/video-editor')} className="px-4 py-2 bg-brand-primary text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-lg">
+                                                <Play className="w-4 h-4 fill-current" />
+                                                Continue Editing
+                                            </button>
+                                        </div>
+                                        <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-xs text-white">
+                                            <span className="bg-black/60 px-2 py-1 rounded truncate flex-1 mr-2">{video.prompt || 'Untitled Video'}</span>
+                                            <span className="bg-black/60 px-2 py-1 rounded shrink-0">{new Date(video.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column (Narrower) */}
+                    <div className="space-y-8">
+                        {/* Upcoming Scheduled Posts */}
+                        <div className="p-6 rounded-2xl border border-white/5 bg-white/5">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                    <CalendarIcon className="w-5 h-5 text-emerald-400" />
+                                    Upcoming
+                                </h2>
+                                <button onClick={() => router.push('/calendar')} className="text-xs text-brand-primary hover:underline">Calendar</button>
+                            </div>
+                            <div className="space-y-3">
+                                {upcomingPosts.length === 0 ? (
+                                     <div className="text-center py-6 text-text-secondary text-sm">Your queue is empty.</div>
+                                ) : upcomingPosts.map(post => (
+                                    <div key={post.id} className="p-4 rounded-xl border border-white/5 bg-black/40 hover:border-white/10 transition">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex gap-1">
+                                                {post.platforms?.map((p: string) => (
+                                                    <span key={p} className="opacity-80 scale-75 origin-left">{getPlatformIcon(p)}</span>
+                                                ))}
+                                            </div>
+                                            <div className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                {new Date(post.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-text-secondary line-clamp-2">{post.content}</p>
+                                        <p className="text-xs text-text-secondary mt-2 opacity-60">
+                                            {new Date(post.scheduled_at).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Content Performance Strip */}
+                        <div className="p-6 rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-black overflow-hidden relative group">
+                            <div className="absolute -top-12 -right-12 p-8 opacity-10 text-brand-primary group-hover:scale-110 transition-transform duration-700">
+                                <Sparkles className="w-48 h-48" />
+                            </div>
+                            <h2 className="text-lg font-bold mb-4 relative z-10">Social Performance</h2>
+                            {isAyrshareConnected ? (
+                                <div className="space-y-4 relative z-10">
+                                    <div className="text-sm text-text-secondary mb-2 uppercase tracking-widest text-[10px] font-bold">Latest post metrics</div>
+                                    {socialLoading ? (
+                                        <div className="py-12 flex flex-col items-center gap-3">
+                                            <div className="w-6 h-6 border-2 border-white/10 border-t-white/40 rounded-full animate-spin" />
+                                            <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Syncing Analytics...</span>
+                                        </div>
+                                    ) : socialHistory.length > 0 ? (
+                                        socialHistory.map((post, i) => (
+                                            <div key={post.id || i} className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all group/item">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+                                                        {getPlatformIcon(post.platform?.[0] || 'social')}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-white truncate max-w-[140px]">{post.post || 'Social Post'}</div>
+                                                        <div className="text-[10px] text-text-tertiary uppercase font-medium">{new Date(post.created_at || post.createdAt).toLocaleDateString()}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-xs text-brand-primary flex gap-4 font-black">
+                                                    {post.analytics?.likes !== undefined && <span className="flex items-center gap-1">❤️ {post.analytics.likes}</span>}
+                                                    {post.analytics?.shares !== undefined && <span className="flex items-center gap-1">🔄 {post.analytics.shares}</span>}
+                                                    {post.analytics?.clicks !== undefined && <span className="flex items-center gap-1">🖱️ {post.analytics.clicks}</span>}
+                                                    {!post.analytics && <span className="text-[10px] text-zinc-600 uppercase">Live</span>}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-8">
+                                            <p className="text-xs text-text-secondary italic">No social activity logged yet.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-center p-6 relative z-10">
+                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 border border-white/5">
+                                        <Linkedin className="w-8 h-8 text-zinc-600" />
+                                    </div>
+                                    <p className="text-sm text-text-secondary mb-6 font-medium">Connect your accounts to see real-time growth stats and engagement metrics.</p>
+                                    <button 
+                                        onClick={() => router.push('/settings')} 
+                                        className="w-full py-4 bg-white text-black rounded-xl font-black text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-xl shadow-white/5"
+                                    >
+                                        Link Accounts
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </PageLayout>
     );

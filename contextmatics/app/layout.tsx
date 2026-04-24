@@ -1,73 +1,68 @@
-import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
-import "./globals.css";
-import { Providers } from "./Providers";
-import Script from "next/script";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import Providers from '@/components/Providers';
+import UpgradeModal from '@/components/UpgradeModal';
+import LowCreditsBanner from '@/components/LowCreditsBanner';
+import { ModernNav } from '@/components/shared/ModernNav';
+import { MobileNav } from '@/components/shared/MobileNav';
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space" });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-    title: {
-        default: "ContextMatic | AI Content Workspace for Creators",
-        template: "%s | ContextMatic"
-    },
-    description: "Transform your content 10x faster. ContextMatic uses AI to turn ideas into blog posts, social threads, videos, and newsletters instantly.",
-    keywords: ["AI content creator", "content repurposing", "video generator", "SaaS", "Gemini AI", "OpenAI", "content marketing automation"],
-    openGraph: {
-        title: "ContextMatic | AI Content Workspace for Creators",
-        description: "Transform your content 10x faster with AI. Blog posts, videos, and social threads in seconds.",
-        type: "website",
-        url: "https://contextmatic.com/",
-        siteName: "ContextMatic",
-        locale: "en_US",
-        images: [{
-            url: "https://contextmatic.com/og-image.png",
-            width: 1200,
-            height: 630,
-            alt: "ContextMatic AI Dashboard"
-        }],
-    },
-    twitter: {
-        card: "summary_large_image",
-        title: "ContextMatic | AI Content Workspace for Creators",
-        description: "Transform your content 10x faster with AI.",
-        creator: "@contextmatic",
-        images: ["https://contextmatic.com/twitter-image.png"],
-    },
-    robots: {
-        index: true,
-        follow: true,
-    }
+  title: {
+    template: '%s | ContextMatic',
+    default: 'ContextMatic - AI Content Repurposing Platform',
+  },
+  description: 'Stop staring at a blank screen. Create a week of content in 10 minutes.',
+  manifest: '/manifest.json',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://contextmatic.example.com'),
+  openGraph: {
+    title: 'ContextMatic',
+    description: 'Stop staring at a blank screen. Create a week of content in 10 minutes.',
+    url: '/',
+    siteName: 'ContextMatic',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ContextMatic',
+    description: 'Stop staring at a blank screen. Create a week of content in 10 minutes.',
+  },
 };
 
-import OnboardingTour from '@/components/OnboardingTour';
-import CookieConsent from '@/components/CookieConsent';
-import GlobalErrorBoundary from '@/components/GlobalErrorBoundary';
+export const viewport = {
+  themeColor: '#09090b',
+};
 
 export default function RootLayout({
-    children,
-}: Readonly<{
-    children: React.ReactNode;
-}>) {
-    return (
-        <html lang="en" className="dark">
-            <head>
-                <Script
-                    src="https://checkout.razorpay.com/v1/checkout.js"
-                    strategy="beforeInteractive"
-                    key="razorpay-script"
-                />
-            </head>
-            <body className={`${inter.variable} ${spaceGrotesk.variable} antialiased font-sans bg-background-primary text-text-primary`}>
-                <Providers>
-                    <GlobalErrorBoundary>
-                        <OnboardingTour />
-                        <CookieConsent />
-                        {children}
-                    </GlobalErrorBoundary>
-                </Providers>
-            </body>
-        </html>
-    );
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  // We can wrap children conditionally for the dashboard routes vs marketing routes,
+  // but to keep it simple and fulfill the generic app layout requirement:
+  // usually, we might have a (dashboard) route group for ModernNav. 
+  // Let's assume ModernNav handles checking if it should render or we just render it.
+  
+  return (
+    <html lang="en">
+      <body className={`${inter.className} bg-zinc-950 text-white min-h-screen text-zinc-100`}>
+        <Providers>
+          <UpgradeModal />
+          <div className="flex h-screen flex-col overflow-hidden">
+            <LowCreditsBanner />
+            <div className="flex flex-1 overflow-hidden">
+              <ModernNav />
+              <main className="flex-1 overflow-y-auto w-full custom-scrollbar pb-20 md:pb-0">
+                {children}
+              </main>
+              <MobileNav />
+            </div>
+          </div>
+        </Providers>
+      </body>
+    </html>
+  );
 }

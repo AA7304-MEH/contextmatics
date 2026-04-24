@@ -25,7 +25,6 @@ export class GradioService {
      * General prediction for Gradio-hosted text models
      */
     async predictText(prompt: string, modelPath: string = this.models.text): Promise<string> {
-        console.log(`[GradioService] Connecting to ${modelPath}...`);
         try {
             const app = await client(modelPath);
             const result = await app.predict("/chat", [
@@ -49,7 +48,6 @@ export class GradioService {
      * General prediction for Gradio-hosted image models (e.g., FLUX, SDXL)
      */
     async generateImage(prompt: string, modelPath: string = this.models.image): Promise<string> {
-        console.log(`[GradioService] Generating image via ${modelPath}...`);
         try {
             const app = await client(modelPath);
             const result = await app.predict("/infer", [

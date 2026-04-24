@@ -51,7 +51,8 @@ export async function POST(req: Request) {
             .single();
 
         if (existingTx) {
-            console.log(`[Payment] Duplicate payment ID detected: ${gatewayPaymentId}. Skipping.`);
+            const { logger } = await import('@/lib/logger');
+            logger.warn(`Duplicate payment ID detected: ${gatewayPaymentId}. Skipping.`, { userId: user.id });
             return NextResponse.json({ 
                 success: true, 
                 message: 'Payment already processed.' 
@@ -83,73 +84,52 @@ export async function POST(req: Request) {
                 return NextResponse.json({ success: false, error: 'Invalid PayPal details' }, { status: 400 });
             }
             // In full production, verify with PayPal REST API here
-            console.log(`[PayPal] Payment verified for ${user.email}: ${paypal_details.id}`);
+            const { logger } = await import('@/lib/logger');
+            logger.info(`PayPal payment verified`, { userId: user.id, paypalId: paypal_details.id });
         } else {
             return NextResponse.json({ success: false, error: 'Unsupported payment method' }, { status: 400 });
         }
 
-        // 3. Map Plan and Credits
-        const nameLower = planName.toLowerCase();
-        let planId = 'free';
-        let creditsToSet = 5;
-
-        if (nameLower.includes('pro')) {
-            planId = 'pro';
-            creditsToSet = 200;
-        } else if (nameLower.includes('enterprise')) {
-            planId = 'enterprise';
-            creditsToSet = 10000;
-        }
-
-        // 4. Atomic Update: Log Transaction & Update Profile
-        // Note: In production, use a Database Transaction (storing payment in DB trigger or RPC)
+        // 3. Map Plan and Credits (Source of Truth)
+        const { getPlanByName } = await import("@/config/plans");
+        const plan = getPlanByName(planName);
         
-        // Log to transactions table first
-        const { error: txError } = await supabase
-            .from('transactions')
-            .insert({
-                user_id: user.id,
-                gateway: method,
-                gateway_payment_id: gatewayPaymentId,
-                gateway_order_id: razorpay_order_id || paypal_details?.id,
-                amount: body.amount || 0,
-                currency: body.currency || 'USD',
-                plan_name: planName,
-                credits_added: creditsToSet,
-                status: 'completed',
-                metadata: { ...body, user_email: user.email }
-            });
-
-        if (txError) {
-            console.error('[Transaction Logging Error]', txError);
-            return NextResponse.json({ success: false, error: 'Failed to log transaction' }, { status: 500 });
+        if (!plan) {
+            return NextResponse.json({ success: false, error: 'Invalid plan' }, { status: 400 });
         }
 
-        // Update Profile
-        const { error: updateError } = await supabase
-            .from('profiles')
-            .update({
-                plan: planId,
-                credits_remaining: creditsToSet, // Set directly for now as per plan logic
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id);
+        const planId = plan.id;
+        const creditsToAdd = plan.credits;
 
-        if (updateError) {
-            console.error('[Payment Sync Error]', updateError);
-            return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
+        // 4. Atomic Update via RPC
+        // This inserts the transaction AND updates the profile in one transaction
+        const { error: rpcError } = await supabase.rpc('process_payment_success', {
+            p_user_id: user.id,
+            p_plan_name: planId,
+            p_credits_to_add: creditsToAdd,
+            p_gateway: method,
+            p_payment_id: gatewayPaymentId,
+            p_order_id: razorpay_order_id || paypal_details?.id || "",
+            p_amount: body.amount || 0,
+            p_currency: body.currency || 'INR'
+        });
+
+        if (rpcError) {
+            console.error('[RPC Payment Error]', rpcError);
+            return NextResponse.json({ success: false, error: rpcError.message }, { status: 500 });
         }
 
-        console.log(`[Payment Success] User ${user.email} weaponized to ${planId} via ${method}`);
+        const { logger } = await import('@/lib/logger');
+        logger.info(`Webhook payment processed`, { userId: user.id, plan: planId, creditsAdded: creditsToAdd });
 
         return NextResponse.json({ 
             success: true, 
             plan: planId, 
-            credits: creditsToSet,
+            credits: creditsToAdd,
             message: `Account weaponized to ${planId} successfully.`
         });
 
-    } catch (error: any) {
+    } catch (error:any) {
         console.error('[Payment Verification Exception]', error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }

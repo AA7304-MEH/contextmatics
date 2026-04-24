@@ -135,9 +135,130 @@ const Sidebar: React.FC = () => {
                     </div>
                 )}
 
-                {activeTab !== 'media' && (
-                    <div className="flex flex-col items-center justify-center h-full text-white/30 mt-10">
-                        <span className="text-sm italic">Coming Soon</span>
+                {activeTab === 'text' && (
+                    <div className="space-y-4 text-left">
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Text Presets</h3>
+                        {[
+                            { name: 'Headline', size: 'text-2xl', weight: 'font-black' },
+                            { name: 'Subheadline', size: 'text-lg', weight: 'font-bold' },
+                            { name: 'Body Text', size: 'text-sm', weight: 'font-medium' },
+                            { name: 'Caption', size: 'text-xs', weight: 'italic' },
+                        ].map((txt) => (
+                            <button
+                                key={txt.name}
+                                onClick={() => addClip('track-t1', {
+                                    type: 'text',
+                                    name: txt.name,
+                                    assetId: 'text-asset',
+                                    url: '',
+                                    start: useProjectStore.getState().playheadTime,
+                                    duration: 5,
+                                    sourceStart: 0,
+                                    sourceDuration: 5,
+                                    speed: 1,
+                                    textContent: txt.name,
+                                    textStyle: { fontSize: 24, fontWeight: 'bold', color: '#ffffff', fontFamily: 'Inter', textAlign: 'center' }
+                                } as any)}
+                                className="w-full p-4 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 hover:border-[#00c8ff]/30 transition-all flex items-center justify-between group"
+                            >
+                                <span className={`${txt.size} ${txt.weight} text-white truncate`}>{txt.name}</span>
+                                <Plus size={16} className="text-white/20 group-hover:text-[#00c8ff]" />
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {activeTab === 'stickers' && (
+                    <div className="space-y-4 text-left">
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Graphics & Overlays</h3>
+                        <div className="grid grid-cols-3 gap-2">
+                            {['🎬', '🔥', '✨', '⚡', '🚀', '❤️', '✅', '❌', '💡', '🔔', '💬', '📍'].map((emoji) => (
+                                <button
+                                    key={emoji}
+                                    onClick={() => addClip('track-v1', {
+                                        type: 'sticker',
+                                        name: 'Sticker',
+                                        assetId: 'sticker-asset',
+                                        url: '',
+                                        start: useProjectStore.getState().playheadTime,
+                                        duration: 3,
+                                        sourceStart: 0,
+                                        sourceDuration: 3,
+                                        speed: 1,
+                                        textContent: emoji
+                                    } as any)}
+                                    className="aspect-square bg-white/5 border border-white/5 rounded-xl flex items-center justify-center text-2xl hover:bg-white/10 hover:border-[#00c8ff]/30 transition-all active:scale-95"
+                                >
+                                    {emoji}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'effects' && (
+                    <div className="space-y-4 text-left">
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Visual Filters</h3>
+                        <div className="grid grid-cols-1 gap-2">
+                            {[
+                                { name: 'Noir (B&W)', type: 'grayscale', value: 1 },
+                                { name: 'Sepia', type: 'sepia', value: 0.8 },
+                                { name: 'Vibrant', type: 'saturate', value: 2 },
+                                { name: 'Blur', type: 'blur', value: '5px' },
+                                { name: 'Invert', type: 'invert', value: 1 },
+                                { name: 'Cold', type: 'hue-rotate', value: '180deg' },
+                            ].map((effect) => (
+                                <button
+                                    key={effect.name}
+                                    onClick={() => {
+                                        const selectedId = useProjectStore.getState().selectedClipId;
+                                        if (selectedId) {
+                                            useProjectStore.getState().addEffect(selectedId, {
+                                                type: effect.type,
+                                                params: { value: effect.value },
+                                                enabled: true
+                                            });
+                                        } else {
+                                            alert("Please select a clip on the timeline first.");
+                                        }
+                                    }}
+                                    className="w-full p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-[#00c8ff]/10 hover:border-[#00c8ff]/50 transition-all flex items-center gap-3 group"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center text-blue-400">
+                                        <Wand2 size={16} />
+                                    </div>
+                                    <span className="text-xs font-bold text-white/80 group-hover:text-white">{effect.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'audio' && (
+                    <div className="space-y-4 text-left">
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Audio Assets</h3>
+                        {assets.filter(a => a.type === 'audio').length > 0 ? (
+                            assets.filter(a => a.type === 'audio').map((asset) => (
+                                <button
+                                    key={asset.id}
+                                    onClick={() => handleAddAssetToTimeline(asset)}
+                                    className="w-full p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 hover:border-[#00c8ff]/50 transition-all flex items-center gap-3 text-left group"
+                                >
+                                    <div className="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center text-pink-500">
+                                        <Music size={18} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-white truncate">{asset.name}</p>
+                                        <p className="text-[9px] text-white/30 uppercase tracking-tighter">Audio Clip</p>
+                                    </div>
+                                </button>
+                            ))
+                        ) : (
+                            <div className="py-12 text-center text-white/20">
+                                <Music size={32} className="mx-auto mb-3 opacity-20" />
+                                <p className="text-xs font-medium">No audio assets found.<br/>Import MP3/WAV files in Media tab.</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

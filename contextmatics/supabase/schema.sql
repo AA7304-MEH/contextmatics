@@ -1,300 +1,310 @@
--- ContextMatic Supabase Schema
--- Run this in Supabase SQL Editor: https://app.supabase.com → SQL Editor
--- This creates all tables, functions, and security policies needed for production.
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ============================================================
--- 1. PROFILES TABLE (user data, credits, plan)
--- ============================================================
-CREATE TABLE IF NOT EXISTS profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  username TEXT UNIQUE,
-  full_name TEXT,
-  avatar_url TEXT,
-  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'business', 'enterprise', 'free_abuse')),
-  credits_remaining INTEGER DEFAULT 3,
-  stripe_customer_id TEXT,
-  country_code TEXT DEFAULT 'US',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- PROFILES
+CREATE TABLE profiles (
+  id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  email text UNIQUE NOT NULL,
+  full_name text,
+  avatar_url text,
+  username text UNIQUE,
+  plan text DEFAULT 'free' CHECK (plan IN ('free','pro','business','enterprise')),
+  plan_expires_at timestamptz,
+  credits_remaining int DEFAULT 30,
+  role text DEFAULT 'user' CHECK (role IN ('user','admin')),
+  niche text,
+  brand_voice text,
+  brand_description text,
+  preferred_language text DEFAULT 'english',
+  secondary_languages text[] DEFAULT '{}',
+  onboarding_completed boolean DEFAULT false,
+  content_os_enabled boolean DEFAULT false,
+  posting_days text[] DEFAULT '{monday,wednesday,friday}',
+  best_posting_times jsonb,
+  referral_code text UNIQUE DEFAULT substring(md5(random()::text),1,8),
+  referred_by uuid REFERENCES profiles(id),
+  referral_credits_earned int DEFAULT 0,
+  razorpay_customer_id text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
-
--- Auto-update the updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER profiles_updated_at
-  BEFORE UPDATE ON profiles
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Auto-create profile on signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (
-    id, 
-    username, 
-    full_name, 
-    avatar_url,
-    plan,
-    credits_remaining,
-    country_code
-  )
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
-    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'avatar_url', ''),
-    COALESCE(NEW.raw_user_meta_data->>'plan', 'free'),
-    COALESCE((NEW.raw_user_meta_data->>'credits_remaining')::integer, 5),
-    COALESCE(NEW.raw_user_meta_data->>'country_code', 'US')
-  );
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Drop existing trigger if any, then recreate
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
-
--- ============================================================
--- 2. SNIPPETS TABLE (generated content history)
--- ============================================================
-CREATE TABLE IF NOT EXISTS snippets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  title TEXT,
-  content TEXT NOT NULL,
-  tags TEXT[] DEFAULT '{}',
-  source TEXT DEFAULT 'gemini', -- 'chatgpt', 'manual', 'gemini', etc.
-  is_public BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_snippets_user_id ON snippets(user_id);
-CREATE INDEX IF NOT EXISTS idx_snippets_created_at ON snippets(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_snippets_user_created ON snippets(user_id, created_at DESC);
-
--- Update trigger for snippets
-CREATE OR REPLACE TRIGGER snippets_updated_at
-  BEFORE UPDATE ON snippets
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- ============================================================
--- 2.1 ASSETS TABLE (User uploads and generated media)
--- ============================================================
-CREATE TABLE IF NOT EXISTS assets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('video', 'audio', 'image', 'text')),
-    url TEXT NOT NULL,
-    thumbnail_url TEXT,
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_assets_user_id ON assets(user_id);
-
-CREATE OR REPLACE TRIGGER assets_updated_at
-    BEFORE UPDATE ON assets
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- ============================================================
--- 2.2 PROJECTS TABLE (Video editor projects)
--- ============================================================
-CREATE TABLE IF NOT EXISTS projects (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    title TEXT NOT NULL DEFAULT 'Untitled Project',
-    description TEXT,
-    thumbnail_url TEXT,
-    timeline_data JSONB DEFAULT '{"tracks": [], "duration": 60, "zoom": 1}',
-    status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'rendering', 'completed', 'failed')),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
-
-CREATE OR REPLACE TRIGGER projects_updated_at
-    BEFORE UPDATE ON projects
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
--- ============================================================
--- 3. ROW LEVEL SECURITY (RLS)
--- ============================================================
--- Critical: ensures users can only access their own data
-
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users read own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+-- VOICE FINGERPRINTS
+CREATE TABLE voice_fingerprints (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+  fingerprint jsonb NOT NULL,
+  generation_instructions text NOT NULL,
+  voice_score int DEFAULT 0,
+  samples_count int DEFAULT 0,
+  analyzed_at timestamptz DEFAULT now()
+);
+ALTER TABLE voice_fingerprints ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own fingerprints" ON voice_fingerprints FOR ALL USING (auth.uid() = user_id);
+
+-- SNIPPETS
+CREATE TABLE snippets (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  workspace_id uuid,
+  title text,
+  content text NOT NULL,
+  platform text,
+  content_type text,
+  language text DEFAULT 'english',
+  tags text[] DEFAULT '{}',
+  source text,
+  credits_used int DEFAULT 1,
+  created_at timestamptz DEFAULT now()
+);
 ALTER TABLE snippets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own snippets" ON snippets FOR ALL USING (auth.uid() = user_id);
 
--- Profiles: users can only read/update their own profile
-DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
-CREATE POLICY "Users can view own profile"
-  ON profiles FOR SELECT
-  USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
-CREATE POLICY "Users can update own profile"
-  ON profiles FOR UPDATE
-  USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
-CREATE POLICY "Users can insert own profile"
-  ON profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can delete own profile" ON profiles;
-CREATE POLICY "Users can delete own profile"
-  ON profiles FOR DELETE
-  USING (auth.uid() = id);
-
--- Snippets: users can only CRUD their own content
-DROP POLICY IF EXISTS "Users can view own snippets" ON snippets;
-CREATE POLICY "Users can view own snippets"
-  ON snippets FOR SELECT
-  USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can insert own snippets" ON snippets;
-CREATE POLICY "Users can insert own snippets"
-  ON snippets FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can update own snippets" ON snippets;
-CREATE POLICY "Users can update own snippets"
-  ON snippets FOR UPDATE
-  USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can delete own snippets" ON snippets;
-CREATE POLICY "Users can delete own snippets"
-  ON snippets FOR DELETE
-  USING (auth.uid() = user_id);
-
--- Assets: users can only CRUD their own assets
+-- ASSETS
+CREATE TABLE assets (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  type text CHECK (type IN ('image','video','audio','document')),
+  url text NOT NULL,
+  thumbnail_url text,
+  size_bytes bigint,
+  created_at timestamptz DEFAULT now()
+);
 ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own assets" ON assets FOR ALL USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can view own assets" ON assets;
-CREATE POLICY "Users can view own assets"
-  ON assets FOR SELECT
-  USING (auth.uid() = user_id);
+-- VIDEOS
+CREATE TABLE videos (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  prompt text,
+  style text,
+  platform text,
+  url text,
+  audio_url text,
+  thumbnail_url text,
+  status text DEFAULT 'processing',
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own videos" ON videos FOR ALL USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can insert own assets" ON assets;
-CREATE POLICY "Users can insert own assets"
-  ON assets FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can update own assets" ON assets;
-CREATE POLICY "Users can update own assets"
-  ON assets FOR UPDATE
-  USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can delete own assets" ON assets;
-CREATE POLICY "Users can delete own assets"
-  ON assets FOR DELETE
-  USING (auth.uid() = user_id);
-
--- Projects: users can only CRUD their own projects
+-- PROJECTS (video editor)
+CREATE TABLE projects (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  timeline_data jsonb,
+  created_at timestamptz DEFAULT now()
+);
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own projects" ON projects FOR ALL USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can view own projects" ON projects;
-CREATE POLICY "Users can view own projects"
-  ON projects FOR SELECT
-  USING (auth.uid() = user_id);
+-- SCHEDULED POSTS
+CREATE TABLE scheduled_posts (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  workspace_id uuid,
+  content text NOT NULL,
+  platforms text[] NOT NULL,
+  scheduled_at timestamptz NOT NULL,
+  status text DEFAULT 'draft' CHECK (status IN ('draft','pending_review','approved','rejected','scheduled','published')),
+  post_ids jsonb,
+  rejection_note text,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE scheduled_posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own scheduled posts" ON scheduled_posts FOR ALL USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can insert own projects" ON projects;
-CREATE POLICY "Users can insert own projects"
-  ON projects FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+-- CONTENT PLANS
+CREATE TABLE content_plans (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  week_start date NOT NULL,
+  plan jsonb NOT NULL,
+  status text DEFAULT 'pending' CHECK (status IN ('pending','approved','scheduled')),
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE content_plans ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own content plans" ON content_plans FOR ALL USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can update own projects" ON projects;
-CREATE POLICY "Users can update own projects"
-  ON projects FOR UPDATE
-  USING (auth.uid() = user_id);
+-- REPURPOSE JOBS
+CREATE TABLE repurpose_jobs (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  source_type text CHECK (source_type IN ('youtube','podcast','upload','voice_memo','url','text')),
+  source_url text,
+  source_title text,
+  transcript text,
+  status text DEFAULT 'processing' CHECK (status IN ('processing','transcribed','generating','complete','failed','partial')),
+  outputs jsonb,
+  credits_used int DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE repurpose_jobs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own repurpose jobs" ON repurpose_jobs FOR ALL USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can delete own projects" ON projects;
-CREATE POLICY "Users can delete own projects"
-  ON projects FOR DELETE
-  USING (auth.uid() = user_id);
+-- SOCIAL INBOX
+CREATE TABLE social_inbox (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  platform text NOT NULL,
+  comment_id text NOT NULL,
+  post_id text,
+  post_content text,
+  commenter_handle text,
+  commenter_followers int DEFAULT 0,
+  comment_text text NOT NULL,
+  sentiment text CHECK (sentiment IN ('positive','neutral','negative','question','opportunity')),
+  priority text DEFAULT 'normal' CHECK (priority IN ('high','normal','low')),
+  status text DEFAULT 'unread' CHECK (status IN ('unread','read','replied','ignored')),
+  ai_replies jsonb,
+  replied_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(platform, comment_id)
+);
+ALTER TABLE social_inbox ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own inbox" ON social_inbox FOR ALL USING (auth.uid() = user_id);
 
+-- TRACKED COMPETITORS
+CREATE TABLE tracked_competitors (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  platform text NOT NULL,
+  handle text NOT NULL,
+  display_name text,
+  follower_count int,
+  last_synced_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE tracked_competitors ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own competitors" ON tracked_competitors FOR ALL USING (auth.uid() = user_id);
 
--- ============================================================
--- 4. VIDEOS TABLE (generated video history)
--- ============================================================
-CREATE TABLE IF NOT EXISTS videos (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  prompt TEXT NOT NULL,
-  style TEXT NOT NULL,
-  platform TEXT NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
-  url TEXT,
-  thumbnail_url TEXT,
-  audio_url TEXT,
-  snippet_id UUID REFERENCES snippets(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- COMPETITOR POSTS
+CREATE TABLE competitor_posts (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  competitor_id uuid REFERENCES tracked_competitors(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  platform text NOT NULL,
+  post_id text NOT NULL,
+  content text NOT NULL,
+  likes int DEFAULT 0,
+  comments int DEFAULT 0,
+  shares int DEFAULT 0,
+  engagement_rate float DEFAULT 0,
+  why_it_worked text,
+  posted_at timestamptz,
+  UNIQUE(platform, post_id)
+);
+ALTER TABLE competitor_posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own competitor posts" ON competitor_posts FOR ALL USING (auth.uid() = user_id);
+
+-- HOOK LIBRARY
+CREATE TABLE hook_library (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  hook_template text NOT NULL,
+  hook_type text CHECK (hook_type IN ('question','statement','controversial','story','data','curiosity','fear','aspiration')),
+  platform text,
+  niche text,
+  language text DEFAULT 'english',
+  usage_count int DEFAULT 0,
+  created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_videos_user_id ON videos(user_id);
-CREATE INDEX IF NOT EXISTS idx_videos_created_at ON videos(created_at DESC);
+-- HOOK AB TESTS
+CREATE TABLE hook_ab_tests (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  topic text NOT NULL,
+  hook_a text NOT NULL,
+  hook_b text NOT NULL,
+  hook_c text NOT NULL,
+  post_a_id text,
+  post_b_id text,
+  post_c_id text,
+  winner text,
+  analysis text,
+  status text DEFAULT 'running' CHECK (status IN ('running','complete')),
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE hook_ab_tests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own ab tests" ON hook_ab_tests FOR ALL USING (auth.uid() = user_id);
 
--- ============================================================
--- 5. TEMPLATES TABLE
--- ============================================================
-CREATE TABLE IF NOT EXISTS templates (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  description TEXT,
-  category TEXT NOT NULL,
-  preview_url TEXT,
-  project_data JSONB NOT NULL,
-  is_public BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- MONETISATION ASSETS
+CREATE TABLE monetisation_assets (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  asset_type text CHECK (asset_type IN ('lead_magnet','email_sequence','product_description','landing_page','mini_course_outline','newsletter_issue','paid_community_post')),
+  title text NOT NULL,
+  content jsonb NOT NULL,
+  source_content text,
+  status text DEFAULT 'draft',
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE monetisation_assets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own monetisation assets" ON monetisation_assets FOR ALL USING (auth.uid() = user_id);
+
+-- REFERRALS
+CREATE TABLE referrals (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  referrer_id uuid REFERENCES profiles(id),
+  referred_id uuid REFERENCES profiles(id),
+  status text DEFAULT 'pending' CHECK (status IN ('pending','completed')),
+  credits_awarded int DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users see own referrals" ON referrals FOR ALL USING (auth.uid() = referrer_id);
+
+-- WORKSPACES
+CREATE TABLE workspaces (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text NOT NULL,
+  owner_id uuid REFERENCES auth.users(id),
+  plan text DEFAULT 'agency',
+  ayrshare_profile_key text,
+  brand_voice text,
+  brand_description text,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
+
+-- WORKSPACE MEMBERS
+CREATE TABLE workspace_members (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text DEFAULT 'editor' CHECK (role IN ('owner','admin','editor','viewer')),
+  invited_email text,
+  status text DEFAULT 'pending' CHECK (status IN ('pending','active')),
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(workspace_id, user_id)
+);
+ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
+
+-- CRON LOGS
+CREATE TABLE cron_logs (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  cron_name text NOT NULL,
+  status text CHECK (status IN ('success','partial','failed')),
+  users_processed int DEFAULT 0,
+  errors jsonb,
+  duration_ms int,
+  ran_at timestamptz DEFAULT now()
 );
 
--- ============================================================
--- 6. COMMUNITY REMIXES
--- ============================================================
-ALTER TABLE videos ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT false;
-ALTER TABLE videos ADD COLUMN IF NOT EXISTS remix_count INTEGER DEFAULT 0;
-
--- ============================================================
--- 7. SECURITY FOR TEMPLATES
--- ============================================================
-ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Anyone can view public templates" ON templates;
-CREATE POLICY "Anyone can view public templates"
-  ON templates FOR SELECT
-  USING (is_public = true);
-
--- ============================================================
--- 8. FEEDBACK TABLE
--- ============================================================
-CREATE TABLE IF NOT EXISTS video_feedback (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  video_id UUID REFERENCES videos(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-  comment TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE video_feedback ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can insert own feedback" ON video_feedback;
-CREATE POLICY "Users can insert own feedback"
-  ON video_feedback FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+-- DECREMENT CREDITS FUNCTION
+CREATE OR REPLACE FUNCTION decrement_credits(user_id uuid, amount int)
+RETURNS int LANGUAGE plpgsql AS $$
+DECLARE new_balance int;
+BEGIN
+  UPDATE profiles SET credits_remaining = credits_remaining - amount
+  WHERE id = user_id AND credits_remaining >= amount
+  RETURNING credits_remaining INTO new_balance;
+  IF NOT FOUND THEN RAISE EXCEPTION 'INSUFFICIENT_CREDITS'; END IF;
+  RETURN new_balance;
+END; $$;

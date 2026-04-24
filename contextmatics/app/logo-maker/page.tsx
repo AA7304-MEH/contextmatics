@@ -34,8 +34,6 @@ export default function LogoMakerPage() {
             const style = LOGO_STYLES.find(s => s.id === selectedStyle);
             const fullPrompt = `${prompt}, ${style?.prompt}`;
 
-            console.log('Initiating logo generation...', { selectedStyle });
-
             const imageUrl = await logoGeneratorService.generate({
                 prompt: fullPrompt,
                 styleId: selectedStyle,
@@ -56,7 +54,6 @@ export default function LogoMakerPage() {
             };
 
             sessionStorage.setItem('last_logo_result', JSON.stringify(result));
-            console.log('Generation successful, navigating to results');
             router.push('/logo-results');
         } catch (error) {
             console.error('Generation error:', error);
@@ -123,7 +120,7 @@ export default function LogoMakerPage() {
                                     Capturing your vision...
                                 </div>
                             ) : (
-                                'Generate Logo'
+                                'Generate Logo (5 Credits)'
                             )}
                         </button>
                     </div>

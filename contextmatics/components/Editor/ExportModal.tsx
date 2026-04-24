@@ -30,8 +30,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
         const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
         const ffmpeg = ffmpegRef.current;
         
-        ffmpeg.on('log', ({ message }) => {
-            console.log('FFmpeg:', message);
+        ffmpeg.on('log', ({ message: _message }) => {
+            // Internal FFmpeg logs - silences for production
         });
 
         ffmpeg.on('progress', ({ progress: p }) => {
@@ -98,7 +98,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                 throw new Error("No media clips to export");
             }
 
-        } catch (err: any) {
+        } catch (err:any) {
             console.error(err);
             setError(err.message || "Failed to export video");
             setStatus('error');

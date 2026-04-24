@@ -22,7 +22,7 @@ const TimelineContainer: React.FC = () => {
 
     const [, drop] = useDrop(() => ({
         accept: 'asset',
-        drop: (item: any, monitor) => {
+        drop: (item:any, monitor) => {
             const asset = item as MediaAsset;
             const offset = monitor.getClientOffset();
             if (!offset || !timelineRef.current) return;

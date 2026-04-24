@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useToast } from '../context/ToastContext';
-import { PageLayout } from './shared';
+import { PageLayout, SEO } from './shared';
 
 interface Template {
     id: string;
@@ -152,7 +152,7 @@ const CATEGORIES = [
 ];
 
 const TemplatesLibrary: React.FC = () => {
-    const navigate = useNavigate();
+    const router = useRouter();
     const { showToast } = useToast();
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -168,7 +168,7 @@ const TemplatesLibrary: React.FC = () => {
         // Store the prompt in sessionStorage and navigate to content creator
         sessionStorage.setItem('template_prompt', template.prompt);
         sessionStorage.setItem('template_name', template.title);
-        navigate('/content-creator');
+        router.push('/content-creator');
     };
 
     const renderStars = (count: number) => {
@@ -179,6 +179,7 @@ const TemplatesLibrary: React.FC = () => {
 
     return (
         <PageLayout showPricing={true} showSettings={true}>
+            <SEO title="Templates Library" description="Pre-built AI prompts to supercharge your content creation." />
             <div className="container mx-auto px-6 py-12">
 
                 {/* Header */}

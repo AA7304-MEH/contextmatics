@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ModernNav } from './shared/ModernNav';
 import { Footer } from './shared/Footer';
+import { SEO } from './shared/SEO';
+import { razorpayService } from '../services/razorpayService';
 
 // Data preserved
-const countryPlans: any = {
+const countryPlans:any = {
   IN: [
-    { name: 'Free', monthlyPrice: 0, yearlyPrice: 0, features: ['5 credits/mo', 'Basic Support'] },
-    { name: 'Pro', monthlyPrice: 599, yearlyPrice: 6400, popular: true, features: ['200 credits/mo', 'HD Export', 'Priority Support'] },
-    { name: 'Enterprise', monthlyPrice: 1499, yearlyPrice: 16000, features: ['Unlimited', 'Team Seats', 'API Access'] },
+    { name: 'Free', monthlyPrice: 0, yearlyPrice: 0, features: ['5 credits/mo', 'Basic Content Generator', '2 Hook Samples'] },
+    { name: 'Pro', monthlyPrice: 599, yearlyPrice: 6400, popular: true, features: ['200 credits/mo', 'Brand Voice Fingerprint', 'Hook Library (Standard)', 'Content OS (Weekly)', 'Repurpose Studio (HD)', 'Priority Support'] },
+    { name: 'Enterprise', monthlyPrice: 1499, yearlyPrice: 16000, features: ['Unlimited Credits', 'Competitor Intelligence', 'Monetisation Studio', 'A/B Test Lab', 'Full Repurpose Studio', 'API Access'] },
   ],
   DEFAULT: [
-    { name: 'Free', monthlyPrice: 0, yearlyPrice: 0, features: ['5 credits/mo', 'Basic Support'] },
-    { name: 'Pro', monthlyPrice: 22, yearlyPrice: 237, popular: true, features: ['200 credits/mo', 'HD Export', 'Priority Support'] },
-    { name: 'Enterprise', monthlyPrice: 45, yearlyPrice: 486, features: ['Unlimited', 'Team Seats', 'API Access'] },
+    { name: 'Free', monthlyPrice: 0, yearlyPrice: 0, features: ['5 credits/mo', 'Basic Content Generator', '2 Hook Samples'] },
+    { name: 'Pro', monthlyPrice: 22, yearlyPrice: 237, popular: true, features: ['200 credits/mo', 'Brand Voice Fingerprint', 'Hook Library (Standard)', 'Content OS (Weekly)', 'Repurpose Studio (HD)', 'Priority Support'] },
+    { name: 'Enterprise', monthlyPrice: 45, yearlyPrice: 486, features: ['Unlimited Credits', 'Competitor Intelligence', 'Monetisation Studio', 'A/B Test Lab', 'Full Repurpose Studio', 'API Access'] },
   ]
 };
 
@@ -29,6 +31,7 @@ const PricingPage: React.FC = () => {
     <div className="bg-background-primary min-h-screen pt-16 font-sans text-text-primary">
       <ModernNav />
 
+      <SEO title="Pricing Plans" description="Choose the perfect plan for your AI content creation needs." />
       <div className="container mx-auto px-6 py-24 text-center">
         {/* ... existing header content ... */}
         <span className="text-brand-primary font-medium text-sm border border-brand-primary/20 bg-brand-primary/10 px-3 py-1 rounded-full mb-6 inline-block">
@@ -57,7 +60,7 @@ const PricingPage: React.FC = () => {
 
         {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left max-w-6xl mx-auto">
-          {plans.map((plan: any, i: number) => (
+          {plans.map((plan:any, i: number) => (
             <div
               key={i}
               className={`card group relative rounded-3xl p-8 flex flex-col transition-all duration-300 bg-background-surface/50 border ${plan.popular
@@ -102,18 +105,17 @@ const PricingPage: React.FC = () => {
   );
 };
 
-import { razorpayService } from '../services/razorpayService';
 
 // ... (existing imports)
 
 const PricingButton = ({ planName, price, currency }: { planName: string, price: number, currency: string }) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { showToast } = useToast();
 
   const handleSelect = async () => {
     if (!user) {
-      navigate('/sign-in');
+      router.push('/sign-in');
       return;
     }
 

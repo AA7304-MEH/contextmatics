@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -8,23 +10,45 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
 
+    // 1. Auth Check (Basic) - Only logged in users can use the proxy
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) { return cookieStore.get(name)?.value; },
+            },
+        }
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return new NextResponse('Unauthorized', { status: 401 });
+
     try {
-        console.log(`[Logo Download] Proxying download for: ${imageUrl}`);
         const response = await fetch(imageUrl, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
+                'User-Agent': 'Mozilla/5.0 (ContextMatic Proxy; +https://contextmatic.com)'
+            },
+            next: { revalidate: 3600 }
         });
 
         if (!response.ok) {
-            console.error(`[Logo Download] External fetch failed: ${response.status} ${response.statusText}`);
-            return new NextResponse(`Error: Remote server returned ${response.status}`, { status: response.status });
+            return NextResponse.redirect(imageUrl);
         }
 
         const buffer = await response.arrayBuffer();
-        const contentType = response.headers.get('content-type') || 'image/png';
-        const extension = contentType.split('/')[1]?.split(';')[0] || 'png';
-        const filename = `contextmatic-logo-${Date.now()}.${extension}`;
+        const contentType = response.headers.get('content-type') || 'application/octet-stream';
+        
+        // Allow images and videos
+        const isImage = contentType.startsWith('image/');
+        const isVideo = contentType.startsWith('video/');
+        
+        if (!isImage && !isVideo) {
+            return NextResponse.redirect(imageUrl);
+        }
+
+        const extension = isVideo ? 'mp4' : 'png';
+        const filename = `contextmatic-asset-${Date.now()}.${extension}`;
 
         return new NextResponse(buffer, {
             headers: {
@@ -36,6 +60,7 @@ export async function GET(req: NextRequest) {
 
     } catch (error) {
         console.error('[Logo Download Error]', error);
-        return new NextResponse(`Error: Internal proxy failure`, { status: 500 });
+        // Ultimate fallback: redirect to the direct URL
+        return NextResponse.redirect(imageUrl);
     }
 }

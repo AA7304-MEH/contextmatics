@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { PageLayout } from './shared';
 import { CountrySelector } from './CountrySelector';
+import { SEO } from './shared/SEO';
 
 const Settings: React.FC = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { user, updateUserCountry } = useAuth();
   const [showSaveNotification, setShowSaveNotification] = useState(false);
 
@@ -41,7 +42,7 @@ const Settings: React.FC = () => {
           <h2 className="mb-4 text-white text-2xl font-bold">Please Log In</h2>
           <p className="text-text-secondary mb-8">You need to be logged in to access settings.</p>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => router.push('/')}
             className="btn btn-primary w-full justify-center"
           >
             Go to Home
@@ -53,6 +54,7 @@ const Settings: React.FC = () => {
 
   return (
     <PageLayout showPricing={true} showSettings={false}>
+      <SEO title="Settings" description="Manage your ContextMatic account preferences and security." />
       <div className="container mx-auto px-6 py-12 md:py-16">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
@@ -195,7 +197,7 @@ const Settings: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => navigate('/subscription')}
+                    onClick={() => router.push('/subscription')}
                     className="btn btn-secondary w-full justify-center mt-2 group"
                   >
                     Manage Subscription

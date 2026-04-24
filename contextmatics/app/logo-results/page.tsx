@@ -43,29 +43,22 @@ export default function LogoResultsPage() {
             showToast('Preparing your high-res logo package...', 'info');
             
             if (result.imageUrl.startsWith('data:')) {
-                // For base64 images, download directly (no proxy needed, no CORS)
                 const link = document.createElement('a');
                 link.href = result.imageUrl;
-                const mime = result.imageUrl.match(/:(.*?);/)?.[1] || 'image/png';
-                const ext = mime.split('/')[1] || 'png';
-                link.download = `logo-package-${Date.now()}.${ext}`;
+                link.download = `logo-contextmatic-${Date.now()}.png`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
             } else {
-                // For remote URLs, use server-side proxy to avoid CORS
+                // Open in new tab for external URLs as a more reliable "download" method
+                // especially for mobile browsers that block programatic clicks on proxy redirects
                 const downloadUrl = `/api/ai/download-logo?url=${encodeURIComponent(result.imageUrl)}`;
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = `logo-package-${Date.now()}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                window.open(downloadUrl, '_blank');
             }
 
-            showToast('Download started!', 'success');
+            showToast('Download started! 🚀', 'success');
         } catch (error) {
-            console.error('Download preparation failed:', error);
+            console.error('Download failed:', error);
             showToast('Download failed. Opening in new tab...', 'error');
             window.open(result.imageUrl, '_blank');
         }
@@ -95,9 +88,9 @@ export default function LogoResultsPage() {
                                 src={result.imageUrl}
                                 alt="Generated Logo"
                                 className="w-full h-full object-contain p-8"
-                                onLoad={() => console.log('Image loaded successfully')}
+                                onLoad={() => {}}
                                 onError={(e) => {
-                                    console.error('Image failed to load:', result.imageUrl);
+                                    // Image failed to load, attempting retry
                                     const target = e.target as HTMLImageElement;
                                     if (result.imageUrl.startsWith('http') && !target.src.includes('retry=true')) {
                                         target.src = result.imageUrl + (result.imageUrl.includes('?') ? '&' : '?') + 'retry=true';

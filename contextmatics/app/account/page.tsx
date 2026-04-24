@@ -36,7 +36,7 @@ export default function AccountPage() {
             if (error) throw error;
             await refreshProfile();
             showToast('Profile updated successfully', 'success');
-        } catch (error: any) {
+        } catch (error:any) {
             showToast(error.message || 'Failed to update profile', 'error');
         } finally {
             setLoading(false);

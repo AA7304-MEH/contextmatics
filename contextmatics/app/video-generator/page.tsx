@@ -67,7 +67,7 @@ function VideoGeneratorContent() {
                 setResult(data);
                 await refreshProfile();
             }
-        } catch (error: any) {
+        } catch (error:any) {
             console.error("Generation failed", error);
             showToast(error.message || 'Failed to generate video. Please try again.', 'error');
         } finally {
@@ -183,8 +183,8 @@ function VideoGeneratorContent() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <button onClick={handleGenerate} disabled={isGenerating || !prompt.trim() || !user || user.processingCredits <= 0} className="btn btn--primary w-full h-14 text-lg font-bold bg-gradient-to-r from-blue-600 to-violet-600 border-none">
-                                            {isGenerating ? 'Dreaming up your video...' : 'Generate Video (1 Credit)'}
+                                        <button onClick={handleGenerate} disabled={isGenerating || !prompt.trim() || !user || user.processingCredits < 10} className="btn btn--primary w-full h-14 text-lg font-bold bg-gradient-to-r from-blue-600 to-violet-600 border-none">
+                                            {isGenerating ? 'Dreaming up your video...' : 'Generate Video (10 Credits)'}
                                         </button>
                                     </div>
                                 </div>

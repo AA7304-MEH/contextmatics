@@ -26,43 +26,55 @@ const DEFAULT_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
 
 export const ollamaService = {
     /**
-     * Sends a chat request to the Ollama instance (Local or Remote)
+     * Sends a chat request to the Ollama instance (Local or Remote) with Retry Logic
      */
-    chat: async (prompt: string, systemPrompt?: string): Promise<string> => {
+    chat: async (prompt: string, systemPrompt?: string, retries = 3): Promise<string> => {
         const isRemote = !OLLAMA_URL.includes('localhost') && !OLLAMA_URL.includes('127.0.0.1');
-        console.log(`[OllamaService] Targeting ${isRemote ? 'REMOTE' : 'LOCAL'} model: ${DEFAULT_MODEL} at ${OLLAMA_URL}`);
         
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), isRemote ? 30000 : 8000); // Fast timeout for local to trigger fallback
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                // Targeting local or remote Ollama via OLLAMA_URL
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), isRemote ? 45000 : 10000);
 
-            const response = await fetch(OLLAMA_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    model: DEFAULT_MODEL,
-                    messages: [
-                        ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
-                        { role: "user", content: prompt }
-                    ],
-                    stream: false
-                }),
-                signal: controller.signal
-            });
+                const response = await fetch(OLLAMA_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: DEFAULT_MODEL,
+                        messages: [
+                            ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+                            { role: "user", content: prompt }
+                        ],
+                        stream: false
+                    }),
+                    signal: controller.signal
+                });
 
-            clearTimeout(timeoutId);
+                clearTimeout(timeoutId);
 
-            if (response.ok) {
-                const data: OllamaResponse = await response.json();
-                console.log(`[OllamaService] Success with Ollama`);
-                return data.message.content;
+                if (response.ok) {
+                    const data: OllamaResponse = await response.json();
+                    return data.message.content;
+                }
+                
+                // If we get a server error, don't retry, just fail to fallback
+                if (response.status >= 500) break;
+
+            } catch (error: any) {
+                // Attempt failed, backoff and retry or fallback
+                
+                // If last attempt failed, break to fallback
+                if (attempt === retries) break;
+                
+                // Exponential backoff
+                const delay = Math.pow(2, attempt) * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
-        } catch (error: any) {
-            console.warn(`[OllamaService] Ollama unreachable or timed out. Falling back to keyless Cloud AI...`);
         }
 
-        // AUTO-FALLBACK: Keyless Cloud AI (Pollinations / Hercai)
-        // This ensures "No-Key" mode works on Vercel (where localhost is unreachable)
+        // All Ollama attempts failed. Falling back to Cloud AI...
         return await ollamaService.freeCloudChat(prompt, systemPrompt);
     },
 
@@ -70,7 +82,6 @@ export const ollamaService = {
      * KEYLESS CLOUD AI: Purely free, no-key text generation API
      */
     freeCloudChat: async (prompt: string, systemPrompt?: string): Promise<string> => {
-        console.log(`[OllamaService] Activating Keyless Cloud AI (Pollinations)...`);
         try {
             // Pollinations Text API is very reliable and free
             const fullPrompt = systemPrompt ? `${systemPrompt}\n\nUser: ${prompt}` : prompt;
@@ -79,7 +90,6 @@ export const ollamaService = {
             if (response.ok) {
                 const text = await response.text();
                 if (text && text.length > 5) {
-                    console.log(`[OllamaService] Success with Keyless Cloud AI`);
                     return text;
                 }
             }

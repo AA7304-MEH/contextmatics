@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { ModernNav } from './shared/ModernNav';
 import { LogoStyleGrid } from './logo-maker/LogoStyleGrid';
 import { logoGeneratorService } from '../services/logoGeneratorService';
@@ -20,7 +20,7 @@ const LOGO_STYLES: LogoStyle[] = [
 
 const LogoMaker: React.FC = () => {
     const { showToast } = useToast();
-    const navigate = useNavigate();
+    const router = useRouter();
     const [prompt, setPrompt] = useState('');
     const [selectedStyle, setSelectedStyle] = useState(LOGO_STYLES[0].id);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -32,8 +32,6 @@ const LogoMaker: React.FC = () => {
         try {
             const style = LOGO_STYLES.find(s => s.id === selectedStyle);
             const fullPrompt = `${prompt}, ${style?.prompt}`;
-
-            console.log('Initiating logo generation...', { selectedStyle });
 
             const imageUrl = await logoGeneratorService.generate({
                 prompt: fullPrompt,
@@ -55,8 +53,7 @@ const LogoMaker: React.FC = () => {
             };
 
             sessionStorage.setItem('last_logo_result', JSON.stringify(result));
-            console.log('Generation successful, navigating to results');
-            navigate('/logo-results');
+            router.push('/logo-results');
         } catch (error) {
             console.error('Generation error:', error);
             showToast('Generation failed. Please try a different tier or style.', 'error');

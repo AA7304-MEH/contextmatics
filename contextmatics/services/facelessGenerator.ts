@@ -221,23 +221,28 @@ function generateMockScript(
         `Stop scrolling. You need to hear this about ${topic}.`,
         `${topic}? Most people get this completely wrong.`,
         `What nobody tells you about ${topic}...`,
-        isFunny ? `So, you think you know about ${topic}? Wrong.` : `Let's talk about ${topic}.`,
+        `I searched the entire internet for ${topic}, and this is what I found.`,
+        `This is the ONE thing about ${topic} that will change your life.`,
+        isFunny ? `So, you think you know about ${topic}? Wrong. Think again.` : `Let's talk about the absolute truth of ${topic}.`,
     ];
 
     const bodyLines = [
         `Here's the secret that ${isFunny ? "nobody talks about because it's boring" : 'changed everything'}.`,
-        `The ${topic} industry is worth $${Math.floor(Math.random() * 900 + 100)} billion.`,
-        `Scientists discovered something shocking about ${topic} in 2024.`,
-        `This single fact about ${topic} will change how you think.`,
+        `The ${topic} industry is worth $${Math.floor(Math.random() * 900 + 100)} billion as of 2024.`,
+        `Scientists discovered something shocking about ${topic} recently.`,
+        `This single fact about ${topic} will change how you think forever.`,
         `Here's what the top 1% know about ${topic} that you don't.`,
-        `The data doesn't lie: ${topic} is exploding right now.`,
+        `The data doesn't lie: ${topic} is exploding right now across all platforms.`,
+        `If you apply this to ${topic}, your results will skyrocket.`,
+        `Most experts agree that ${topic} is the next big frontier.`,
     ];
 
     const ctaLines = [
         'Follow for more. You don\'t want to miss what\'s next.',
         'Subscribe and share this with someone who needs to hear it.',
         'Drop a 🔥 if this blew your mind.',
-        isFunny ? 'Like and follow or I\'ll be sad. 😢' : 'Your move. Start today.',
+        'Save this video before it disappears from your feed!',
+        isFunny ? 'Like and follow or I\'ll be sad. 😢' : 'Your move. Start implementing this today.',
     ];
 
     const scenes: Omit<Scene, 'id'>[] = [];

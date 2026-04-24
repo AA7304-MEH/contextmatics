@@ -1,69 +1,64 @@
-/**
- * Production-Grade Structured Logger
- * weaponized for ContextMatic Phase 9.
- */
+import { NextResponse } from 'next/server';
 
-type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+type LogLevel = 'info' | 'warn' | 'error';
 
-interface LogContext {
+interface LogData {
+  [key: string]: unknown;
+}
+
+interface LogEntry {
+  level: LogLevel;
+  message: string;
+  route?: string;
   userId?: string;
-  projectId?: string;
-  transactionId?: string;
-  path?: string;
-  error?: any;
-  [key: string]: any;
+  data?: LogData;
+  timestamp: string;
 }
 
-class Logger {
-  private static instance: Logger;
-  private isProduction = process.env.NODE_ENV === 'production';
+/**
+ * Standardised JSON Logger for production tracking.
+ * Supports both logger.info({ message, data }) and logger.info(message, data).
+ */
+export const logger = {
+  info: (msgOrEntry: string | Omit<LogEntry, 'level' | 'timestamp'>, data?: LogData) => 
+    log('info', msgOrEntry, data),
+  warn: (msgOrEntry: string | Omit<LogEntry, 'level' | 'timestamp'>, data?: LogData) => 
+    log('warn', msgOrEntry, data),
+  error: (msgOrEntry: string | Omit<LogEntry, 'level' | 'timestamp'>, data?: LogData) => 
+    log('error', msgOrEntry, data),
+};
 
-  static getInstance(): Logger {
-    if (!Logger.instance) {
-      Logger.instance = new Logger();
-    }
-    return Logger.instance;
+function log(level: LogLevel, msgOrEntry: string | Omit<LogEntry, 'level' | 'timestamp'>, data?: LogData) {
+  let entry: Partial<LogEntry>;
+
+  if (typeof msgOrEntry === 'string') {
+    entry = { message: msgOrEntry, data };
+  } else {
+    entry = { ...msgOrEntry };
+    if (data) entry.data = { ...(entry.data || {}), ...data };
   }
 
-  private log(level: LogLevel, message: string, context?: LogContext) {
-    const timestamp = new Date().toISOString();
-    const structuredLog = {
-      timestamp,
-      level: level.toUpperCase(),
-      message,
-      ...context,
-      environment: process.env.NODE_ENV
-    };
+  const output = {
+    ...entry,
+    level,
+    timestamp: new Date().toISOString(),
+  };
 
-    if (this.isProduction) {
-      // In production, we would send this to Sentry, Axiom, or Datadog
-      // For now, we use a single-line JSON log for easy ingestion by cloud loggers
-      console.log(JSON.stringify(structuredLog));
-    } else {
-      // In development, keep it readable
-      const color = level === 'error' ? '\x1b[31m' : level === 'warn' ? '\x1b[33m' : '\x1b[32m';
-      const reset = '\x1b[0m';
-      console.log(`${color}[${level.toUpperCase()}]${reset} ${timestamp} - ${message}`, context || '');
-    }
-  }
-
-  info(message: string, context?: LogContext) {
-    this.log('info', message, context);
-  }
-
-  warn(message: string, context?: LogContext) {
-    this.log('warn', message, context);
-  }
-
-  error(message: string, context?: LogContext) {
-    this.log('error', message, context);
-  }
-
-  debug(message: string, context?: LogContext) {
-    if (!this.isProduction) {
-      this.log('debug', message, context);
-    }
+  // In production, we'd send this to Axiom, Datadog, or Cloudwatch.
+  // For standard Next.js, we use console[level] so it appears in Vercel logs.
+  if (level === 'error') {
+    console.error(JSON.stringify(output));
+  } else if (level === 'warn') {
+    console.warn(JSON.stringify(output));
+  } else {
+    console.info(JSON.stringify(output));
   }
 }
 
-export const logger = Logger.getInstance();
+export function apiError(message: string, code: string, status: number = 500) {
+    return NextResponse.json({
+        success: false,
+        message,
+        code
+    }, { status });
+}

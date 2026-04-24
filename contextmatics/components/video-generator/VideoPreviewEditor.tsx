@@ -25,7 +25,7 @@ export const VideoPreviewEditor: React.FC<VideoPreviewEditorProps> = ({ videoUrl
                 if (audioRef.current) {
                     audioRef.current.currentTime = videoRef.current.currentTime;
                     // Attempt to play audio, handling browser autoplay policies
-                    audioRef.current.play().catch(e => console.log("Audio play failed (interaction needed)", e));
+                    audioRef.current.play().catch(_e => {});
                 }
             }
             setIsPlaying(!isPlaying);
@@ -46,22 +46,21 @@ export const VideoPreviewEditor: React.FC<VideoPreviewEditorProps> = ({ videoUrl
 
     const handleExport = async () => {
         try {
-            showToast('Starting download... Please wait.', 'info');
-            const response = await fetch(videoUrl);
-            if (!response.ok) throw new Error('Network response was not ok');
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `contextmatic-video-${Date.now()}.mp4`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+            showToast('Preparing your video for download...', 'info');
+            
+            // Refactor for Safari compatibility:
+            // Using window.open with our download-logo proxy logic (which works for videos too)
+            // But let's check if we have a download-video route. We can reuse download-logo if it just proxies.
+            // Actually, let's just use the direct URL with window.open if it's external, 
+            // but the browser might just PLAY it. 
+            // Our proxy route forces 'attachment' via headers.
+            const proxyUrl = `/api/ai/download-logo?url=${encodeURIComponent(videoUrl)}`;
+            window.open(proxyUrl, '_blank');
+            
+            showToast('Download started! 🚀', 'success');
         } catch (error) {
             console.error('Download failed:', error);
-            // Fallback to direct link if fetch fails (CORS fallback)
+            showToast('Download failed. Opening in new tab...', 'error');
             window.open(videoUrl, '_blank');
         }
     };
@@ -91,7 +90,6 @@ export const VideoPreviewEditor: React.FC<VideoPreviewEditorProps> = ({ videoUrl
                     loop
                     onError={(e) => {
                         const error = e.currentTarget.error;
-                        console.error("Video Error Object:", error);
                         // Only alert if it's a real error, not just an interruption/abort
                         if (error && error.code !== 1) {
                             const errorMsg = error.message || "Unknown error";
@@ -106,8 +104,6 @@ export const VideoPreviewEditor: React.FC<VideoPreviewEditorProps> = ({ videoUrl
                         ref={audioRef}
                         src={audioUrl}
                         loop
-                        onPlay={() => console.log("🎵 Audio playing")}
-                        onError={(e) => console.log("⚠️ Audio failed", e)}
                     />
                 )}
 

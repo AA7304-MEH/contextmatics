@@ -1,7 +1,7 @@
 /**
  * Environment variable validation utility
  */
-import { env } from '@/config/env';
+
 
 export const validateEnvironmentVariables = () => {
   const REQUIRED_ENV_VARS = [
@@ -27,29 +27,11 @@ export const validateEnvironmentVariables = () => {
 };
 
 export const getEnvironmentInfo = () => {
-  const key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
-  const isDevMode = process.env.NODE_ENV !== 'production' && (
-    !key ||
-    key.includes('dummy') ||
-    key.includes('your_clerk') ||
-    key.includes('test_dummy')
-  );
-
   return {
     hasRazorpay: !!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID && !process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.includes('dummy'),
     hasPaypal: !!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && !process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID?.includes('dummy'),
     hasGemini: !!process.env.NEXT_PUBLIC_GEMINI_API_KEY && !process.env.NEXT_PUBLIC_GEMINI_API_KEY?.includes('dummy'),
-    hasClerk: !!key && !isDevMode,
-    isClerkKeyValid: (() => {
-      if (!key) return false;
-      if (isDevMode) return false;
-      if (!/^pk_(test|live)_.{20,}$/.test(key)) return false;
-      if (/^pk_(test|live)_X+$/i.test(key)) return false;
-      return true;
-    })(),
     isDevelopmentMode: process.env.NODE_ENV !== 'production',
     isProduction: process.env.NODE_ENV === 'production',
-    isDevMode
   };
 };

@@ -7,24 +7,6 @@ import { LogoGenerationRequest } from '../types';
 export class LogoGeneratorService {
     private static instance: LogoGeneratorService;
 
-    private config = {
-        free: {
-            provider: 'pollinations',
-            url: 'https://pollinations.ai/p/'
-        },
-        basic: {
-            provider: 'huggingface',
-            models: [
-                'stabilityai/stable-diffusion-xl-base-1.0',
-                'runwayml/stable-diffusion-v1-5'
-            ]
-        },
-        premium: {
-            provider: 'openai',
-            url: 'https://api.openai.com/v1/images/generations'
-        }
-    };
-
     private constructor() { }
 
     static getInstance(): LogoGeneratorService {
@@ -37,10 +19,7 @@ export class LogoGeneratorService {
     async generate(request: LogoGenerationRequest): Promise<string> {
         const { prompt, width = 1024, height = 1024 } = request;
 
-        console.log('Generating logo with waterfall approach...');
-
         // 1. Try secure server-side generation (OpenAI & HuggingFace)
-        console.log('Attempting secure server-side generation...');
         try {
             const response = await fetch('/api/ai/generate-logo', {
                 method: 'POST',
@@ -53,28 +32,22 @@ export class LogoGeneratorService {
             if (response.ok) {
                 const data = await response.json();
                 if (data.image) {
-                    console.log(`Success via server (${data.provider})`);
                     return data.image;
                 }
-            } else {
-                const errData = await response.json();
-                console.warn('Server generation skipped/failed:', errData.error);
             }
         } catch (e) {
-            console.warn('Server-side generation request failed:', e);
+            // Server-side generation request failed, fallback to client-side
         }
 
-        // 3. Try Pollinations (Free - Robust)
-        console.log('Falling back to Pollinations...');
+        // 2. Try Pollinations (Free - Robust)
         try {
             const result = await this.generatePollinations(prompt, width, height);
             if (result) return result;
         } catch (e) {
-            console.warn('Pollinations failed:', e);
+            // Pollinations failed
         }
 
-        // 4. Try Hercai (Free Fallback - No Cloudflare 1033)
-        console.log('Falling back to Hercai (Free Alternative)...');
+        // 3. Try Hercai (Free Fallback)
         return this.generateHercai(prompt);
     }
 

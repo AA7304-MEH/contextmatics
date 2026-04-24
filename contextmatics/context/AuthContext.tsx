@@ -22,6 +22,9 @@ interface AuthContextType {
     updateUserCountry: (countryCode: string) => void;
     updateProfile: (data: { username?: string, fullName?: string, avatarUrl?: string }) => Promise<void>;
     refreshProfile: () => Promise<void>;
+    currentWorkspace: any | null;
+    workspaces: any[];
+    switchWorkspace: (workspace: any) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +33,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null);
     const [isVerified, setIsVerified] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [currentWorkspace, setCurrentWorkspace] = useState<any | null>(null);
+    const [workspaces, setWorkspaces] = useState<any[]>([]);
 
     // Fetch user profile from 'profiles' table
     const fetchProfile = async (userId: string) => {
@@ -42,9 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (error) {
                 if (error.code === 'PGRST116') {
-                    console.log('[Auth] No profile found for user yet (expected for new signups)');
+                    // Profile not found yet (expected for new signups)
                 } else {
-                    console.warn('Error fetching profile:', error.message);
+                    console.error('Error fetching profile:', error.message);
                 }
                 return null;
             }
@@ -65,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             countryCode: 'US',
             plan: isAdmin ? 'enterprise' : 'free',
             processingCredits: isAdmin ? 999999 : 5,
+            credits_remaining: isAdmin ? 999999 : 5,
             role: isAdmin ? 'admin' : 'user',
         };
 
@@ -80,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     countryCode: profile.country_code || baseUser.countryCode,
                     plan: finalPlan,
                     processingCredits: finalCredits,
+                    credits_remaining: finalCredits,
                     role: (profile.role === 'admin' || isAdmin) ? 'admin' : 'user',
                     username: profile.username,
                     fullName: profile.full_name,
@@ -87,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 };
             }
         } catch (e) {
-            console.warn('[Auth] Profile fetch failed:', e);
+            console.error('[Auth] Profile fetch failed:', e);
         }
 
         return baseUser;
@@ -106,6 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     countryCode: 'US',
                     plan: isAdmin ? 'enterprise' : 'free',
                     processingCredits: isAdmin ? 999999 : 5,
+                    credits_remaining: isAdmin ? 999999 : 5,
                     role: isAdmin ? 'admin' : 'user',
                 };
                 setUser(baseUser);
@@ -131,15 +139,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     countryCode: 'US',
                     plan: isAdmin ? 'enterprise' : 'free',
                     processingCredits: isAdmin ? 999999 : 5,
+                    credits_remaining: isAdmin ? 999999 : 5,
                     role: isAdmin ? 'admin' : 'user',
                 };
                 setUser(baseUser);
 
                 const mappedUser = await mapSessionToUser(session.user);
                 setUser(mappedUser);
+
+                // Re-fetch default workspace & list
+                const { data: wsData } = await supabase.from('workspace_members').select('workspace:workspace_id(*)').eq('user_id', session.user.id);
+                if (wsData) {
+                    setWorkspaces(wsData.map(w => w.workspace));
+                    if (wsData[0]) setCurrentWorkspace(wsData[0].workspace);
+                }
             } else {
                 setUser(null);
                 setIsVerified(false);
+                setCurrentWorkspace(null);
+                setWorkspaces([]);
             }
             setLoading(false);
         });
@@ -151,13 +169,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         if (!loading && user && typeof window !== 'undefined' &&
             (window.location.pathname === '/sign-in' || window.location.pathname === '/sign-up')) {
-            console.log('[Auth] Authenticated user on auth page, redirecting to dashboard...');
             window.location.href = '/dashboard';
         }
     }, [user, loading]);
 
     const login = async (email: string, password: string) => {
-        console.log('[Auth] Attempting login for:', email);
 
         // Add a 15-second timeout to prevent infinite hang
         const loginPromise = supabase.auth.signInWithPassword({ email, password });
@@ -167,10 +183,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const { error } = await Promise.race([loginPromise, timeoutPromise]) as any;
         if (error) {
-            console.error('[Auth] Login error:', error);
             throw error;
         }
-        console.log('[Auth] Login request sent successfully');
     };
 
     const signup = async (email: string, countryCode: string, _viewerId: string, userData?: any) => {
@@ -192,7 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (error) throw error;
 
         if (data.user) {
-            console.log('[Auth] Account created, profile will be initialized by DB trigger');
+            // Account created, profile will be initialized by DB trigger
         }
     };
 
@@ -202,8 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const upgradePlan = async (plan: PlanId) => {
-        // Weaponized Phase 10: sensitive updates MUST go through backend/payments
-        console.warn('[Auth] upgradePlan called from client. This should be handled via /api/payments/verify.');
+        // Sensitive updates MUST go through backend/payments
         if (user && process.env.NODE_ENV !== 'production') {
             const { error } = await supabase.from('profiles').update({ plan }).eq('id', user.id);
             if (!error) {
@@ -284,6 +297,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const mappedUser = await mapSessionToUser(session?.user || { id: user.id, email: user.email });
             setUser(mappedUser);
             if (session?.user) setIsVerified(!!session.user.email_confirmed_at);
+            
+            // Sync workspace on refresh
+            if (session?.user) {
+                const { data: wsData } = await supabase.from('workspace_members').select('workspace:workspace_id(*)').eq('user_id', session.user.id);
+                if (wsData) {
+                    setWorkspaces(wsData.map(w => w.workspace));
+                    if (!currentWorkspace && wsData[0]) setCurrentWorkspace(wsData[0].workspace);
+                }
+            }
+        }
+    };
+
+    const switchWorkspace = (workspace: any) => {
+        setCurrentWorkspace(workspace);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('contextmatic_last_workspace_id', workspace.id);
         }
     };
 
@@ -303,7 +332,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             checkSubscriptionStatus,
             updateUserCountry,
             updateProfile,
-            refreshProfile
+            refreshProfile,
+            currentWorkspace,
+            workspaces,
+            switchWorkspace
         }}>
             {children}
         </AuthContext.Provider>

@@ -37,3 +37,19 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+.env*.local
+
+# logs
+*.log
+*.txt
+build_log.txt
+tsc_output*.txt
+type_check.log
+build.log
+build_final.log
+build_full.log
+build_output.txt
+tsc_report.txt
+unused_vars.txt
+migration.sql
+fixer.cjs

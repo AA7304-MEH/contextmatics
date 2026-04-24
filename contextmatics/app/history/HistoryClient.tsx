@@ -27,7 +27,7 @@ export default function HistoryPage() {
         }
     };
 
-    const getTimeAgo = (date: any) => {
+    const getTimeAgo = (date:any) => {
         const now = new Date();
         const diffMs = now.getTime() - new Date(date).getTime();
         const diffMins = Math.floor(diffMs / 60000);
@@ -186,7 +186,7 @@ export default function HistoryPage() {
                                             <div className="flex items-center gap-2 mt-1 text-xs text-[var(--color-text-secondary)]">
                                                 <span className="capitalize">{item.format}</span>
                                                 <span className="w-1 h-1 rounded-full bg-zinc-700" />
-                                                <span>{getTimeAgo(item.createdAt)}</span>
+                                                <span>{getTimeAgo(item.created_at)}</span>
                                             </div>
                                         </div>
                                     </div>

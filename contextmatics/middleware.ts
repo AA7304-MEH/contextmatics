@@ -1,105 +1,114 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+const PUBLIC_ROUTES = [
+  '/',
+  '/sign-in',
+  '/sign-up',
+  '/forgot-password',
+  '/pricing',
+  '/auth/callback'
+];
+
 export async function middleware(request: NextRequest) {
-    let response = NextResponse.next({
-        request: {
-            headers: request.headers,
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
         },
-    });
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
-
-    const supabase = createServerClient(
-        supabaseUrl,
-        supabaseAnonKey,
-        {
-            cookies: {
-                get(name: string) {
-                    return request.cookies.get(name)?.value;
-                },
-                set(name: string, value: string, options: CookieOptions) {
-                    request.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    });
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    });
-                    response.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    });
-                },
-                remove(name: string, options: CookieOptions) {
-                    request.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    });
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    });
-                    response.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    });
-                },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
             },
-        }
-    );
+          });
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+        },
+      },
+    }
+  );
 
-    const protectedRoutes = [
-        '/dashboard',
-        '/content-creator',
-        '/video-repurpose',
-        '/video-generator',
-        '/settings',
-        '/history',
-        '/analytics',
-        '/account',
-        '/subscription',
-        '/templates',
-        '/snippets',
-        '/studio',
-        '/projects',
-        '/admin',
-    ];
+  const { data: { user } } = await supabase.auth.getUser();
 
-    const isProtectedRoute = protectedRoutes.some(route =>
-        request.nextUrl.pathname.startsWith(route)
-    );
+  const isPublicRoute = PUBLIC_ROUTES.includes(request.nextUrl.pathname);
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+  // Unauthenticated user
+  if (!user && !isPublicRoute && !request.nextUrl.pathname.startsWith('/api/webhooks')) {
+    return NextResponse.redirect(new URL('/sign-in', request.url));
+  }
 
-    if (authError && isProtectedRoute) {
-        console.error('[Middleware] Auth error:', authError.message);
+  // Authenticated user
+  if (user) {
+    if (request.nextUrl.pathname === '/sign-in' || request.nextUrl.pathname === '/sign-up') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    if (user) {
-        console.log('[Middleware] Authenticated user:', user.email);
+    // Check onboarding
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single();
+
+    const onboardingCompleted = profile?.onboarding_completed ?? false;
+
+    // Prevent redirect loop
+    if (!onboardingCompleted && request.nextUrl.pathname !== '/onboarding' && request.nextUrl.pathname !== '/auth/callback' && !request.nextUrl.pathname.startsWith('/api/')) {
+        return NextResponse.redirect(new URL('/onboarding', request.url));
     }
 
-    if (!user && isProtectedRoute) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/sign-in';
-        url.searchParams.set('return_to', request.nextUrl.pathname);
-        return NextResponse.redirect(url);
+    if (onboardingCompleted && request.nextUrl.pathname === '/onboarding') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
     }
+  }
 
-    return response;
+  return response;
 }
 
 export const config = {
-    matcher: [
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-    ],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };

@@ -1,4 +1,5 @@
-import { generateFacelessScript, Scene } from './facelessGenerator';
+import { Scene } from './facelessGenerator';
+import { videoScriptCore } from '@/lib/ai/video-script-core';
 import { replicateEngine } from './replicateEngine';
 import { env } from '../config/env';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,18 +24,10 @@ class AIService {
      * The master flow: Topic -> Script -> Visual Assets -> Project
      */
     async generateFullVideoProject(supabase: any, userId: string, topic: string, style: string): Promise<GeneratedVideoProject> {
-        console.log(`[AIService] Generating full project for: ${topic} (${style})`);
 
-        // 1. Generate Script using Gemini
-        const script = await generateFacelessScript({
-            topic,
-            style,
-            purpose: 'engagement',
-            platforms: ['Shorts'],
-            targetDuration: 30
-        });
-
-        const scenes = script.variants[0].scenes;
+        // 1. Generate Script using unified AI core
+        const script = await videoScriptCore(topic, style, 'engagement', 30);
+        const scenes = script.scenes;
 
         // 2. Process Scenes to generate/fetch assets
         const clips: any[] = [];
@@ -47,17 +40,15 @@ class AIService {
             
             if (env.REPLICATE_API_TOKEN && env.REPLICATE_API_TOKEN.length > 10) {
                 try {
-                    const gen = await replicateEngine.generateRealVideo({
+                    await replicateEngine.generateRealVideo({
                         prompt: scene.visualDescription,
                         style,
                         userId,
                         platform: 'shorts'
                     }, env.REPLICATE_API_TOKEN);
                     
-                    console.log(`[AIService] Triggered Replicate for scene: ${gen.jobId}`);
                     assetUrl = this.getStockVideoForScene(scene); // Fallback to stock for immediate UI response
                 } catch (e) {
-                    console.warn('[AIService] Replicate generation failed, using stock.');
                     assetUrl = this.getStockVideoForScene(scene);
                 }
             } else {
@@ -89,7 +80,6 @@ class AIService {
         }
 
         // 3. Create Project in Supabase
-        console.log('[AIService] Saving project to Supabase...');
         const { data: project, error } = await supabase
             .from('projects')
             .insert({

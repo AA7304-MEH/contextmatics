@@ -1,14 +1,15 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { useHistory } from '../context/HistoryContext';
+import { useHistory } from '@/context/HistoryContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { PageLayout } from './shared';
+import { SEO } from './shared/SEO';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { historyItems } = useHistory();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   if (!user) return null;
 
@@ -49,7 +50,7 @@ const Dashboard: React.FC = () => {
 
   const recentItems = historyItems.slice(0, 5);
 
-  const getTimeAgo = (date: Date) => {
+  const getTimeAgo = (date: Date | string) => {
     const now = new Date();
     const diffMs = now.getTime() - new Date(date).getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -63,6 +64,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <PageLayout showPricing={true} showSettings={true}>
+      <SEO title="User Dashboard" description="Overview of your AI creative workspace and content stats." />
       <div className="container mx-auto px-6 py-12">
 
         {/* Header */}
@@ -101,7 +103,7 @@ const Dashboard: React.FC = () => {
             {quickActions.map((action, i) => (
               <button
                 key={action.label}
-                onClick={() => navigate(action.path)}
+                onClick={() => router.push(action.path)}
                 className="group relative overflow-hidden rounded-2xl border border-white/5 bg-[var(--color-background-surface)]/50 p-6 text-left transition-all duration-300 hover:border-white/15 hover:-translate-y-1 hover:shadow-xl"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
@@ -158,7 +160,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-xl font-semibold text-white tracking-tight">Recent Activity</h2>
             {recentItems.length > 0 && (
               <button
-                onClick={() => navigate('/history')}
+                onClick={() => router.push('/history')}
                 className="text-sm text-[var(--color-text-secondary)] hover:text-white transition-colors"
               >
                 View All →
@@ -172,7 +174,7 @@ const Dashboard: React.FC = () => {
               <h3 className="text-lg font-semibold text-white mb-2">No activity yet</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-6">Start creating content or generating videos to see your activity here.</p>
               <button
-                onClick={() => navigate('/content-creator')}
+                onClick={() => router.push('/content-creator')}
                 className="btn btn-primary bg-gradient-to-r from-blue-600 to-violet-600 border-none px-6"
               >
                 Create Your First Piece ✨
@@ -192,7 +194,7 @@ const Dashboard: React.FC = () => {
                     <div>
                       <h4 className="text-sm font-medium text-white">{item.title}</h4>
                       <p className="text-xs text-[var(--color-text-secondary)]">
-                        {item.format} · {getTimeAgo(item.createdAt)}
+                        {item.format} · {getTimeAgo(item.created_at)}
                       </p>
                     </div>
                   </div>
@@ -204,7 +206,7 @@ const Dashboard: React.FC = () => {
                       {item.status}
                     </span>
                     <button
-                      onClick={() => navigate('/history')}
+                      onClick={() => router.push('/history')}
                       className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-white/10 transition-colors opacity-0 group-hover:opacity-100"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

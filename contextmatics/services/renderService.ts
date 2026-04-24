@@ -44,7 +44,8 @@ export class RenderService {
       }
     );
 
-    console.log(`[RenderService] Queuing production render for project: ${projectId}`);
+    const { logger } = await import('@/lib/logger');
+    logger.info(`Queuing production render for project: ${projectId}`, { projectId, userId });
 
     const { data, error } = await supabase
       .from('projects')

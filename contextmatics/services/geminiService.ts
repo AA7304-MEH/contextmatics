@@ -1,13 +1,13 @@
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const generateContent = async (content: string, format: string): Promise<string> => {
+
+export const generateContent = async (content: string, format: string, language: string = 'english'): Promise<string> => {
     try {
         const response = await fetch('/api/ai/repurpose', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ content, format })
+            body: JSON.stringify({ content, format, language })
         });
 
         const data = await response.json();
