@@ -1,4 +1,4 @@
-// Updated to fix Vercel deployment email match
+// Triggering deployment on public repository
 import { Suspense } from "react";
 import { CursorLandingPage } from "@/components/CursorLandingPage";
 
