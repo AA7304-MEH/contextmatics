@@ -1,5 +1,4 @@
-// Triggering deployment on public repository
-import { Suspense } from "react";
+// Final production build trigger
 import { CursorLandingPage } from "@/components/CursorLandingPage";
 
 export const dynamic = 'force-dynamic';
