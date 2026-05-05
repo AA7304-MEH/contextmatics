@@ -53,3 +53,5 @@ tsc_report.txt
 unused_vars.txt
 migration.sql
 fixer.cjs
+
+.vercel
