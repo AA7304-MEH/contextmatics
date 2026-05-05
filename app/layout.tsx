@@ -5,7 +5,6 @@ import Providers from '@/components/Providers';
 import UpgradeModal from '@/components/UpgradeModal';
 import LowCreditsBanner from '@/components/LowCreditsBanner';
 import { ModernNav } from '@/components/shared/ModernNav';
-import { MobileNav } from '@/components/shared/MobileNav';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,7 +15,7 @@ export const metadata: Metadata = {
   },
   description: 'Stop staring at a blank screen. Create a week of content in 10 minutes.',
   manifest: '/manifest.json',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://contextmatic.example.com'),
+  metadataBase: new URL('https://contextmatics.vercel.app'),
   openGraph: {
     title: 'ContextMatic',
     description: 'Stop staring at a blank screen. Create a week of content in 10 minutes.',
@@ -41,24 +40,18 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // We can wrap children conditionally for the dashboard routes vs marketing routes,
-  // but to keep it simple and fulfill the generic app layout requirement:
-  // usually, we might have a (dashboard) route group for ModernNav. 
-  // Let's assume ModernNav handles checking if it should render or we just render it.
-  
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-zinc-950 text-white min-h-screen text-zinc-100`}>
+    <html lang="en" className="dark">
+      <body className={`${inter.className} bg-zinc-950 text-white min-h-screen selection:bg-brand-primary/30`}>
         <Providers>
-          <UpgradeModal />
-          <div className="flex h-screen flex-col overflow-hidden">
+          <div className="relative flex min-h-screen flex-col">
             <LowCreditsBanner />
-            <div className="flex flex-1 overflow-hidden">
+            <UpgradeModal />
+            <div className="flex flex-1">
               <ModernNav />
-              <main className="flex-1 overflow-y-auto w-full custom-scrollbar pb-20 md:pb-0">
+              <main className="flex-1 w-full overflow-x-hidden">
                 {children}
               </main>
-              <MobileNav />
             </div>
           </div>
         </Providers>

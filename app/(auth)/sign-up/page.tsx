@@ -5,9 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, User, Github, Chrome, Loader2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 export default function SignUp() {
   const router = useRouter();
+  const { signup } = useAuth();
   const searchParams = useSearchParams();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -30,23 +32,13 @@ export default function SignUp() {
     setLoading(true);
     setError(null);
     
-    // Pass custom data (full name) via options.data
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        }
-      }
-    });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
+    try {
+      await signup(email, 'US', 'visitor_123', { fullName, password });
       router.push('/onboarding');
       router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign up');
+      setLoading(false);
     }
   };
 

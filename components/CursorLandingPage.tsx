@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { ModernNav } from './shared/ModernNav';
 import { ArrowRight, Play, Sparkles, TrendingUp, CheckCircle2, ChevronRight, Layout, Video, PenTool, Share2 } from 'lucide-react';
 
 const Hero = () => {
@@ -305,7 +304,6 @@ const Footer = () => {
 export const CursorLandingPage = () => {
     return (
         <div className="bg-background-primary min-h-screen overflow-x-hidden selection:bg-brand-primary/30">
-            <ModernNav />
             <Hero />
             <SocialProof />
             <Features />

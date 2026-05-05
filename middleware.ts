@@ -7,7 +7,9 @@ const PUBLIC_ROUTES = [
   '/sign-up',
   '/forgot-password',
   '/pricing',
-  '/auth/callback'
+  '/auth/callback',
+  '/privacy',
+  '/terms'
 ];
 
 export async function middleware(request: NextRequest) {

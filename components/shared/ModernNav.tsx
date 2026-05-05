@@ -130,10 +130,37 @@ export const ModernNav = () => {
         }
     ];
 
-    if (!user) return null; // Only show for logged in users
+    if (!user) {
+        return (
+            <nav className="fixed top-0 left-0 right-0 h-20 border-b border-white/5 bg-background-primary/80 backdrop-blur-xl z-[100] flex items-center justify-between px-6 md:px-12">
+                <div onClick={() => router.push('/')} className="flex items-center gap-3 cursor-pointer group">
+                    <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center font-black text-black shadow-[0_0_20px_rgba(59,130,246,0.3)] group-hover:scale-110 transition-transform">C</div>
+                    <span className="text-xl font-black tracking-tighter text-white">ContextMatic</span>
+                </div>
+                
+                <div className="hidden md:flex items-center gap-8">
+                    <button onClick={() => router.push('/pricing')} className="text-sm font-bold text-text-secondary hover:text-white transition-colors uppercase tracking-widest">Pricing</button>
+                    <button onClick={() => router.push('/sign-in')} className="text-sm font-bold text-text-secondary hover:text-white transition-colors uppercase tracking-widest">Sign In</button>
+                    <button 
+                        onClick={() => router.push('/sign-up')}
+                        className="px-6 py-2.5 bg-brand-primary text-black font-black text-xs rounded-xl hover:scale-105 transition-all shadow-lg shadow-brand-primary/20 uppercase tracking-widest"
+                    >
+                        Get Started
+                    </button>
+                </div>
+
+                <button onClick={() => router.push('/sign-in')} className="md:hidden p-2 text-white bg-white/5 rounded-lg">
+                    <Menu className="w-6 h-6" />
+                </button>
+            </nav>
+        );
+    }
 
     return (
         <>
+            {/* Desktop Sidebar Spacer to push content */}
+            <div className="hidden md:block w-64 shrink-0 pointer-events-none" />
+
             {/* Mobile Header */}
             <div className="md:hidden fixed top-0 w-full h-16 bg-background-primary/80 backdrop-blur-xl border-b border-white/5 px-6 flex items-center justify-between z-50">
                 <div onClick={() => router.push('/dashboard')} className="flex items-center gap-2">
